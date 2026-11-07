@@ -82,6 +82,7 @@ export default function App() {
   };
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
+  const gpuTemp = systemInfo?.gpu_temp_c || 0;
   const vramUsed = systemInfo?.gpu_vram_used_gb || '0';
   const vramTotal = systemInfo?.gpu_vram_total_gb || '0';
 

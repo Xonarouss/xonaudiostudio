@@ -118,14 +118,9 @@ class TTSEngine:
         # Provide clean default reference if none given
         if not ref_audio_path or not os.path.exists(ref_audio_path):
             default_ref = BASE_DIR / "backend" / "default_sample.wav"
-            if not default_ref.exists():
-                sr = 24000
-                t = np.linspace(0, 3, sr * 3, endpoint=False)
-                tone = 0.05 * np.sin(2 * np.pi * 220 * t)
-                sf.write(str(default_ref), tone, sr)
             ref_audio_path = str(default_ref)
             if not ref_text:
-                ref_text = "Welcome to XonAudio Studio."
+                ref_text = "Some call me nature, others call me mother nature."
 
         try:
             wav, sr, _ = self.f5.infer(

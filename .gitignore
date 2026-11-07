@@ -23,6 +23,9 @@ outputs/sfx/*.wav
 # Models checkpoints (large weights)
 models/f5-tts/*
 models/stable-audio-open/*
+models/llama/*
 !models/f5-tts/.gitkeep
 !models/stable-audio-open/.gitkeep
+!models/llama/.gitkeep
+models/.version_cache.json
 
