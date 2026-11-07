@@ -34,6 +34,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const [history, setHistory] = useState([]);
 
   const isModelReady = modelsStatus?.stable_audio?.installed;
+  const isStableAudioReady = isModelReady;
 
   // Progress simulation timer during diffusion
   useEffect(() => {

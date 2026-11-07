@@ -125,7 +125,7 @@ class TTSEngine:
         try:
             wav, sr, _ = self.f5.infer(
                 ref_file=ref_audio_path,
-                ref_text=ref_text or "Hello there.",
+                ref_text=ref_text,  # empty string "" → F5-TTS auto-transcribes via ASR
                 gen_text=gen_text,
                 file_wave=str(output_path),
                 speed=float(speed),

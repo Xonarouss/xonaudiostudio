@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Mic, Upload, Sparkles, Volume2, Music, CheckCircle2, AlertCircle,
   RefreshCw, Sliders, History, Play, Activity, User, Users, Trash2,
-  Plus, ChevronRight, X, Star
+  Plus, ChevronRight, X, Star, Globe, Smile
 } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
 
@@ -100,6 +100,8 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
   const [nfeSteps, setNfeSteps] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [emotion, setEmotion] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -279,6 +281,8 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
       formData.append('speed', speed.toString());
       formData.append('nfe_steps', nfeSteps.toString());
       formData.append('remove_silence', removeSilence.toString());
+      formData.append('language', language);
+      formData.append('emotion', emotion);
 
       if (refAudioFile) {
         // One-time file upload takes priority
@@ -627,6 +631,79 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
 
         {/* RIGHT: Parameters + Output */}
         <div className="lg:col-span-5 space-y-6">
+
+          {/* Emotion & Language Panel */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <p className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              🎭 Emotion & Language
+            </p>
+
+            {/* Emotion direction */}
+            <div className="space-y-2">
+              <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">Emotion Direction</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: '😐 Neutral',    value: '' },
+                  { label: '😠 Angry',      value: '(speaking with intense anger and frustration)' },
+                  { label: '😨 Fearful',    value: '(speaking with fear and anxiety, voice trembling)' },
+                  { label: '😢 Sad',        value: '(speaking sadly and softly, with grief)' },
+                  { label: '😄 Happy',      value: '(speaking joyfully and enthusiastically)' },
+                  { label: '🤫 Whisper',    value: '(whispering softly and carefully)' },
+                  { label: '📢 Loud',       value: '(speaking loudly and emphatically)' },
+                  { label: '😒 Sarcastic',  value: '(speaking sarcastically with dry humor)' },
+                  { label: '😴 Calm',       value: '(speaking in a calm, slow, and relaxed tone)' },
+                  { label: '🤩 Excited',    value: '(speaking with great excitement and energy)' },
+                ].map((e) => (
+                  <button
+                    key={e.label}
+                    type="button"
+                    onClick={() => setEmotion(prev => prev === e.value ? '' : e.value)}
+                    className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all active:scale-95 ${
+                      emotion === e.value && e.value !== ''
+                        ? 'bg-purple-600 text-white border-purple-700 shadow-sm'
+                        : e.value === '' && emotion === ''
+                        ? 'bg-slate-200 text-slate-700 border-slate-300'
+                        : 'bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border-slate-200 hover:border-purple-300'
+                    }`}
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400">
+                💡 Emotion cues are prepended to your text as natural language stage directions. For best results, use an emotional reference audio that matches the target emotion.
+              </p>
+            </div>
+
+            {/* Language selector */}
+            <div className="space-y-1.5">
+              <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">Language</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: '🇬🇧 English', value: 'en' },
+                  { label: '🇨🇳 Chinese', value: 'zh' },
+                  { label: '🌐 Auto-detect', value: 'auto' },
+                ].map((lang) => (
+                  <button
+                    key={lang.value}
+                    type="button"
+                    onClick={() => setLanguage(lang.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                      language === lang.value
+                        ? 'bg-cyan-600 text-white border-cyan-700 shadow-sm'
+                        : 'bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 border-slate-200 hover:border-cyan-300'
+                    }`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400">
+                F5-TTS v1 supports English and Chinese Mandarin natively. Auto-detect works for mixed-language scripts.
+              </p>
+            </div>
+          </div>
+
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -639,11 +716,23 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
             </div>
 
             {/* Active voice indicator */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-0.5">
-              <span className="text-slate-500 font-medium">Active voice: </span>
-              <span className="font-bold text-slate-800">
-                {refAudioFile ? `📎 ${refAudioName} (one-time)` : selectedVoice ? `${GENDER_COLORS[selectedVoice.gender]?.icon} ${selectedVoice.name}` : '🤖 Default (basic_ref_en)'}
-              </span>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div>
+                <span className="text-slate-500 font-medium">Active voice: </span>
+                <span className="font-bold text-slate-800">
+                  {refAudioFile ? `📎 ${refAudioName} (one-time)` : selectedVoice ? `${GENDER_COLORS[selectedVoice.gender]?.icon} ${selectedVoice.name}` : '🤖 Default (basic_ref_en)'}
+                </span>
+              </div>
+              {emotion && (
+                <div>
+                  <span className="text-slate-500 font-medium">Emotion: </span>
+                  <span className="font-semibold text-purple-700 truncate">{emotion.replace(/[()]/g, '')}</span>
+                </div>
+              )}
+              <div>
+                <span className="text-slate-500 font-medium">Language: </span>
+                <span className="font-semibold text-cyan-700">{language === 'en' ? '🇬🇧 English' : language === 'zh' ? '🇨🇳 Chinese' : '🌐 Auto-detect'}</span>
+              </div>
             </div>
 
             {/* Speed slider */}

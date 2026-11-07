@@ -83,21 +83,28 @@ class LlamaEngine:
         # Handle both BatchEncoding and plain tensor returns
         if hasattr(encoded, "input_ids"):
             input_ids = encoded.input_ids.to(self.device)
+            # Also pass attention_mask if available to suppress warnings
+            attention_mask = encoded.attention_mask.to(self.device) if hasattr(encoded, "attention_mask") else None
         else:
             input_ids = encoded.to(self.device)
+            attention_mask = None
 
         input_len = input_ids.shape[1]
 
+        generate_kwargs = dict(
+            input_ids=input_ids,
+            max_new_tokens=max_new_tokens,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9,
+            pad_token_id=self.tokenizer.eos_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+        )
+        if attention_mask is not None:
+            generate_kwargs["attention_mask"] = attention_mask
+
         with torch.no_grad():
-            output_ids = self.model.generate(
-                input_ids=input_ids,
-                max_new_tokens=max_new_tokens,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9,
-                pad_token_id=self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-            )
+            output_ids = self.model.generate(**generate_kwargs)
 
         # Decode only the new tokens (skip prompt)
         response = self.tokenizer.decode(

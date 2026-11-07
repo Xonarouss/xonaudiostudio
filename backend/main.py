@@ -51,7 +51,7 @@ VOICES_DIR.mkdir(parents=True, exist_ok=True)
 # Preset voice catalog — matches files in backend/voices/
 # ref_text="" means F5-TTS auto-transcribes using its built-in ASR
 PRESET_VOICES = [
-    {"id": "aria",    "name": "Aria",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "Some call me nature, others call me mother nature.", "file": "aria.wav"},
+    {"id": "aria",    "name": "Aria",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "对，这就是我，万人之上，不来的我。", "file": "aria.wav"},
     {"id": "nova",    "name": "Nova",   "description": "Female · Expressive Story Voice", "gender": "female",  "ref_text": "",  "file": "nova.flac"},
     {"id": "echo",    "name": "Echo",   "description": "Male · Deep Country Voice",       "gender": "male",    "ref_text": "",  "file": "echo.flac"},
     {"id": "sage",    "name": "Sage",   "description": "Male · Town Narrator",            "gender": "male",    "ref_text": "",  "file": "sage.flac"},
@@ -285,7 +285,9 @@ def get_custom_voice_audio(filename: str):
     wav = VOICES_DIR / "custom" / filename
     if not wav.exists():
         raise HTTPException(status_code=404, detail="Custom voice audio not found")
-    return FileResponse(str(wav), media_type="audio/wav")
+    ext = wav.suffix.lower()
+    media_type_map = {".wav": "audio/wav", ".flac": "audio/flac", ".mp3": "audio/mpeg", ".m4a": "audio/mp4"}
+    return FileResponse(str(wav), media_type=media_type_map.get(ext, "audio/wav"))
 
 @app.post("/api/voices/upload")
 async def upload_custom_voice(
@@ -335,7 +337,9 @@ async def generate_tts(
     ref_text: Optional[str] = Form(""),
     speed: Optional[float] = Form(1.0),
     nfe_steps: Optional[int] = Form(32),
-    remove_silence: Optional[bool] = Form(True)
+    remove_silence: Optional[bool] = Form(True),
+    language: Optional[str] = Form("en"),
+    emotion: Optional[str] = Form(""),
 ):
     if not is_f5_installed():
         raise HTTPException(
@@ -344,6 +348,11 @@ async def generate_tts(
         )
     temp_ref_path = None
     resolved_ref_text = ref_text or ""
+
+    # Prepend emotion direction as a stage cue before the gen_text
+    effective_gen_text = gen_text
+    if emotion and emotion.strip():
+        effective_gen_text = f"{emotion.strip()} {gen_text}"
 
     try:
         if ref_audio and ref_audio.filename:
@@ -387,7 +396,7 @@ async def generate_tts(
                             resolved_ref_text = voice_def.get("ref_text", "")
 
         audio_url = tts_engine.generate(
-            gen_text=gen_text,
+            gen_text=effective_gen_text,
             ref_audio_path=temp_ref_path,
             ref_text=resolved_ref_text,
             speed=float(speed),
