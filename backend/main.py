@@ -9,6 +9,9 @@ BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+# Apply compatibility patches FIRST — before any transformers / TTS imports
+import patch_transformers_compat  # noqa: F401, E402
+
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -89,8 +92,8 @@ VOICES_DIR.mkdir(parents=True, exist_ok=True)
 PRESET_VOICES = [
     {"id": "daan",    "name": "Daan 🇳🇱",   "description": "Nederlands (Man) · Helder & Krachtig",   "gender": "male",    "ref_text": "Hallo, mijn naam is Daan. Ik spreek vloeiend Nederlands met een heldere en natuurlijke stem.", "file": "daan_nl.wav"},
     {"id": "femke",   "name": "Femke 🇳🇱",  "description": "Nederlands (Vrouw) · Warm & Vriendelijk","gender": "female",  "ref_text": "Hoi, ik ben Femke. Welkom bij de Nederlandse stem presets voor XonAudio Studio.", "file": "femke_nl.wav"},
-    {"id": "bram",    "name": "Bram 🇳🇱",   "description": "Nederlands (Man) · Diep & Rustgevend",   "gender": "male",    "ref_text": "Goedendag. Mijn naam is Bram. Ik ben een rustige en betrouwbare Nederlandse stem voor al jouw verhalen.", "file": "bram_nl.wav"},
-    {"id": "lotte",   "name": "Lotte 🇳🇱",  "description": "Nederlands (Vrouw) · Expressief & Fris", "gender": "female",  "ref_text": "Hoi allemaal! Ik ben Lotte. Laten we samen geweldige en expressieve Nederlandse audio maken.", "file": "lotte_nl.wav"},
+    {"id": "bram",    "name": "Bram 🇳🇱",   "description": "Nederlands (Man) · Diep & Rustgevend",   "gender": "male",    "ref_text": "Goedendag. Mijn naam is Bram. Ik ben een rustige en betrouwbare stem voor al jouw verhalen.", "file": "bram_nl.wav"},
+    {"id": "lotte",   "name": "Lotte 🇳🇱",  "description": "Nederlands (Vrouw) · Expressief & Fris", "gender": "female",  "ref_text": "Hoi allemaal! Ik ben Lotte. Laten we samen geweldige Nederlandse audio maken.", "file": "lotte_nl.wav"},
     {"id": "aria",    "name": "Aria 🇬🇧",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "", "file": "aria.wav"},
     {"id": "nova",    "name": "Nova 🇬🇧",   "description": "Female · Expressive Story Voice", "gender": "female",  "ref_text": "",  "file": "nova.flac"},
     {"id": "echo",    "name": "Echo 🇬🇧",   "description": "Male · Deep Country Voice",       "gender": "male",    "ref_text": "",  "file": "echo.flac"},

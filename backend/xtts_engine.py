@@ -13,8 +13,10 @@ import torch
 
 try:
     import patch_torchaudio
+    import patch_transformers_compat  # Must run before any TTS / transformers import
 except ImportError:
     from backend import patch_torchaudio
+    from backend import patch_transformers_compat  # noqa: F401
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 XTTS_DIR = BASE_DIR / "models" / "xtts-v2"
