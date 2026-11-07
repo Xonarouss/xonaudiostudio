@@ -12,6 +12,7 @@ from models_manager import (
     is_xtts_installed,
     is_fish_installed,
     is_audioldm_installed,
+    is_whisper_installed,
     check_for_model_updates,
     download_model,
     MODELS_DIR,
@@ -20,7 +21,8 @@ from models_manager import (
     LLAMA_DIR,
     XTTS_DIR,
     FISH_MODEL_DIR,
-    AUDIOLDM_DIR
+    AUDIOLDM_DIR,
+    WHISPER_DIR
 )
 
 FIRST_LAUNCH_FLAG = MODELS_DIR / ".first_launch_done"
@@ -85,6 +87,16 @@ MODELS_CATALOG = {
         "what_it_does": "Intelligent prompt expansion, acoustic styling, and voice scriptwriting assistant.",
         "use_for": "Magic Wand prompt optimization to turn simple ideas into Hollywood acoustic prompts.",
         "recommendation": "[RECOMMENDED for AI prompt enhancement & creative suggestions]"
+    },
+    "7": {
+        "key": "whisper",
+        "name": "Faster-Whisper Medium (Voice ASR & Cleaner)",
+        "size": "~1.5 GB",
+        "is_installed": is_whisper_installed,
+        "arch": "CTranslate2 Faster-Whisper on CUDA (Systran/faster-whisper-medium)",
+        "what_it_does": "Instant 100% reference voice auto-transcription and audio cleaning pipeline (-20 LUFS).",
+        "use_for": "Eliminating voice cloning word hallucinations & repeats by generating exact reference text.",
+        "recommendation": "[HIGHLY RECOMMENDED for flawless voice cloning without hallucination]"
     }
 }
 
@@ -136,9 +148,9 @@ def interactive_first_launch_wizard():
 
     keys_to_download = []
     if choice == "A":
-        keys_to_download = ["f5_tts", "fish_speech", "xtts", "audioldm2", "stable_audio", "llama"]
+        keys_to_download = ["f5_tts", "fish_speech", "xtts", "audioldm2", "stable_audio", "llama", "whisper"]
     elif choice == "V":
-        keys_to_download = ["f5_tts", "fish_speech", "xtts"]
+        keys_to_download = ["f5_tts", "fish_speech", "xtts", "whisper"]
     elif choice == "S":
         keys_to_download = ["audioldm2", "stable_audio"]
     elif choice == "M":

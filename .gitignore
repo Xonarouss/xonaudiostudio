@@ -28,12 +28,16 @@ models/xtts-v2/**
 models/fish-speech-1.5/**
 models/fish-speech-repo/
 models/audioldm2/**
+models/whisper-medium/**
+models/stable-audio-open-small/**
 !models/f5-tts/.gitkeep
 !models/stable-audio-open/.gitkeep
 !models/llama/.gitkeep
 !models/xtts-v2/.gitkeep
 !models/fish-speech-1.5/.gitkeep
 !models/audioldm2/.gitkeep
+!models/whisper-medium/.gitkeep
+!models/stable-audio-open-small/.gitkeep
 models/.first_launch_done
 models/.version_cache.json
 test_*.wav

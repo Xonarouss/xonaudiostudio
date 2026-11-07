@@ -52,6 +52,16 @@ from models_manager import (
 from tts_engine import tts_engine
 from sfx_engine import sfx_engine
 from llama_engine import llama_engine
+from whisper_engine import whisper_engine
+from audio_cleaner import clean_audio
+from text_preprocessor import (
+    preprocess_for_f5tts,
+    preprocess_for_xtts,
+    preprocess_for_fish,
+    preprocess_text_for_engine,
+    extract_tags,
+    should_route_to_fish
+)
 
 try:
     from xtts_engine import xtts_engine
@@ -129,6 +139,10 @@ class LlamaChatRequest(BaseModel):
     message: str
     history: Optional[List[Dict[str, str]]] = []
 
+class PreprocessTextRequest(BaseModel):
+    text: str
+    engine: Optional[str] = "f5_tts"
+
 # ----------------- SYSTEM & MODELS ENDPOINTS -----------------
 
 @app.get("/api/health")
@@ -184,6 +198,7 @@ def api_unload_models():
             xtts_engine.unload()
         if FISH_AVAILABLE and fish_engine:
             fish_engine.unload()
+        whisper_engine.unload()
         return {"status": "success", "message": "All models unloaded from GPU memory."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -347,6 +362,12 @@ async def upload_custom_voice(
     with open(str(out_path), "wb") as f:
         shutil.copyfileobj(voice_file.file, f)
 
+    # Automatically clean uploaded custom voice (VAD silence trim + -20 LUFS)
+    try:
+        clean_audio(str(out_path), str(out_path))
+    except Exception as _c_err:
+        print(f"[Main] Warning cleaning custom voice audio: {_c_err}")
+
     return {
         "status": "success",
         "voice_id": f"custom_{stem}",
@@ -400,6 +421,59 @@ def _cleanup_temp(path: Optional[str]):
         except OSError:
             pass
 
+@app.post("/api/transcribe")
+def transcribe_audio(
+    audio_file: UploadFile = File(...),
+    language: Optional[str] = Form("auto"),
+    clean: Optional[bool] = Form(True),
+):
+    """
+    Transcribes reference audio using local Faster-Whisper (CUDA)
+    and optionally cleans/normalizes the audio (-20 LUFS & silence trim).
+    """
+    temp_path = None
+    cleaned_path = None
+    try:
+        suffix = Path(audio_file.filename).suffix or ".wav"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            if hasattr(audio_file.file, "seek"):
+                audio_file.file.seek(0)
+            shutil.copyfileobj(audio_file.file, tmp)
+            temp_path = tmp.name
+
+        clean_flag = str(clean).lower() in ("true", "1", "yes")
+        audio_for_whisper = temp_path
+        if clean_flag:
+            cleaned_path = clean_audio(temp_path)
+            audio_for_whisper = cleaned_path
+
+        result = whisper_engine.transcribe(audio_for_whisper, language=language)
+        return {
+            "status": "success",
+            "transcript": result.get("text", ""),
+            "language": result.get("language", ""),
+            "language_probability": result.get("language_probability", 0.0),
+            "duration": result.get("duration", 0.0),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+    finally:
+        _cleanup_temp(temp_path)
+        _cleanup_temp(cleaned_path)
+
+@app.post("/api/preprocess-text")
+def api_preprocess_text(req: PreprocessTextRequest):
+    """Parses emotion tags and cleans text according to target engine."""
+    cleaned, tags = preprocess_text_for_engine(req.text, req.engine)
+    route_fish = should_route_to_fish(req.text)
+    return {
+        "status": "success",
+        "original": req.text,
+        "cleaned": cleaned,
+        "tags": tags,
+        "should_route_to_fish": route_fish,
+    }
+
 @app.post("/api/tts/generate")
 async def generate_tts(
     gen_text: str = Form(...),
@@ -418,12 +492,14 @@ async def generate_tts(
             detail="F5-TTS model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
         )
     temp_ref_path = None
+    cleaned_ref_path = None
     resolved_ref_text = ref_text or ""
 
-    # Prepend emotion direction as a stage cue before the gen_text
+    # Prepend emotion direction as a stage cue before gen_text, then strip brackets so F5-TTS NEVER reads them aloud
     effective_gen_text = gen_text
     if emotion and emotion.strip():
         effective_gen_text = f"{emotion.strip()} {gen_text}"
+    effective_gen_text = preprocess_for_f5tts(effective_gen_text)
 
     try:
         if ref_audio and ref_audio.filename:
@@ -436,25 +512,21 @@ async def generate_tts(
             # Resolve preset or custom voice from library
             if voice_id.startswith("custom_"):
                 filename = voice_id[len("custom_"):]
-                # Try with various extensions
                 for ext in [".wav", ".flac", ".mp3", ".m4a"]:
                     candidate = VOICES_DIR / "custom" / f"{filename}{ext}"
                     if candidate.exists():
                         temp_ref_path = str(candidate)
                         break
-                # Fallback: try exact match in custom dir
                 if not temp_ref_path:
                     for f in (VOICES_DIR / "custom").glob(f"{filename}.*"):
                         temp_ref_path = str(f)
                         break
             else:
-                # Preset voice — find from PRESET_VOICES definition
                 voice_def = next((v for v in PRESET_VOICES if v["id"] == voice_id), None)
                 if voice_def:
                     voice_file = voice_def.get("file", f"{voice_id}.wav")
                     preset_path = VOICES_DIR / voice_file
                     if not preset_path.exists():
-                        # Fallback: try extensions
                         for ext in [".wav", ".flac"]:
                             c = VOICES_DIR / f"{voice_id}{ext}"
                             if c.exists():
@@ -462,13 +534,32 @@ async def generate_tts(
                                 break
                     if preset_path.exists():
                         temp_ref_path = str(preset_path)
-                        # Use the preset's ref_text (empty string = auto-transcribe)
                         if not resolved_ref_text:
                             resolved_ref_text = voice_def.get("ref_text", "")
 
+        # Clean reference audio: VAD silence trim + -20 LUFS volume normalization
+        active_ref_path = temp_ref_path
+        if temp_ref_path and os.path.exists(temp_ref_path):
+            try:
+                cleaned_ref_path = clean_audio(temp_ref_path)
+                active_ref_path = cleaned_ref_path
+            except Exception as _c_err:
+                print(f"[TTS] Warning cleaning reference audio: {_c_err}")
+                active_ref_path = temp_ref_path
+
+        # If reference text is missing, automatically transcribe with Whisper to prevent hallucinations/stuttering
+        if active_ref_path and os.path.exists(active_ref_path) and not resolved_ref_text.strip():
+            try:
+                print("[TTS] Auto-transcribing reference audio with local Faster-Whisper...")
+                w_res = whisper_engine.transcribe(active_ref_path, language=language)
+                resolved_ref_text = w_res.get("text", "")
+                print(f"[TTS] Auto-transcribed reference text: '{resolved_ref_text}'")
+            except Exception as _w_err:
+                print(f"[TTS] Faster-Whisper auto-transcription warning: {_w_err}")
+
         audio_url = tts_engine.generate(
             gen_text=effective_gen_text,
-            ref_audio_path=temp_ref_path,
+            ref_audio_path=active_ref_path,
             ref_text=resolved_ref_text,
             speed=float(speed),
             nfe_steps=int(nfe_steps),
@@ -478,17 +569,13 @@ async def generate_tts(
         return {
             "status": "success",
             "audio_url": audio_url,
-            "text": gen_text
+            "text": effective_gen_text
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Only remove if it was a true temp file (not a library voice)
-        if temp_ref_path and temp_ref_path.startswith(tempfile.gettempdir()) and os.path.exists(temp_ref_path):
-            try:
-                os.remove(temp_ref_path)
-            except OSError:
-                pass
+        _cleanup_temp(temp_ref_path)
+        _cleanup_temp(cleaned_ref_path)
 
 @app.post("/api/xtts/generate")
 async def generate_xtts(
@@ -505,6 +592,9 @@ async def generate_xtts(
     if not is_xtts_installed():
         raise HTTPException(status_code=400, detail="XTTS-v2 model not installed. Download it in Model Manager.")
     temp_ref_path = None
+    cleaned_ref_path = None
+    # Strip brackets so XTTS never reads them aloud
+    clean_gen_text = preprocess_for_xtts(gen_text)
     try:
         if ref_audio and ref_audio.filename:
             suffix = Path(ref_audio.filename).suffix or ".wav"
@@ -513,18 +603,29 @@ async def generate_xtts(
                 temp_ref_path = tmp.name
         elif voice_id:
             temp_ref_path = _resolve_voice_path(voice_id)
+
+        active_ref_path = temp_ref_path
+        if temp_ref_path and os.path.exists(temp_ref_path):
+            try:
+                cleaned_ref_path = clean_audio(temp_ref_path)
+                active_ref_path = cleaned_ref_path
+            except Exception as _c_err:
+                print(f"[XTTS] Warning cleaning reference audio: {_c_err}")
+                active_ref_path = temp_ref_path
+
         audio_url = xtts_engine.generate(
-            gen_text=gen_text,
-            ref_audio_path=temp_ref_path,
+            gen_text=clean_gen_text,
+            ref_audio_path=active_ref_path,
             language=language or "en",
             speed=float(speed),
             emotion=emotion or "",
         )
-        return {"status": "success", "audio_url": audio_url, "text": gen_text}
+        return {"status": "success", "audio_url": audio_url, "text": clean_gen_text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         _cleanup_temp(temp_ref_path)
+        _cleanup_temp(cleaned_ref_path)
 
 
 @app.post("/api/fish/generate")
@@ -537,12 +638,16 @@ async def generate_fish(
     speed: Optional[float] = Form(1.0),
     emotion: Optional[str] = Form(""),
 ):
-    """Generate speech using Fish Speech 1.5 — fully local, best quality."""
+    """Generate speech using Fish Speech 1.5 — fully local, native emotion tags."""
     if not FISH_AVAILABLE or fish_engine is None:
         raise HTTPException(status_code=503, detail="Fish Speech engine unavailable. Check backend installation.")
     if not is_fish_installed():
         raise HTTPException(status_code=400, detail="Fish Speech 1.5 not installed. Download it in Model Manager.")
     temp_ref_path = None
+    cleaned_ref_path = None
+    # Preprocess text for Fish Speech (normalizes tags [laughs] -> [laugh], removes unsupported brackets)
+    clean_gen_text = preprocess_for_fish(gen_text)
+    resolved_ref_text = ref_text or ""
     try:
         if ref_audio and ref_audio.filename:
             suffix = Path(ref_audio.filename).suffix or ".wav"
@@ -551,19 +656,38 @@ async def generate_fish(
                 temp_ref_path = tmp.name
         elif voice_id:
             temp_ref_path = _resolve_voice_path(voice_id)
+
+        active_ref_path = temp_ref_path
+        if temp_ref_path and os.path.exists(temp_ref_path):
+            try:
+                cleaned_ref_path = clean_audio(temp_ref_path)
+                active_ref_path = cleaned_ref_path
+            except Exception as _c_err:
+                print(f"[Fish] Warning cleaning reference audio: {_c_err}")
+                active_ref_path = temp_ref_path
+
+        # If ref text missing, auto-transcribe with Whisper
+        if active_ref_path and os.path.exists(active_ref_path) and not resolved_ref_text.strip():
+            try:
+                w_res = whisper_engine.transcribe(active_ref_path, language=language)
+                resolved_ref_text = w_res.get("text", "")
+            except Exception as _w_err:
+                print(f"[Fish] Whisper transcription warning: {_w_err}")
+
         audio_url = fish_engine.generate(
-            gen_text=gen_text,
-            ref_audio_path=temp_ref_path,
-            ref_text=ref_text or "",
+            gen_text=clean_gen_text,
+            ref_audio_path=active_ref_path,
+            ref_text=resolved_ref_text,
             language=language or "en",
             speed=float(speed),
             emotion=emotion or "",
         )
-        return {"status": "success", "audio_url": audio_url, "text": gen_text}
+        return {"status": "success", "audio_url": audio_url, "text": clean_gen_text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         _cleanup_temp(temp_ref_path)
+        _cleanup_temp(cleaned_ref_path)
 
 
 @app.get("/api/xtts/languages")

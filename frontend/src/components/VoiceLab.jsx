@@ -155,6 +155,9 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
   const [refAudioFile, setRefAudioFile] = useState(null);
   const [refAudioName, setRefAudioName] = useState('');
   const [refText, setRefText] = useState('');
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [whisperMeta, setWhisperMeta] = useState(null);
+  const [detectedEmotionTags, setDetectedEmotionTags] = useState([]);
 
   // Generation state
   const [speed, setSpeed] = useState(1.0);
@@ -258,7 +261,48 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
     }
   };
 
-  const handleOneTimeFileChange = (e) => {
+  // Real-time emotion tag detector
+  useEffect(() => {
+    const matches = text.match(/\[([a-zA-Z0-9_\-\s]+)\]/g);
+    if (matches && matches.length > 0) {
+      setDetectedEmotionTags(Array.from(new Set(matches)));
+    } else {
+      setDetectedEmotionTags([]);
+    }
+  }, [text]);
+
+  // Trigger Faster-Whisper automatic transcription and audio cleaning pipeline
+  const triggerAutoTranscription = async (file) => {
+    if (!file) return;
+    setIsTranscribing(true);
+    setErrorMessage('');
+    try {
+      const fd = new FormData();
+      fd.append('audio_file', file);
+      fd.append('language', language === 'zh-cn' ? 'zh' : language || 'auto');
+      fd.append('clean', 'true');
+      const res = await fetch('/api/transcribe', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Transcription failed' }));
+        throw new Error(err.detail || 'Whisper transcription failed');
+      }
+      const data = await res.json();
+      if (data.transcript) {
+        setRefText(data.transcript);
+        setWhisperMeta({
+          language: data.language,
+          prob: data.language_probability,
+          duration: data.duration,
+        });
+      }
+    } catch (err) {
+      console.warn('Whisper transcription warning:', err);
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const handleOneTimeFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('audio/')) {
@@ -269,6 +313,8 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
     setRefAudioName(file.name);
     setSelectedVoice(null); // override preset
     setErrorMessage('');
+    setWhisperMeta(null);
+    await triggerAutoTranscription(file);
   };
 
   const handlePreviewVoice = async (voice) => {
@@ -647,6 +693,41 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
               placeholder="Enter speech script here (multilingual support)..."
               className="w-full rounded-xl p-4 text-sm glass-input text-slate-900 placeholder-slate-400 resize-none font-sans leading-relaxed shadow-xs"
             />
+
+            {/* Smart Emotion Tag Routing Notice */}
+            {detectedEmotionTags.length > 0 && (
+              <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs animate-fadeIn ${
+                ttsEngine === 'fish'
+                  ? 'bg-teal-50 border-teal-200 text-teal-900 shadow-2xs'
+                  : 'bg-amber-50 border-amber-200 text-amber-900 shadow-2xs'
+              }`}>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="text-sm">{ttsEngine === 'fish' ? '🎭' : '💡'}</span>
+                    <span>{ttsEngine === 'fish' ? 'Fish Speech Native Emotion Tags Active:' : 'Emotion Tags Detected:'}</span>
+                    <span className="font-mono text-[11px] bg-white/80 px-2 py-0.5 rounded border border-amber-300 text-amber-950 font-bold">
+                      {detectedEmotionTags.join(' ')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-slate-700">
+                    {ttsEngine === 'fish' ? (
+                      <>Fish Speech 1.5 will vocalize these emotion tags natively into acted laughing, gasping, crying or whispering.</>
+                    ) : (
+                      <>Brackets are automatically filtered so they are <b>never read aloud</b> as "bracket laughs bracket". For authentic acted laughter/emotions, switch to Fish Speech.</>
+                    )}
+                  </p>
+                </div>
+                {ttsEngine !== 'fish' && isFishReady && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectEngine('fish')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white flex-shrink-0 transition-all active:scale-95 shadow-sm"
+                  >
+                    Switch to Fish Speech 🐟
+                  </button>
+                )}
+              </div>
+            )}
             {/* Expressive Speech & Emotion Cues */}
             <div className="space-y-2.5 pt-1">
               <div className="flex items-center justify-between">
@@ -931,16 +1012,60 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
                     </div>
 
                     {refAudioFile && (
-                      <div className="space-y-1.5 animate-fadeIn">
-                        <label className="text-xs font-semibold text-slate-700">What does this audio say? (Reference transcript)</label>
-                        <input
-                          type="text"
-                          value={refText}
-                          onChange={e => setRefText(e.target.value)}
-                          placeholder="e.g. 'Hello, this is a sample recording for voice cloning.'"
-                          className="w-full px-3.5 py-2.5 text-xs rounded-lg glass-input text-slate-900 placeholder-slate-400 shadow-xs"
-                        />
-                        <p className="text-[11px] text-slate-500">A matching transcript ensures the highest fidelity and zero pronunciation artifacts.</p>
+                      <div className="space-y-2 animate-fadeIn pt-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span>Reference Transcript</span>
+                            <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
+                              Faster-Whisper Auto-ASR
+                            </span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => triggerAutoTranscription(refAudioFile)}
+                            disabled={isTranscribing}
+                            className="text-[11px] font-semibold text-cyan-700 hover:text-cyan-800 flex items-center gap-1 disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isTranscribing ? 'animate-spin' : ''}`} />
+                            <span>{isTranscribing ? 'Transcribing...' : 'Re-transcribe'}</span>
+                          </button>
+                        </div>
+
+                        {/* Transcription Status Banner */}
+                        {isTranscribing ? (
+                          <div className="flex items-center gap-2 p-3 bg-cyan-50/80 border border-cyan-200 rounded-xl text-cyan-800 text-xs font-semibold animate-pulse">
+                            <RefreshCw className="w-4 h-4 animate-spin text-cyan-600 flex-shrink-0" />
+                            <span>Transcribing reference audio with local Faster-Whisper on CUDA (float16)...</span>
+                          </div>
+                        ) : whisperMeta ? (
+                          <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs">
+                            <div className="flex items-center gap-1.5 font-medium">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                              <span>Auto-transcribed ({whisperMeta.language?.toUpperCase()}, {whisperMeta.duration}s clip)</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-100/70 px-2 py-0.5 rounded">
+                              🧹 -20 LUFS Cleaned
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <span>🧹 Audio is automatically VAD-trimmed &amp; normalized to -20 LUFS.</span>
+                          </div>
+                        )}
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={refText}
+                            onChange={e => setRefText(e.target.value)}
+                            placeholder={isTranscribing ? "Listening and transcribing reference voice..." : "Exact transcript of reference audio (auto-filled by Whisper)"}
+                            className="w-full px-3.5 py-2.5 text-xs rounded-lg glass-input text-slate-900 placeholder-slate-400 shadow-xs"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-normal">
+                          💡 You can adjust the transcript above if needed. An exact 100% transcript eliminates word repetition, skipping, and hallucinations during voice cloning.
+                        </p>
                       </div>
                     )}
                   </div>

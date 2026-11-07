@@ -28,6 +28,8 @@ XTTS_DIR = MODELS_DIR / "xtts-v2"
 FISH_MODEL_DIR = MODELS_DIR / "fish-speech-1.5"
 FISH_REPO_DIR = MODELS_DIR / "fish-speech-repo"
 AUDIOLDM_DIR = MODELS_DIR / "audioldm2"
+STABLE_AUDIO_SMALL_DIR = MODELS_DIR / "stable-audio-open-small"
+WHISPER_DIR = MODELS_DIR / "whisper-medium"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 
@@ -39,6 +41,8 @@ XTTS_DIR.mkdir(parents=True, exist_ok=True)
 FISH_MODEL_DIR.mkdir(parents=True, exist_ok=True)
 FISH_REPO_DIR.mkdir(parents=True, exist_ok=True)
 AUDIOLDM_DIR.mkdir(parents=True, exist_ok=True)
+STABLE_AUDIO_SMALL_DIR.mkdir(parents=True, exist_ok=True)
+WHISPER_DIR.mkdir(parents=True, exist_ok=True)
 
 def is_llama_installed() -> bool:
     """Checks if Llama weights exist in models/llama."""
@@ -67,6 +71,23 @@ def is_audioldm_installed() -> bool:
     if not AUDIOLDM_DIR.exists():
         return False
     files = list(AUDIOLDM_DIR.glob("**/*.safetensors")) + list(AUDIOLDM_DIR.glob("**/*.bin"))
+    return len(files) > 0
+
+def is_whisper_installed() -> bool:
+    """Checks if Faster-Whisper weights exist in models/whisper-medium."""
+    if not WHISPER_DIR.exists():
+        return False
+    files = list(WHISPER_DIR.glob("*.bin")) + list(WHISPER_DIR.glob("*.safetensors"))
+    return len(files) > 0
+
+def is_stable_audio_small_installed() -> bool:
+    """Checks if Stable Audio Open Small weights exist in models/stable-audio-open-small."""
+    if not STABLE_AUDIO_SMALL_DIR.exists():
+        return False
+    # stable-audio-tools saves model.ckpt / model.safetensors + model_config.json
+    files = (list(STABLE_AUDIO_SMALL_DIR.glob("**/*.ckpt"))
+             + list(STABLE_AUDIO_SMALL_DIR.glob("**/*.safetensors"))
+             + list(STABLE_AUDIO_SMALL_DIR.glob("**/model_config.json")))
     return len(files) > 0
 
 def load_version_cache() -> Dict[str, Any]:
@@ -165,6 +186,8 @@ def get_all_models_status() -> Dict[str, Any]:
     xtts_size = get_dir_size_gb(XTTS_DIR)
     fish_size = get_dir_size_gb(FISH_MODEL_DIR)
     audioldm_size = get_dir_size_gb(AUDIOLDM_DIR)
+    stable_small_size = get_dir_size_gb(STABLE_AUDIO_SMALL_DIR)
+    whisper_size = get_dir_size_gb(WHISPER_DIR)
 
     f5_ready = is_f5_installed()
     stable_ready = is_stable_audio_installed()
@@ -211,6 +234,24 @@ def get_all_models_status() -> Dict[str, Any]:
             "path": str(AUDIOLDM_DIR),
             "vram_estimate": "~2.5 GB",
             "description": "Dual CLAP + T5 conditioning designed for composite soundscapes & Foley actions (e.g. reversing car screeching tires)."
+        },
+        "stable_audio_small": {
+            "name": "Stable Audio Open Small (Fast 44.1kHz)",
+            "repo": "stabilityai/stable-audio-open-small",
+            "installed": is_stable_audio_small_installed(),
+            "size_gb": f"{stable_small_size:.2f}",
+            "path": str(STABLE_AUDIO_SMALL_DIR),
+            "vram_estimate": "~1.5 GB",
+            "description": "Lightweight DiT model for rapid 44.1kHz stereo SFX & loops up to 11s. Runs on consumer GPUs with minimal VRAM."
+        },
+        "whisper": {
+            "name": "Faster-Whisper Medium (Voice ASR & Cleaner)",
+            "repo": "Systran/faster-whisper-medium",
+            "installed": is_whisper_installed(),
+            "size_gb": f"{whisper_size:.2f}",
+            "path": str(WHISPER_DIR),
+            "vram_estimate": "~1.5 GB",
+            "description": "High-accuracy speech transcription & reference voice cleaner on CUDA float16."
         },
         "llama": {
             "name": "Llama 3 Local AI (Assistant & Prompt Enhancer)",
@@ -356,6 +397,43 @@ def download_model(model_key: str) -> Dict[str, Any]:
         except Exception as e:
             raise RuntimeError(f"Error downloading AudioLDM 2: {e}")
 
+    elif model_key == "stable_audio_small":
+        print("[ModelManager] Downloading Stable Audio Open Small from Hugging Face (~1.5 GB)...")
+        hf_token = os.environ.get("HF_TOKEN", "").strip()
+        if not hf_token:
+            env_file = BASE_DIR / ".env"
+            if env_file.exists():
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    if line.startswith("HF_TOKEN="):
+                        hf_token = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        break
+        if not hf_token:
+            raise RuntimeError(
+                "Stable Audio Open Small is a gated model on Hugging Face. "
+                "You must accept the license at https://huggingface.co/stabilityai/stable-audio-open-small "
+                "and set your HF_TOKEN in the .env file (HF_TOKEN=hf_your_token_here)."
+            )
+        try:
+            snapshot_download(
+                repo_id="stabilityai/stable-audio-open-small",
+                local_dir=str(STABLE_AUDIO_SMALL_DIR),
+                token=hf_token,
+            )
+            return {"status": "success", "message": "Stable Audio Open Small downloaded! Fast 44.1kHz stereo SFX generation ready."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading Stable Audio Open Small: {e}")
+
+    elif model_key == "whisper":
+        print("[ModelManager] Downloading Faster-Whisper Medium from Hugging Face (~1.5 GB)...")
+        try:
+            snapshot_download(
+                repo_id="Systran/faster-whisper-medium",
+                local_dir=str(WHISPER_DIR),
+            )
+            return {"status": "success", "message": "Faster-Whisper Medium downloaded! Reference audio transcription & cleaner ready."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading Faster-Whisper: {e}")
+
     else:
         raise ValueError(f"Unknown model: {model_key}")
 
@@ -384,6 +462,18 @@ def delete_model(model_key: str) -> Dict[str, Any]:
             shutil.rmtree(AUDIOLDM_DIR, ignore_errors=True)
             AUDIOLDM_DIR.mkdir(parents=True, exist_ok=True)
             deleted_items.append("AudioLDM 2")
+
+    if model_key in ("stable_audio_small", "all"):
+        if STABLE_AUDIO_SMALL_DIR.exists():
+            shutil.rmtree(STABLE_AUDIO_SMALL_DIR, ignore_errors=True)
+            STABLE_AUDIO_SMALL_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("Stable Audio Open Small")
+
+    if model_key in ("whisper", "all"):
+        if WHISPER_DIR.exists():
+            shutil.rmtree(WHISPER_DIR, ignore_errors=True)
+            WHISPER_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("Faster-Whisper")
 
     if model_key in ("llama", "all"):
         if LLAMA_DIR.exists():
