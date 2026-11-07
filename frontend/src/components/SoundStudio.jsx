@@ -3,22 +3,24 @@ import { Radio, Sparkles, Volume2, Sliders, RefreshCw, CheckCircle2, AlertCircle
 import AudioPlayer from './AudioPlayer';
 
 const PRESET_PROMPTS = [
-  { label: '🌩️ Thunder & Rain', prompt: 'Cinematic thunder strike in the distance with gentle rain pouring on asphalt', duration: 12 },
-  { label: '🚀 Sci-Fi Laser', prompt: 'Futuristic sci-fi laser blast weapon charging up and firing with heavy energy echo', duration: 4 },
-  { label: '👣 Gravel Footsteps', prompt: 'Heavy boots walking steadily on loose gravel path outdoors', duration: 8 },
-  { label: '🏎️ V8 Muscle Car', prompt: 'Aggressive V8 muscle car engine revving up and accelerating fast on asphalt', duration: 10 },
-  { label: '🌌 Deep Space Drone', prompt: 'Dark cinematic atmospheric drone with deep sub bass rumbling in deep space', duration: 20 },
-  { label: '💥 Trailer Impact', prompt: 'Massive Hollywood movie trailer impact boom with reverberating brass hit', duration: 6 },
-  { label: '🔥 Campfire Crackle', prompt: 'Cozy fireplace campfire crackling wood embers gently burning in silence', duration: 15 },
-  { label: '🌊 Ocean Waves', prompt: 'Calm ocean waves crashing gently on a sandy beach during sunset', duration: 16 }
+  { label: '🚗 Reversing Car & Screeching', prompt: 'Car engine reversing fast followed by sudden loud screeching tires skidding on asphalt', duration: 6, engine: 'audioldm2' },
+  { label: '🚪 Footsteps & Door Slam', prompt: 'Heavy boots walking quickly on wooden floor followed by a loud heavy wooden door slamming shut', duration: 7, engine: 'audioldm2' },
+  { label: '🌩️ Thunder & Rain', prompt: 'Cinematic thunder strike in the distance with gentle rain pouring on asphalt', duration: 12, engine: 'stable_audio' },
+  { label: '🚀 Sci-Fi Laser Weapon', prompt: 'Futuristic sci-fi laser blast weapon charging up and firing with heavy energy echo', duration: 4, engine: 'audioldm2' },
+  { label: '🏎️ V8 Muscle Car', prompt: 'Aggressive V8 muscle car engine revving up and accelerating fast on asphalt', duration: 10, engine: 'stable_audio' },
+  { label: '🌌 Deep Space Drone', prompt: 'Dark cinematic atmospheric drone with deep sub bass rumbling in deep space', duration: 20, engine: 'stable_audio' },
+  { label: '💥 Trailer Impact Boom', prompt: 'Massive Hollywood movie trailer impact boom with reverberating brass hit', duration: 6, engine: 'audioldm2' },
+  { label: '🔥 Campfire Crackle', prompt: 'Cozy fireplace campfire crackling wood embers gently burning in silence', duration: 15, engine: 'stable_audio' },
+  { label: '🌊 Ocean Waves', prompt: 'Calm ocean waves crashing gently on a sandy beach during sunset', duration: 16, engine: 'stable_audio' }
 ];
 
 export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
-  const [prompt, setPrompt] = useState('Cinematic massive explosion followed by falling debris and reverberation');
+  const [sfxEngine, setSfxEngine] = useState('audioldm2'); // 'audioldm2' | 'stable_audio'
+  const [prompt, setPrompt] = useState('Car engine reversing fast followed by sudden loud screeching tires skidding on asphalt');
   const [negativePrompt, setNegativePrompt] = useState('low quality, distortion, harsh, noisy, speech, human voice');
-  const [duration, setDuration] = useState(10);
-  const [steps, setSteps] = useState(50);
-  const [cfgScale, setCfgScale] = useState(7.0);
+  const [duration, setDuration] = useState(6);
+  const [steps, setSteps] = useState(35);
+  const [cfgScale, setCfgScale] = useState(4.0);
   const [seed, setSeed] = useState(-1);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
@@ -30,11 +32,26 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState(null);
   const [lastPrompt, setLastPrompt] = useState('');
+  const [lastEngine, setLastEngine] = useState('audioldm2');
   const [errorMessage, setErrorMessage] = useState('');
   const [history, setHistory] = useState([]);
 
-  const isModelReady = modelsStatus?.stable_audio?.installed;
-  const isStableAudioReady = isModelReady;
+  const isStableAudioReady = !!modelsStatus?.stable_audio?.installed;
+  const isAudioLDMReady = !!modelsStatus?.audioldm2?.installed;
+  const isCurrentEngineReady = sfxEngine === 'audioldm2' ? isAudioLDMReady : isStableAudioReady;
+
+  // Switch default params when engine changes
+  const handleSelectEngine = (engine) => {
+    setSfxEngine(engine);
+    if (engine === 'audioldm2') {
+      if (duration > 30) setDuration(15);
+      setSteps(35);
+      setCfgScale(4.0);
+    } else {
+      setSteps(50);
+      setCfgScale(7.0);
+    }
+  };
 
   // Progress simulation timer during diffusion
   useEffect(() => {
@@ -42,7 +59,11 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
     let stepTimer = null;
     if (isGenerating) {
       setProgressPercent(8);
-      setProgressStage('Initializing Stable Audio Open diffusion pipeline...');
+      setProgressStage(
+        sfxEngine === 'audioldm2'
+          ? 'Initializing AudioLDM 2 diffusion pipeline on CUDA...'
+          : 'Initializing Stable Audio Open diffusion pipeline on CUDA...'
+      );
       setElapsedSeconds(0);
 
       timer = setInterval(() => {
@@ -52,19 +73,27 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       stepTimer = setInterval(() => {
         setProgressPercent(p => {
           if (p < 30) {
-            setProgressStage('Encoding text conditioning with T5 / CLAP...');
+            setProgressStage(
+              sfxEngine === 'audioldm2'
+                ? 'Encoding dual CLAP + T5 narrative text conditioning...'
+                : 'Encoding text conditioning with CLAP...'
+            );
             return p + 5;
           } else if (p < 85) {
             const currentStep = Math.round((p / 85) * steps);
-            setProgressStage(`Denoising stereo audio latent (${currentStep}/${steps} steps)...`);
-            return p + 3;
+            setProgressStage(`Denoising audio latents (${currentStep}/${steps} steps)...`);
+            return p + 4;
           } else if (p < 95) {
-            setProgressStage(`Decoding 44.1kHz stereo waveform via Autoencoder (${duration}s)...`);
+            setProgressStage(
+              sfxEngine === 'audioldm2'
+                ? `Decoding 16kHz Foley waveform via VAE (${duration}s)...`
+                : `Decoding 44.1kHz stereo waveform via Autoencoder (${duration}s)...`
+            );
             return p + 2;
           }
           return p;
         });
-      }, 350);
+      }, 300);
     } else {
       if (progressPercent > 0 && progressPercent < 100) {
         setProgressPercent(100);
@@ -75,7 +104,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       clearInterval(timer);
       clearInterval(stepTimer);
     };
-  }, [isGenerating, steps, duration]);
+  }, [isGenerating, steps, duration, sfxEngine]);
 
   const handleEnhanceWithLlama = async () => {
     if (!prompt.trim() || isEnhancing) return;
@@ -102,6 +131,9 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const handleApplyPreset = (preset) => {
     setPrompt(preset.prompt);
     setDuration(preset.duration);
+    if (preset.engine) {
+      handleSelectEngine(preset.engine);
+    }
   };
 
   const handleGenerate = async () => {
@@ -110,8 +142,9 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       return;
     }
 
-    if (!isModelReady) {
-      setErrorMessage('Stable Audio Open model is not installed. Download it via Model Manager.');
+    if (!isCurrentEngineReady) {
+      const engineTitle = sfxEngine === 'audioldm2' ? 'AudioLDM 2 Studio' : 'Stable Audio Open';
+      setErrorMessage(`${engineTitle} is not installed. Download it via Model Manager.`);
       return;
     }
 
@@ -129,6 +162,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
           steps: Number(steps),
           cfg_scale: Number(cfgScale),
           seed: Number(seed),
+          engine: sfxEngine,
         }),
       });
 
@@ -142,12 +176,14 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       setProgressStage('Audio generated successfully!');
       setGeneratedAudioUrl(data.audio_url);
       setLastPrompt(prompt);
+      setLastEngine(sfxEngine);
 
       const newEntry = {
         id: Date.now(),
         title: prompt.length > 40 ? prompt.substring(0, 40) + '...' : prompt,
         url: data.audio_url,
         duration: duration,
+        engine: sfxEngine,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       };
       setHistory(prev => [newEntry, ...prev.slice(0, 9)]);
@@ -165,9 +201,9 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-              Stable Audio Open 1.0
+              Dual AI Engine
             </span>
-            <span className="text-xs text-slate-500 font-medium">High-Resolution 44.1kHz Foley &amp; Sound FX Diffusion (Up to 47s)</span>
+            <span className="text-xs text-slate-500 font-medium">AudioLDM 2 (Multi-Event Foley) &amp; Stable Audio Open (44.1kHz Stereo)</span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Radio className="w-6 h-6 text-purple-600" />
@@ -177,10 +213,10 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
 
         {/* Model status pill */}
         <div className="flex items-center gap-2">
-          {isModelReady ? (
+          {isCurrentEngineReady ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Model Ready</span>
+              <span>{sfxEngine === 'audioldm2' ? 'AudioLDM 2 Ready' : 'Stable Audio Ready'}</span>
             </div>
           ) : (
             <button
@@ -188,9 +224,98 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors"
             >
               <AlertCircle className="w-4 h-4 text-amber-600" />
-              <span>Model Missing (Download in Manager)</span>
+              <span>Download in Model Manager</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Dual Engine Selector */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Engine 1: AudioLDM 2 */}
+        <div
+          onClick={() => handleSelectEngine('audioldm2')}
+          className={`cursor-pointer rounded-2xl border-2 p-5 transition-all duration-200 select-none ${
+            sfxEngine === 'audioldm2'
+              ? 'border-indigo-600 bg-indigo-50/70 shadow-md shadow-indigo-100'
+              : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                AudioLDM 2 Studio
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                Multi-Event Foley
+              </span>
+            </div>
+            {isAudioLDMReady ? (
+              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Ready
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenModelManager(); }}
+                className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 hover:bg-amber-100"
+              >
+                Missing (Download)
+              </button>
+            )}
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">Complex Action &amp; Composite Prompt Adherence</h3>
+          <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            Dual CLAP + T5 conditioning. Engineered for prompts with multiple simultaneous actions (e.g. <i>"reversing car screeching tires"</i> plays the reversing engine <b>AND</b> the screeching tires without dropping events).
+          </p>
+          <div className="mt-3 flex items-center gap-4 text-[11px] font-mono text-slate-500">
+            <span>• 16kHz Audio</span>
+            <span>• Up to 30s</span>
+            <span>• ~3s Fast Diffusion</span>
+          </div>
+        </div>
+
+        {/* Engine 2: Stable Audio Open */}
+        <div
+          onClick={() => handleSelectEngine('stable_audio')}
+          className={`cursor-pointer rounded-2xl border-2 p-5 transition-all duration-200 select-none ${
+            sfxEngine === 'stable_audio'
+              ? 'border-purple-600 bg-purple-50/70 shadow-md shadow-purple-100'
+              : 'border-slate-200 bg-white hover:border-purple-300 hover:shadow-xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                Stable Audio Open 1.0
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                44.1kHz Hi-Fi
+              </span>
+            </div>
+            {isStableAudioReady ? (
+              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Ready
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenModelManager(); }}
+                className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 hover:bg-amber-100"
+              >
+                Missing (Download)
+              </button>
+            )}
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">44.1kHz Stereo Ambient Beds &amp; Continuous Foley</h3>
+          <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            Full bandwidth stereo diffusion by Stability AI. Ideal for long sustained continuous textures (thunderstorm, ocean waves, room tone, space drone) up to 47 seconds.
+          </p>
+          <div className="mt-3 flex items-center gap-4 text-[11px] font-mono text-slate-500">
+            <span>• 44.1kHz Stereo</span>
+            <span>• Up to 47s</span>
+            <span>• Stability AI</span>
+          </div>
         </div>
       </div>
 
@@ -261,30 +386,34 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             </p>
           </div>
 
-          {/* Duration Slider (1 to 47 seconds) */}
+          {/* Duration Slider */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-purple-600" />
+                <Clock className={`w-4 h-4 ${sfxEngine === 'audioldm2' ? 'text-indigo-600' : 'text-purple-600'}`} />
                 <span className="text-sm font-bold text-slate-800">Audio Clip Duration</span>
               </div>
-              <span className="font-mono text-lg font-extrabold text-purple-700 bg-purple-50 px-3 py-1 rounded-lg border border-purple-200 shadow-2xs">
+              <span className={`font-mono text-lg font-extrabold px-3 py-1 rounded-lg border shadow-2xs ${
+                sfxEngine === 'audioldm2'
+                  ? 'text-indigo-700 bg-indigo-50 border-indigo-200'
+                  : 'text-purple-700 bg-purple-50 border-purple-200'
+              }`}>
                 {duration}s
               </span>
             </div>
             <input
               type="range"
               min="1"
-              max="47"
+              max={sfxEngine === 'audioldm2' ? 30 : 47}
               step="1"
               value={duration}
               onChange={(e) => setDuration(parseInt(e.target.value))}
-              className="w-full accent-purple-600"
+              className={`w-full ${sfxEngine === 'audioldm2' ? 'accent-indigo-600' : 'accent-purple-600'}`}
             />
             <div className="flex justify-between text-[11px] font-mono text-slate-500">
-              <span>1 second</span>
-              <span>24 seconds</span>
-              <span>47 seconds (Max)</span>
+              <span>1s</span>
+              <span>{sfxEngine === 'audioldm2' ? '15s' : '24s'}</span>
+              <span>{sfxEngine === 'audioldm2' ? '30s (Max)' : '47s (Max)'}</span>
             </div>
           </div>
         </div>
@@ -294,12 +423,12 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-purple-600" />
+                <Sliders className={`w-4 h-4 ${sfxEngine === 'audioldm2' ? 'text-indigo-600' : 'text-purple-600'}`} />
                 Synthesis Parameters
               </span>
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-xs text-purple-700 hover:text-purple-800 font-semibold"
+                className={`text-xs font-semibold ${sfxEngine === 'audioldm2' ? 'text-indigo-700 hover:text-indigo-800' : 'text-purple-700 hover:text-purple-800'}`}
               >
                 {showAdvanced ? 'Simple' : 'Advanced'}
               </button>
@@ -309,16 +438,16 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-slate-700 font-medium">
                 <span>Inference Steps</span>
-                <span className="font-mono text-purple-700 font-bold">{steps} steps</span>
+                <span className={`font-mono font-bold ${sfxEngine === 'audioldm2' ? 'text-indigo-700' : 'text-purple-700'}`}>{steps} steps</span>
               </div>
               <input
                 type="range"
-                min="25"
+                min="15"
                 max="100"
                 step="5"
                 value={steps}
                 onChange={(e) => setSteps(parseInt(e.target.value))}
-                className="w-full accent-purple-600"
+                className={`w-full ${sfxEngine === 'audioldm2' ? 'accent-indigo-600' : 'accent-purple-600'}`}
               />
             </div>
 
@@ -326,7 +455,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-slate-700 font-medium">
                 <span>Prompt Guidance (CFG Scale)</span>
-                <span className="font-mono text-purple-700 font-bold">{cfgScale.toFixed(1)}</span>
+                <span className={`font-mono font-bold ${sfxEngine === 'audioldm2' ? 'text-indigo-700' : 'text-purple-700'}`}>{cfgScale.toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -335,7 +464,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
                 step="0.5"
                 value={cfgScale}
                 onChange={(e) => setCfgScale(parseFloat(e.target.value))}
-                className="w-full accent-purple-600"
+                className={`w-full ${sfxEngine === 'audioldm2' ? 'accent-indigo-600' : 'accent-purple-600'}`}
               />
             </div>
 
@@ -354,12 +483,12 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs text-slate-700 font-semibold">
                     <span className="flex items-center gap-1">
-                      <Hash className="w-3.5 h-3.5 text-purple-600" />
+                      <Hash className={`w-3.5 h-3.5 ${sfxEngine === 'audioldm2' ? 'text-indigo-600' : 'text-purple-600'}`} />
                       Seed (-1 for random)
                     </span>
                     <button
                       onClick={() => setSeed(Math.floor(Math.random() * 999999))}
-                      className="text-[11px] text-purple-600 hover:underline"
+                      className={`text-[11px] hover:underline ${sfxEngine === 'audioldm2' ? 'text-indigo-600' : 'text-purple-600'}`}
                     >
                       Randomize
                     </button>
@@ -374,20 +503,28 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               </div>
             )}
 
-            {/* BEAUTIFUL VISIBLE PROGRESS BAR */}
+            {/* PROGRESS BAR */}
             {isGenerating && (
-              <div className="space-y-2 pt-2 p-4 bg-slate-50 rounded-xl border border-purple-100 animate-fadeIn">
+              <div className={`space-y-2 pt-2 p-4 bg-slate-50 rounded-xl border animate-fadeIn ${
+                sfxEngine === 'audioldm2' ? 'border-indigo-100' : 'border-purple-100'
+              }`}>
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                    <Activity className={`w-3.5 h-3.5 animate-pulse ${sfxEngine === 'audioldm2' ? 'text-indigo-600' : 'text-purple-600'}`} />
                     {progressStage}
                   </span>
-                  <span className="font-mono font-bold text-purple-700">{progressPercent}% ({elapsedSeconds}s)</span>
+                  <span className={`font-mono font-bold ${sfxEngine === 'audioldm2' ? 'text-indigo-700' : 'text-purple-700'}`}>
+                    {progressPercent}% ({elapsedSeconds}s)
+                  </span>
                 </div>
                 {/* Progress bar track */}
                 <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-500 transition-all duration-300 shadow-sm"
+                    className={`h-full rounded-full transition-all duration-300 shadow-sm ${
+                      sfxEngine === 'audioldm2'
+                        ? 'bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500'
+                        : 'bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-500'
+                    }`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -397,29 +534,31 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             {/* Generate Action Button */}
             <button
               onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim() || !isStableAudioReady}
+              disabled={isGenerating || !prompt.trim() || !isCurrentEngineReady}
               className={`w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-md transition-all duration-200 ${
                 isGenerating
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
-                  : !isStableAudioReady
+                  : !isCurrentEngineReady
                   ? 'bg-amber-100 text-amber-800 cursor-not-allowed border border-amber-300'
+                  : sfxEngine === 'audioldm2'
+                  ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white hover:brightness-105 active:scale-[0.99] shadow-indigo-600/20'
                   : 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white hover:brightness-105 active:scale-[0.99] shadow-purple-600/20'
               }`}
             >
               {isGenerating ? (
                 <>
-                  <RefreshCw className="w-5 h-5 animate-spin text-purple-600" />
+                  <RefreshCw className="w-5 h-5 animate-spin text-white" />
                   <span>Synthesizing Sound ({progressPercent}%)...</span>
                 </>
-              ) : !isStableAudioReady ? (
+              ) : !isCurrentEngineReady ? (
                 <>
                   <AlertCircle className="w-5 h-5 text-amber-700" />
-                  <span>Stable Audio Not Installed (Download in Manager)</span>
+                  <span>{sfxEngine === 'audioldm2' ? 'AudioLDM 2' : 'Stable Audio'} Not Installed (Download in Manager)</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>Generate Sound Effect</span>
+                  <span>Generate Sound ({sfxEngine === 'audioldm2' ? 'AudioLDM 2 Multi-Event' : 'Stable Audio 44.1kHz'})</span>
                 </>
               )}
             </button>
@@ -430,7 +569,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             <div className="space-y-2">
               <AudioPlayer
                 audioUrl={generatedAudioUrl}
-                title="Stable Audio Open Effect"
+                title={lastEngine === 'audioldm2' ? 'AudioLDM 2 Studio (Multi-Event SFX)' : 'Stable Audio Open (44.1kHz Hi-Fi)'}
                 subtitle={lastPrompt.length > 50 ? lastPrompt.substring(0, 50) + '...' : lastPrompt}
                 duration={duration}
               />

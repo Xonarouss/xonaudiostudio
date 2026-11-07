@@ -40,6 +40,7 @@ def create_zip():
         "models/llama/.gitkeep",
         "models/xtts-v2/.gitkeep",
         "models/fish-speech-1.5/.gitkeep",
+        "models/audioldm2/.gitkeep",
         "outputs/tts/.gitkeep",
         "outputs/sfx/.gitkeep",
     ]

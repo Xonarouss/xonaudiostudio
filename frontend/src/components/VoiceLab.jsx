@@ -109,7 +109,29 @@ function VoiceCard({ voice, selected, onSelect, onPreview, onDelete }) {
 }
 
 export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
-  const [text, setText] = useState('Welcome to XonAudio Studio. This voice is generated locally with the F5-TTS architecture on your GPU.');
+  const [text, setText] = useState('Welcome to XonAudio Studio. This voice is generated locally on your GPU.');
+  const textareaRef = useRef(null);
+
+  const insertAtCursor = (insertion) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setText(prev => prev + ' ' + insertion);
+      return;
+    }
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = el.value.substring(0, start);
+    const after = el.value.substring(end);
+    const needsSpaceBefore = before.length > 0 && !before.endsWith(' ') && !insertion.startsWith(' ');
+    const toAdd = (needsSpaceBefore ? ' ' : '') + insertion;
+    const updated = before + toAdd + after;
+    setText(updated);
+    setTimeout(() => {
+      el.focus();
+      const nextPos = start + toAdd.length;
+      el.setSelectionRange(nextPos, nextPos);
+    }, 0);
+  };
 
   // TTS Engine selection
   const [ttsEngine, setTtsEngine] = useState('f5tts'); // 'f5tts' | 'xtts' | 'fish'
@@ -618,56 +640,122 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
               </div>
             </div>
             <textarea
+              ref={textareaRef}
               rows={5}
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Enter speech script here (multilingual support)..."
               className="w-full rounded-xl p-4 text-sm glass-input text-slate-900 placeholder-slate-400 resize-none font-sans leading-relaxed shadow-xs"
             />
-            {/* F5-TTS Style Token Quick-Insert Buttons */}
-            <div className="space-y-2 pt-1">
-              <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">Quick-Insert Speech Cues</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: '😄 Ha ha ha!',   insert: ' Ha ha ha!' },
-                  { label: '😤 Hmm...',       insert: ' Hmm...' },
-                  { label: '😮 Oh!',          insert: ' Oh!' },
-                  { label: '😯 Wow!',         insert: ' Wow!' },
-                  { label: '⏸ Pause',         insert: '...' },
-                  { label: '🤔 Well...',      insert: ' Well...' },
-                  { label: '😲 Whoa!',        insert: ' Whoa!' },
-                  { label: '💨 (sighs)',       insert: ' (sighs)' },
-                  { label: '😬 Ugh',          insert: ' Ugh.' },
-                  { label: '🎉 Yes!',         insert: ' Yes!' },
-                  { label: '🔡 EMPHASIS',     insert: ' ' },
-                ].map((token) => (
-                  <button
-                    key={token.label}
-                    type="button"
-                    onClick={() => {
-                      if (token.label === '🔡 EMPHASIS') {
-                        // Uppercase the last word
-                        setText(prev => {
-                          const words = prev.trimEnd().split(' ');
-                          if (words.length > 0) {
-                            words[words.length - 1] = words[words.length - 1].toUpperCase();
-                          }
-                          return words.join(' ');
-                        });
-                      } else {
-                        setText(prev => prev + token.insert);
-                      }
-                    }}
-                    className="px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 border border-slate-200 hover:border-cyan-300 transition-all active:scale-95"
-                    title={`Insert: ${token.insert}`}
-                  >
-                    {token.label}
-                  </button>
-                ))}
+            {/* Expressive Speech & Emotion Cues */}
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-slate-700 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                  <Smile className="w-3.5 h-3.5 text-cyan-600" />
+                  Expressive Cues &amp; Emotion Tags
+                </p>
+                <span className="text-[10px] font-mono text-slate-400">Click to insert at cursor</span>
               </div>
-              <p className="text-[10px] text-slate-400">
-                💡 F5-TTS reads text naturally — punctuation controls rhythm. Use "..." for pauses, "!" for emphasis, and UPPERCASE WORDS for stress.
-              </p>
+
+              {/* Engine-specific tags */}
+              {ttsEngine === 'fish' ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: '😂 [laugh]', insert: '[laugh]' },
+                      { label: '🤭 [chuckle]', insert: '[chuckle]' },
+                      { label: '😮 [gasp]', insert: '[gasp]' },
+                      { label: '💨 [sigh]', insert: '[sigh]' },
+                      { label: '🤫 [whisper]', insert: '[whisper]' },
+                      { label: '😱 [screaming]', insert: '[screaming]' },
+                      { label: '😭 [crying]', insert: '[crying]' },
+                      { label: '⏸ [pause]', insert: '[pause]' },
+                      { label: '🎭 [laughter]', insert: '[laughter]' },
+                    ].map((token) => (
+                      <button
+                        key={token.label}
+                        type="button"
+                        onClick={() => insertAtCursor(token.insert)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition-all active:scale-95 shadow-2xs"
+                        title={`Insert Fish Speech tag: ${token.insert}`}
+                      >
+                        {token.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-teal-50/70 border border-teal-200 text-[11px] text-teal-900 leading-relaxed">
+                    🐟 <b>Fish Speech 1.5 Emotion Tags:</b> Natively decodes bracketed emotional tokens like <code>[laugh]</code>, <code>[sigh]</code>, and <code>[gasp]</code> directly into authentic emotional vocal expressions.
+                  </div>
+                </div>
+              ) : ttsEngine === 'xtts' ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: '😄 (laughing)', insert: '(laughing)' },
+                      { label: '💨 (sighs)', insert: '(sighs)' },
+                      { label: '😮 (gasping)', insert: '(gasping)' },
+                      { label: '🤫 (whispering)', insert: '(whispering)' },
+                      { label: '⏸ ...', insert: '...' },
+                      { label: '❗ Stress', insert: '!' },
+                      { label: '😂 [laugh]', insert: '[laugh]' },
+                    ].map((token) => (
+                      <button
+                        key={token.label}
+                        type="button"
+                        onClick={() => insertAtCursor(token.insert)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 transition-all active:scale-95 shadow-2xs"
+                        title={`Insert XTTS cue: ${token.insert}`}
+                      >
+                        {token.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-orange-50/70 border border-orange-200 text-[11px] text-orange-900 leading-relaxed">
+                    🗣️ <b>Coqui XTTS-v2 Emotion:</b> Emotion and prosody are primarily transferred from your speaker reference audio. Stage directions like <code>(laughing)</code> or <code>(whispering)</code> guide pacing.
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: '😄 Ha ha ha!', insert: 'Ha ha ha!' },
+                      { label: '💨 (sighs)', insert: '(sighs)' },
+                      { label: '😤 Hmm...', insert: 'Hmm...' },
+                      { label: '😮 Oh!', insert: 'Oh!' },
+                      { label: '⏸ Pause ...', insert: '...' },
+                      { label: '😲 Whoa!', insert: 'Whoa!' },
+                      { label: '🎉 Yes!', insert: 'Yes!' },
+                      { label: '🔡 EMPHASIS', insert: 'UPPERCASE' },
+                      { label: '😂 [laugh]', insert: '[laugh]' },
+                    ].map((token) => (
+                      <button
+                        key={token.label}
+                        type="button"
+                        onClick={() => {
+                          if (token.label === '🔡 EMPHASIS') {
+                            setText(prev => {
+                              const words = prev.trimEnd().split(' ');
+                              if (words.length > 0) {
+                                words[words.length - 1] = words[words.length - 1].toUpperCase();
+                              }
+                              return words.join(' ');
+                            });
+                          } else {
+                            insertAtCursor(token.insert);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 transition-all active:scale-95 shadow-2xs"
+                        title={`Insert F5-TTS cue: ${token.insert}`}
+                      >
+                        {token.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-cyan-50/70 border border-cyan-200 text-[11px] text-cyan-900 leading-relaxed">
+                    🎙️ <b>F5-TTS Flow Matching:</b> Controls speech dynamics via punctuation and onomatopoeia. Use <code>...</code> for pauses, exclamation marks <code>!</code> for energy, and CAPITAL LETTERS for emphasis.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

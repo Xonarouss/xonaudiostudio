@@ -69,11 +69,12 @@ echo [+] Core dependencies and FFmpeg installed successfully!
 echo.
 
 :CHECK_UPDATES
-:: 3.5 Verify critical dependencies (torchsde, FFmpeg)
-python -c "import torchsde, einops" >nul 2>&1
+:: 3.5 Verify critical dependencies (torchsde, FFmpeg, TTS, Fish Speech deps)
+python -c "import torchsde, einops, TTS, coqpit, tiktoken" >nul 2>&1
 if errorlevel 1 (
-    echo [*] Installing missing audio processing libraries...
-    pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg
+    echo [*] Verifying and installing voice and audio processing libraries...
+    pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg coqpit trainer anyascii pysbd num2words tiktoken vector-quantize-pytorch pytorch-lightning lightning loralib natsort pyrootutils
+    python -c "import TTS" >nul 2>&1 || pip install TTS==0.22.0
 )
 
 if not exist "venv\Scripts\ffmpeg.exe" (

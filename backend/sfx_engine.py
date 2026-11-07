@@ -9,7 +9,7 @@ import soundfile as sf
 import scipy.io.wavfile
 
 import torch
-from models_manager import STABLE_AUDIO_DIR
+from models_manager import STABLE_AUDIO_DIR, AUDIOLDM_DIR
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUTS_DIR = BASE_DIR / "outputs" / "sfx"
@@ -20,6 +20,8 @@ class SFXEngine:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipe = None
         self.is_loaded = False
+        self.audioldm_pipe = None
+        self.is_audioldm_loaded = False
         print(f"[SFXEngine] Initialized on device: {self.device}")
 
     def load_model(self):
@@ -133,6 +135,109 @@ class SFXEngine:
         print("[SFXEngine] Unloading Stable Audio Open from VRAM...")
         self.pipe = None
         self.is_loaded = False
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    def load_audioldm(self):
+        """Loads AudioLDM 2 pipeline onto CUDA (RTX 5080)."""
+        if self.is_audioldm_loaded and self.audioldm_pipe is not None:
+            return
+
+        print(f"[SFXEngine] Loading AudioLDM 2 pipeline onto {self.device}...")
+        from diffusers import AudioLDM2Pipeline
+
+        local_files = list(AUDIOLDM_DIR.glob("**/*.safetensors")) + list(AUDIOLDM_DIR.glob("**/*.bin"))
+        model_source = str(AUDIOLDM_DIR) if len(local_files) > 0 else "cvssp/audioldm2"
+
+        dtype = torch.float16 if self.device == "cuda" else torch.float32
+        try:
+            self.audioldm_pipe = AudioLDM2Pipeline.from_pretrained(
+                model_source,
+                torch_dtype=dtype,
+            )
+            self.audioldm_pipe = self.audioldm_pipe.to(self.device)
+            if hasattr(self.audioldm_pipe, "enable_attention_slicing"):
+                self.audioldm_pipe.enable_attention_slicing()
+
+            self.is_audioldm_loaded = True
+            print(f"[SFXEngine] AudioLDM 2 successfully loaded onto {self.device}!")
+        except Exception as e:
+            if self.device == "cuda":
+                print(f"[SFXEngine] CUDA AudioLDM 2 warning ({e}). Falling back to CPU...")
+                try:
+                    self.device = "cpu"
+                    self.audioldm_pipe = AudioLDM2Pipeline.from_pretrained(
+                        model_source,
+                        torch_dtype=torch.float32,
+                    ).to("cpu")
+                    self.is_audioldm_loaded = True
+                    print("[SFXEngine] AudioLDM 2 loaded on CPU!")
+                    return
+                except Exception as e_cpu:
+                    raise RuntimeError(f"Could not load AudioLDM 2 on CPU: {e_cpu}")
+            self.is_audioldm_loaded = False
+            raise RuntimeError(f"Error loading AudioLDM 2: {e}")
+
+    def generate_audioldm(
+        self,
+        prompt: str,
+        negative_prompt: str = "low quality, noisy, distorted, speech",
+        duration: float = 10.0,
+        steps: int = 40,
+        guidance_scale: float = 4.0,
+        seed: int = -1
+    ) -> str:
+        """
+        Generates sound effect from prompt using AudioLDM 2 (16kHz).
+        Particularly effective for complex multi-event prompts and Foley action adherence.
+        """
+        if not self.is_audioldm_loaded:
+            self.load_audioldm()
+
+        duration = max(1.0, min(30.0, float(duration)))
+        generator = None
+        if seed is not None and seed >= 0:
+            generator = torch.Generator(device=self.device).manual_seed(int(seed))
+
+        filename = f"sfx_audioldm2_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
+        output_path = OUTPUTS_DIR / filename
+
+        print(f"[SFXEngine] Generating AudioLDM 2 SFX: '{prompt}' ({duration}s, {steps} steps)...")
+        try:
+            output = self.audioldm_pipe(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                audio_length_in_s=duration,
+                num_inference_steps=steps,
+                guidance_scale=guidance_scale,
+                generator=generator
+            )
+
+            # AudioLDM 2 returns numpy array of shape (samples,) or (1, samples)
+            audio = output.audios[0]
+            audio_np = np.asarray(audio, dtype=np.float32)
+            if audio_np.ndim > 1 and audio_np.shape[0] == 1:
+                audio_np = audio_np[0]
+
+            # Normalize to avoid clipping
+            max_val = np.max(np.abs(audio_np))
+            if max_val > 0.99:
+                audio_np = audio_np / max_val * 0.99
+
+            sr = 16000
+            sf.write(str(output_path), audio_np, sr)
+            print(f"[SFXEngine] AudioLDM 2 SFX saved to {output_path}")
+            return f"/outputs/sfx/{filename}"
+        except Exception as e:
+            print(f"[SFXEngine] AudioLDM 2 generation error: {e}")
+            raise RuntimeError(f"Fout bij AudioLDM 2 generatie: {e}")
+
+    def unload_audioldm(self):
+        """Frees AudioLDM 2 from VRAM."""
+        print("[SFXEngine] Unloading AudioLDM 2 from VRAM...")
+        self.audioldm_pipe = None
+        self.is_audioldm_loaded = False
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

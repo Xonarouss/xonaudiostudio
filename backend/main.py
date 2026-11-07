@@ -38,6 +38,7 @@ from models_manager import (
     is_llama_installed,
     is_xtts_installed,
     is_fish_installed,
+    is_audioldm_installed,
     MODELS_DIR,
     OUTPUTS_DIR
 )
@@ -111,6 +112,7 @@ class SFXGenerateRequest(BaseModel):
     steps: Optional[int] = 50
     cfg_scale: Optional[float] = 7.0
     seed: Optional[int] = -1
+    engine: Optional[str] = "stable_audio"  # "stable_audio" | "audioldm2"
 
 class LlamaEnhanceRequest(BaseModel):
     prompt: str
@@ -150,6 +152,8 @@ def api_delete_model(req: DeleteModelRequest):
             tts_engine.unload()
         if req.model_key in ("stable_audio", "all"):
             sfx_engine.unload()
+        if req.model_key in ("audioldm2", "all"):
+            sfx_engine.unload_audioldm()
         if req.model_key in ("llama", "all"):
             llama_engine.unload()
         if req.model_key in ("xtts", "all") and XTTS_AVAILABLE and xtts_engine:
@@ -569,28 +573,55 @@ def get_fish_languages():
 
 @app.post("/api/sfx/generate")
 def generate_sfx(req: SFXGenerateRequest):
-    if not is_stable_audio_installed():
-        raise HTTPException(
-            status_code=400,
-            detail="Stable Audio Open model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
-        )
-    try:
-        audio_url = sfx_engine.generate(
-            prompt=req.prompt,
-            negative_prompt=req.negative_prompt,
-            duration=req.duration,
-            steps=req.steps,
-            cfg_scale=req.cfg_scale,
-            seed=req.seed
-        )
-        return {
-            "status": "success",
-            "audio_url": audio_url,
-            "prompt": req.prompt,
-            "duration": req.duration
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    engine_choice = getattr(req, "engine", "stable_audio") or "stable_audio"
+    if engine_choice == "audioldm2":
+        if not is_audioldm_installed():
+            raise HTTPException(
+                status_code=400,
+                detail="AudioLDM 2 model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
+            )
+        try:
+            audio_url = sfx_engine.generate_audioldm(
+                prompt=req.prompt,
+                negative_prompt=req.negative_prompt,
+                duration=req.duration or 10.0,
+                steps=req.steps or 40,
+                guidance_scale=req.cfg_scale or 4.0,
+                seed=req.seed if req.seed is not None else -1
+            )
+            return {
+                "status": "success",
+                "audio_url": audio_url,
+                "prompt": req.prompt,
+                "duration": req.duration,
+                "engine": "audioldm2"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    else:
+        if not is_stable_audio_installed():
+            raise HTTPException(
+                status_code=400,
+                detail="Stable Audio Open model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
+            )
+        try:
+            audio_url = sfx_engine.generate(
+                prompt=req.prompt,
+                negative_prompt=req.negative_prompt,
+                duration=req.duration,
+                steps=req.steps,
+                cfg_scale=req.cfg_scale,
+                seed=req.seed
+            )
+            return {
+                "status": "success",
+                "audio_url": audio_url,
+                "prompt": req.prompt,
+                "duration": req.duration,
+                "engine": "stable_audio"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 # ----------------- SERVE BUILT FRONTEND IF PRESENT -----------------
 

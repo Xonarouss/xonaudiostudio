@@ -114,10 +114,11 @@ export default function ModelManager({
   const llama = modelsStatus?.llama || {};
   const xtts = modelsStatus?.xtts || {};
   const fish = modelsStatus?.fish_speech || {};
+  const audioldm = modelsStatus?.audioldm2 || {};
 
   const totalSize = (
     parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(llama.size_gb || 0) +
-    parseFloat(xtts.size_gb || 0) + parseFloat(fish.size_gb || 0)
+    parseFloat(xtts.size_gb || 0) + parseFloat(fish.size_gb || 0) + parseFloat(audioldm.size_gb || 0)
   ).toFixed(2);
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
@@ -462,7 +463,88 @@ export default function ModelManager({
           </div>
         </div>
 
-        {/* Model 3: Llama 3 Local AI */}
+        {/* Model 3: AudioLDM 2 Studio (Multi-Event SFX) */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  AudioLDM 2
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Multi-Event Foley Studio</span>
+              </div>
+              {audioldm.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({audioldm.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~1.8 GB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">AudioLDM 2 Studio</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Dual CLAP + T5 conditioning designed for composite soundscapes &amp; Foley actions where multiple prompt elements (e.g. reversing car screeching tires) must all be heard with strict adherence.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">Hugging Face (cvssp/audioldm2)</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/audioldm2</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-indigo-700 font-bold">~2.5 GB VRAM</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Conditioning:</span>
+                <span className="text-indigo-700 font-bold">Dual CLAP + T5 Text</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {audioldm.installed ? (
+              <button
+                onClick={() => handleDelete('audioldm2')}
+                disabled={deletingModel === 'audioldm2'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({audioldm.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('audioldm2')}
+                disabled={downloadingModel === 'audioldm2'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+              >
+                {downloadingModel === 'audioldm2' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~1.8 GB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download AudioLDM 2 (~1.8 GB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 4: Llama 3 Local AI */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between">

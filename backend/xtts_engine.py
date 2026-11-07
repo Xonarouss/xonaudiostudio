@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Optional
 import torch
 
+try:
+    import patch_torchaudio
+except ImportError:
+    from backend import patch_torchaudio
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 XTTS_DIR = BASE_DIR / "models" / "xtts-v2"
 OUTPUTS_DIR = BASE_DIR / "outputs" / "tts"
@@ -45,7 +50,14 @@ class XTTSEngine:
             raise RuntimeError("XTTS-v2 model is not installed. Please download it in Model Manager.")
 
         print(f"[XTTSEngine] Loading XTTS-v2 on {self.device}...")
+        _orig_torch_load = torch.load
+        def _safe_load(*args, **kwargs):
+            if "weights_only" not in kwargs:
+                kwargs["weights_only"] = False
+            return _orig_torch_load(*args, **kwargs)
+
         try:
+            torch.load = _safe_load
             from TTS.api import TTS as CoquiTTS
             # Load from local directory
             config_path = None
@@ -54,8 +66,6 @@ class XTTSEngine:
                     config_path = str(f)
                     break
 
-            # Find checkpoint
-            checkpoint_dir = str(XTTS_DIR)
             self.tts = CoquiTTS(
                 model_path=str(XTTS_DIR),
                 config_path=config_path or str(XTTS_DIR / "config.json"),
@@ -67,6 +77,8 @@ class XTTSEngine:
             self.is_loaded = False
             print(f"[XTTSEngine] Error loading XTTS-v2: {e}")
             raise RuntimeError(f"Could not load XTTS-v2: {e}")
+        finally:
+            torch.load = _orig_torch_load
 
     def generate(
         self,
@@ -91,26 +103,28 @@ class XTTSEngine:
 
         print(f"[XTTSEngine] Generating {SUPPORTED_LANGUAGES.get(language, language)} speech ({len(gen_text)} chars)...")
 
+        # Determine speaker reference audio (XTTS-v2 clones from a reference wav)
+        effective_ref = None
+        if ref_audio_path and os.path.exists(ref_audio_path):
+            effective_ref = str(ref_audio_path)
+        elif (BASE_DIR / "voices" / "aria.wav").exists():
+            effective_ref = str(BASE_DIR / "voices" / "aria.wav")
+        else:
+            samples = list(XTTS_DIR.glob("**/*.wav"))
+            if samples:
+                effective_ref = str(samples[0])
+
+        if not effective_ref or not os.path.exists(effective_ref):
+            raise RuntimeError("XTTS-v2 requires a reference voice (.wav). No voice sample found.")
+
         try:
-            if ref_audio_path and os.path.exists(ref_audio_path):
-                # Voice cloning mode
-                self.tts.tts_to_file(
-                    text=effective_text,
-                    speaker_wav=ref_audio_path,
-                    language=language,
-                    file_path=str(output_path),
-                    speed=speed
-                )
-            else:
-                # Use built-in speaker (first available)
-                speakers = self.tts.speakers if hasattr(self.tts, 'speakers') and self.tts.speakers else None
-                self.tts.tts_to_file(
-                    text=effective_text,
-                    speaker=speakers[0] if speakers else None,
-                    language=language,
-                    file_path=str(output_path),
-                    speed=speed
-                )
+            self.tts.tts_to_file(
+                text=effective_text,
+                speaker_wav=effective_ref,
+                language=language,
+                file_path=str(output_path),
+                speed=speed
+            )
             print(f"[XTTSEngine] Audio generated: {output_path}")
             return f"/outputs/tts/{filename}"
         except Exception as e:

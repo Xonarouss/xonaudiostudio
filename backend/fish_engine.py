@@ -99,23 +99,33 @@ class FishEngine:
 
     def _load_via_python_api(self):
         """Load model directly via fish_speech Python module."""
+        from fish_speech.tokenizer import FishTokenizer
         from fish_speech.models.text2semantic.inference import load_model as load_llm
         from fish_speech.models.vqgan.inference import load_model as load_vqgan
 
         precision = torch.bfloat16 if self.device == "cuda" else torch.float32
 
         # Load the LLM (text → semantic tokens)
-        self._model, self._tokenizer = load_llm(
+        self._model, self._decode_one_token = load_llm(
             checkpoint_path=str(FISH_MODEL_DIR),
             device=self.device,
             precision=precision,
             compile=False,
         )
+        self._tokenizer = FishTokenizer.from_pretrained(str(FISH_MODEL_DIR))
+        self._model.tokenizer = self._tokenizer
+
+        # Setup KV caches for fast inference
+        with torch.device(self.device):
+            self._model.setup_caches(
+                max_batch_size=1,
+                max_seq_len=self._model.config.max_seq_len,
+                dtype=next(self._model.parameters()).dtype,
+            )
 
         # Load the VQ-GAN decoder (semantic tokens → audio)
         decoder_path = FISH_MODEL_DIR / "firefly-gan-vq-fsq-8x1024-21hz-generator.pth"
         if not decoder_path.exists():
-            # Try any .pth that looks like a decoder/codec
             for f in FISH_MODEL_DIR.glob("*.pth"):
                 if any(k in f.name.lower() for k in ["firefly", "decoder", "codec", "gan"]):
                     decoder_path = f
@@ -139,49 +149,57 @@ class FishEngine:
         speed: float,
     ):
         """Generate audio using the in-process Python API."""
-        import numpy as np
         import soundfile as sf
-        from fish_speech.models.text2semantic.inference import generate as gen_semantic
-        from fish_speech.models.vqgan.inference import decode_to_file
+        import torchaudio
+        from fish_speech.models.text2semantic.inference import generate_long
 
-        precision = torch.bfloat16 if self.device == "cuda" else torch.float32
-
-        # Encode reference audio into semantic tokens (for voice cloning)
         prompt_tokens = None
         prompt_text = None
-        if ref_audio_path and os.path.exists(ref_audio_path):
-            from fish_speech.models.vqgan.inference import encode_reference
-            prompt_tokens, prompt_text_encoded = encode_reference(
-                decoder=self._decoder,
-                reference_audio=ref_audio_path,
-                device=self.device,
-            )
-            if ref_text:
-                prompt_text = ref_text
 
-        # Generate semantic tokens
-        codes = gen_semantic(
+        if ref_audio_path and os.path.exists(ref_audio_path):
+            try:
+                audio, sr = torchaudio.load(str(ref_audio_path))
+                if audio.shape[0] > 1:
+                    audio = audio.mean(0, keepdim=True)
+                audio = torchaudio.functional.resample(audio, sr, self._decoder.spec_transform.sample_rate)
+                audios = audio[None].to(self.device)
+                audio_lengths = torch.tensor([audios.shape[2]], device=self.device, dtype=torch.long)
+                prompt_tokens = self._decoder.encode(audios, audio_lengths)[0][0]
+                prompt_text = ref_text or ""
+            except Exception as e:
+                print(f"[FishEngine] Warning: Reference audio encode failed: {e}")
+
+        # Compute reasonable max_new_tokens based on text length (~21 tokens per second of speech)
+        char_count = len(gen_text)
+        est_tokens = max(50, min(1024, int(char_count * 2.2) + 35))
+
+        responses = list(generate_long(
             model=self._model,
-            tokenizer=self._tokenizer,
             device=self.device,
+            decode_one_token=self._decode_one_token,
             text=gen_text,
-            prompt_tokens=prompt_tokens,
-            prompt_text=prompt_text,
-            max_new_tokens=1024,
+            num_samples=1,
+            max_new_tokens=est_tokens,
             top_p=0.7,
             repetition_penalty=1.5,
             temperature=0.7,
             compile=False,
             iterative_prompt=True,
-        )
+            chunk_length=150,
+            prompt_text=[prompt_text] if prompt_text else None,
+            prompt_tokens=[prompt_tokens] if prompt_tokens is not None else None,
+        ))
 
-        # Decode to audio and save
-        decode_to_file(
-            decoder=self._decoder,
-            codes=codes,
-            output_path=str(output_path),
-            device=self.device,
-        )
+        codes_list = [r.codes for r in responses if r.action == "sample" and r.codes is not None]
+        if not codes_list:
+            raise RuntimeError("Fish Speech produced no audio codes.")
+
+        all_codes = torch.cat(codes_list, dim=1)
+        feature_lengths = torch.tensor([all_codes.shape[1]], device=self.device)
+        fake_audios, _ = self._decoder.decode(indices=all_codes[None], feature_lengths=feature_lengths)
+        audio = fake_audios[0, 0].float().detach().cpu().numpy()
+
+        sf.write(str(output_path), audio, self._decoder.spec_transform.sample_rate)
 
     def _generate_via_cli(
         self,

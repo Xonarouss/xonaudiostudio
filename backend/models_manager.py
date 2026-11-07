@@ -27,6 +27,7 @@ LLAMA_DIR = MODELS_DIR / "llama"
 XTTS_DIR = MODELS_DIR / "xtts-v2"
 FISH_MODEL_DIR = MODELS_DIR / "fish-speech-1.5"
 FISH_REPO_DIR = MODELS_DIR / "fish-speech-repo"
+AUDIOLDM_DIR = MODELS_DIR / "audioldm2"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 
@@ -37,6 +38,7 @@ LLAMA_DIR.mkdir(parents=True, exist_ok=True)
 XTTS_DIR.mkdir(parents=True, exist_ok=True)
 FISH_MODEL_DIR.mkdir(parents=True, exist_ok=True)
 FISH_REPO_DIR.mkdir(parents=True, exist_ok=True)
+AUDIOLDM_DIR.mkdir(parents=True, exist_ok=True)
 
 def is_llama_installed() -> bool:
     """Checks if Llama weights exist in models/llama."""
@@ -59,6 +61,13 @@ def is_fish_installed() -> bool:
     weights = (list(FISH_MODEL_DIR.glob("*.pth")) + list(FISH_MODEL_DIR.glob("*.safetensors"))
                + list(FISH_MODEL_DIR.glob("*.ckpt")))
     return len(weights) > 0
+
+def is_audioldm_installed() -> bool:
+    """Checks if AudioLDM 2 weights exist in models/audioldm2."""
+    if not AUDIOLDM_DIR.exists():
+        return False
+    files = list(AUDIOLDM_DIR.glob("**/*.safetensors")) + list(AUDIOLDM_DIR.glob("**/*.bin"))
+    return len(files) > 0
 
 def load_version_cache() -> Dict[str, Any]:
     if VERSION_CACHE_FILE.exists():
@@ -155,6 +164,7 @@ def get_all_models_status() -> Dict[str, Any]:
     llama_size = get_dir_size_gb(LLAMA_DIR)
     xtts_size = get_dir_size_gb(XTTS_DIR)
     fish_size = get_dir_size_gb(FISH_MODEL_DIR)
+    audioldm_size = get_dir_size_gb(AUDIOLDM_DIR)
 
     f5_ready = is_f5_installed()
     stable_ready = is_stable_audio_installed()
@@ -192,6 +202,15 @@ def get_all_models_status() -> Dict[str, Any]:
             "size_gb": f"{stable_size:.2f}",
             "path": str(STABLE_AUDIO_DIR),
             "vram_estimate": "4.5 GB"
+        },
+        "audioldm2": {
+            "name": "AudioLDM 2 Studio (Multi-Event SFX)",
+            "repo": "cvssp/audioldm2",
+            "installed": is_audioldm_installed(),
+            "size_gb": f"{audioldm_size:.2f}",
+            "path": str(AUDIOLDM_DIR),
+            "vram_estimate": "~2.5 GB",
+            "description": "Dual CLAP + T5 conditioning designed for composite soundscapes & Foley actions (e.g. reversing car screeching tires)."
         },
         "llama": {
             "name": "Llama 3 Local AI (Assistant & Prompt Enhancer)",
@@ -326,6 +345,17 @@ def download_model(model_key: str) -> Dict[str, Any]:
         except Exception as e:
             raise RuntimeError(f"Error downloading Fish Speech 1.5: {e}")
 
+    elif model_key == "audioldm2":
+        print("[ModelManager] Downloading AudioLDM 2 from Hugging Face (~1.8 GB)...")
+        try:
+            snapshot_download(
+                repo_id="cvssp/audioldm2",
+                local_dir=str(AUDIOLDM_DIR),
+            )
+            return {"status": "success", "message": "AudioLDM 2 downloaded! Multi-event Foley and complex sound design ready."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading AudioLDM 2: {e}")
+
     else:
         raise ValueError(f"Unknown model: {model_key}")
 
@@ -348,6 +378,12 @@ def delete_model(model_key: str) -> Dict[str, Any]:
             shutil.rmtree(STABLE_AUDIO_DIR, ignore_errors=True)
             STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
             deleted_items.append("Stable Audio Open")
+
+    if model_key in ("audioldm2", "all"):
+        if AUDIOLDM_DIR.exists():
+            shutil.rmtree(AUDIOLDM_DIR, ignore_errors=True)
+            AUDIOLDM_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("AudioLDM 2")
 
     if model_key in ("llama", "all"):
         if LLAMA_DIR.exists():
@@ -515,3 +551,17 @@ def get_system_metrics() -> Dict[str, Any]:
         "disk_free_gb": disk_free_gb,
         "engine_status": "Engine Online"
     }
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 2 and sys.argv[1] == "download":
+        m_name = sys.argv[2]
+        print(f"[ModelManager CLI] Starting download for: {m_name}")
+        res = download_model(m_name)
+        print(f"[ModelManager CLI] Download result: {res}")
+    elif len(sys.argv) > 1 and sys.argv[1] == "status":
+        status = get_all_models_status()
+        for k, v in status.items():
+            state = "INSTALLED" if v["installed"] else "MISSING"
+            print(f"  * {v['name']} ({k}): {state} [{v['size_gb']} GB]")
+
