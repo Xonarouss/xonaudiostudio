@@ -12,32 +12,47 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPO = "Xonarouss/xonaudiostudio"
-TAG = "v1.1.0"
-ZIP_PATH = BASE_DIR / "XonAudio-Studio-v1.0.0-Portable.zip"
-UPLOAD_NAME = "XonAudio-Studio-v1.1.0-Portable.zip"
+TAG = "v1.2.0"
+ZIP_PATH = BASE_DIR / "XonAudio-Studio-v1.2.0-Portable.zip"
+UPLOAD_NAME = "XonAudio-Studio-v1.2.0-Portable.zip"
 
 RELEASE_NOTES = """\
-## XonAudio Studio v1.1.0
+# 🎙️ XonAudio Studio v1.2.0
 
-### New Features
-- **Emotion/Style Direction Panel** — 10 emotion presets (Angry, Fearful, Sad, Happy, Whisper, Loud, Sarcastic, Calm, Excited, Neutral) prepended as natural language stage cues to your TTS prompt
-- **Language Selector** — English, Chinese Mandarin, and Auto-detect support in Voice Lab
-- **Distinct Aria Voice** — Aria now uses a real female voice sample (Chinese F5-TTS reference), clearly different from Atlas and Default
-- **Custom Voice MP3 Support** — Uploaded MP3 voices now stream with the correct audio/mpeg MIME type
+### 🚀 Major Highlights
 
-### Bug Fixes
-- **Sound Studio blank white page** — Fixed undefined `isStableAudioReady` variable causing React crash
-- **AI Assistant 'Not Installed' banner** — Fixed race condition; banner no longer flashes when model is already loaded
-- **Llama attention_mask** — Added proper attention_mask passthrough to suppress generation warnings and improve output quality
-- **ref_text 'Hello there' fallback** — Removed hard-coded fallback that caused random words in output; now uses F5-TTS built-in ASR auto-transcription
-- **Aria/Atlas voice distinction** — All 3 preset voices (Aria, Atlas, Default) were previously identical; Aria is now a distinct female voice
+#### 1. Three Neural Voice Engines (Voice Lab Switcher)
+- **F5-TTS v1 Base** — Flow-matching non-autoregressive diffusion with fast ODE solver (English & Chinese Mandarin zero-shot voice cloning).
+- **Coqui XTTS-v2** — SOTA multilingual voice cloning across 17 languages with native **Dutch (Nederlands 🇳🇱)**, German, French, Spanish, Italian, Portuguese, and more.
+- **Fish Speech 1.5 Ultra** — The newest dual autoregressive (DAR) + VQ-GAN neural audio codec architecture. 100% fully local, ultra-natural cadence, zero cloud/API dependencies, with native **Dutch (🇳🇱)** support.
 
-### How to Run
-1. Extract the ZIP
-2. Double-click **Start_AudioStudio.bat** (auto-installs all models on first run)
-3. Open http://127.0.0.1:8000 in your browser
+#### 2. 🇳🇱 Native Dutch Language Support
+- Full high-fidelity Dutch speech synthesis and voice cloning via XTTS-v2 and Fish Speech 1.5.
 
-**Requirements:** Windows 10/11, NVIDIA GPU (RTX recommended), Python 3.10+
+#### 3. Automatic Dependency & FFmpeg Installer
+- `Start_AudioStudio.bat` and `Install_Environment.bat` now automatically check and install all required audio processing packages (`torchsde`, `einops`, `encodec`, `pydub`, `phonemizer`, `imageio-ffmpeg`).
+- Automatically bundles and links static `ffmpeg.exe` binaries directly into `venv\Scripts\ffmpeg.exe` so pydub and torchaudio have zero configuration overhead.
+
+#### 4. Magic Wand & Llama Prompt Enhancer Fix
+- Fixed `enhance_prompt()` to automatically load Llama 3 on demand when installed.
+- Expanded `max_new_tokens` to 200 for rich cinematic acoustic descriptions.
+
+#### 5. Aria Voice & Preset Audio Refinements
+- Replaced Aria voice sample with a natural female English narration voice.
+- Set auto-ASR transcription for zero pronunciation artifacts.
+
+#### 6. Website Update
+- Dedicated **5 Neural AI Architectures** showcase live on GitHub Pages with model specs, VRAM footprints, and Dutch language badges.
+
+---
+
+### 💻 How to Run
+1. Download **`XonAudio-Studio-v1.2.0-Portable.zip`**
+2. Extract the archive
+3. Double-click **`Start_AudioStudio.bat`** (auto-installs all requirements on first run)
+4. Studio UI opens automatically at `http://localhost:5173`
+
+**Built by Xonarous Inc** • [https://xonarous.nl](https://xonarous.nl)
 """
 
 def api_request(url, token, method="GET", data=None, content_type="application/json"):
