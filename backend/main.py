@@ -36,12 +36,30 @@ from models_manager import (
     is_f5_installed,
     is_stable_audio_installed,
     is_llama_installed,
+    is_xtts_installed,
+    is_fish_installed,
     MODELS_DIR,
     OUTPUTS_DIR
 )
 from tts_engine import tts_engine
 from sfx_engine import sfx_engine
 from llama_engine import llama_engine
+
+try:
+    from xtts_engine import xtts_engine
+    XTTS_AVAILABLE = True
+except Exception as _xtts_err:
+    xtts_engine = None
+    XTTS_AVAILABLE = False
+    print(f"[Main] XTTS-v2 engine not available: {_xtts_err}")
+
+try:
+    from fish_engine import fish_engine
+    FISH_AVAILABLE = True
+except Exception as _fish_err:
+    fish_engine = None
+    FISH_AVAILABLE = False
+    print(f"[Main] Fish Speech engine not available: {_fish_err}")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
@@ -51,7 +69,7 @@ VOICES_DIR.mkdir(parents=True, exist_ok=True)
 # Preset voice catalog — matches files in backend/voices/
 # ref_text="" means F5-TTS auto-transcribes using its built-in ASR
 PRESET_VOICES = [
-    {"id": "aria",    "name": "Aria",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "对，这就是我，万人之上，不来的我。", "file": "aria.wav"},
+    {"id": "aria",    "name": "Aria",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "", "file": "aria.wav"},
     {"id": "nova",    "name": "Nova",   "description": "Female · Expressive Story Voice", "gender": "female",  "ref_text": "",  "file": "nova.flac"},
     {"id": "echo",    "name": "Echo",   "description": "Male · Deep Country Voice",       "gender": "male",    "ref_text": "",  "file": "echo.flac"},
     {"id": "sage",    "name": "Sage",   "description": "Male · Town Narrator",            "gender": "male",    "ref_text": "",  "file": "sage.flac"},
@@ -134,6 +152,10 @@ def api_delete_model(req: DeleteModelRequest):
             sfx_engine.unload()
         if req.model_key in ("llama", "all"):
             llama_engine.unload()
+        if req.model_key in ("xtts", "all") and XTTS_AVAILABLE and xtts_engine:
+            xtts_engine.unload()
+        if req.model_key in ("fish_speech", "all") and FISH_AVAILABLE and fish_engine:
+            fish_engine.unload()
 
         res = delete_model(req.model_key)
         return res
@@ -147,6 +169,10 @@ def api_unload_models():
         tts_engine.unload()
         sfx_engine.unload()
         llama_engine.unload()
+        if XTTS_AVAILABLE and xtts_engine:
+            xtts_engine.unload()
+        if FISH_AVAILABLE and fish_engine:
+            fish_engine.unload()
         return {"status": "success", "message": "All models unloaded from GPU memory."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -329,6 +355,40 @@ def delete_custom_voice(filename: str):
 
 # ----------------- AUDIO GENERATION ENDPOINTS -----------------
 
+def _resolve_voice_path(voice_id: str) -> Optional[str]:
+    """Resolve a voice_id to a file path on disk (preset or custom)."""
+    if not voice_id:
+        return None
+    if voice_id.startswith("custom_"):
+        stem = voice_id[len("custom_"):]
+        for ext in [".wav", ".flac", ".mp3", ".m4a"]:
+            candidate = VOICES_DIR / "custom" / f"{stem}{ext}"
+            if candidate.exists():
+                return str(candidate)
+        for f in (VOICES_DIR / "custom").glob(f"{stem}.*"):
+            return str(f)
+    else:
+        voice_def = next((v for v in PRESET_VOICES if v["id"] == voice_id), None)
+        if voice_def:
+            vf = VOICES_DIR / voice_def.get("file", f"{voice_id}.wav")
+            if vf.exists():
+                return str(vf)
+            for ext in [".wav", ".flac"]:
+                c = VOICES_DIR / f"{voice_id}{ext}"
+                if c.exists():
+                    return str(c)
+    return None
+
+
+def _cleanup_temp(path: Optional[str]):
+    """Remove a temp file if it was written to the temp directory."""
+    import tempfile as _tf
+    if path and path.startswith(_tf.gettempdir()) and os.path.exists(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
 @app.post("/api/tts/generate")
 async def generate_tts(
     gen_text: str = Form(...),
@@ -418,6 +478,94 @@ async def generate_tts(
                 os.remove(temp_ref_path)
             except OSError:
                 pass
+
+@app.post("/api/xtts/generate")
+async def generate_xtts(
+    gen_text: str = Form(...),
+    ref_audio: Optional[UploadFile] = File(None),
+    voice_id: Optional[str] = Form(""),
+    language: Optional[str] = Form("en"),
+    speed: Optional[float] = Form(1.0),
+    emotion: Optional[str] = Form(""),
+):
+    """Generate speech using XTTS-v2 — 17 languages including Dutch."""
+    if not XTTS_AVAILABLE or xtts_engine is None:
+        raise HTTPException(status_code=503, detail="XTTS-v2 engine unavailable. Install TTS library: pip install TTS")
+    if not is_xtts_installed():
+        raise HTTPException(status_code=400, detail="XTTS-v2 model not installed. Download it in Model Manager.")
+    temp_ref_path = None
+    try:
+        if ref_audio and ref_audio.filename:
+            suffix = Path(ref_audio.filename).suffix or ".wav"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(ref_audio.file, tmp)
+                temp_ref_path = tmp.name
+        elif voice_id:
+            temp_ref_path = _resolve_voice_path(voice_id)
+        audio_url = xtts_engine.generate(
+            gen_text=gen_text,
+            ref_audio_path=temp_ref_path,
+            language=language or "en",
+            speed=float(speed),
+            emotion=emotion or "",
+        )
+        return {"status": "success", "audio_url": audio_url, "text": gen_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        _cleanup_temp(temp_ref_path)
+
+
+@app.post("/api/fish/generate")
+async def generate_fish(
+    gen_text: str = Form(...),
+    ref_audio: Optional[UploadFile] = File(None),
+    voice_id: Optional[str] = Form(""),
+    ref_text: Optional[str] = Form(""),
+    language: Optional[str] = Form("en"),
+    speed: Optional[float] = Form(1.0),
+    emotion: Optional[str] = Form(""),
+):
+    """Generate speech using Fish Speech 1.5 — fully local, best quality."""
+    if not FISH_AVAILABLE or fish_engine is None:
+        raise HTTPException(status_code=503, detail="Fish Speech engine unavailable. Check backend installation.")
+    if not is_fish_installed():
+        raise HTTPException(status_code=400, detail="Fish Speech 1.5 not installed. Download it in Model Manager.")
+    temp_ref_path = None
+    try:
+        if ref_audio and ref_audio.filename:
+            suffix = Path(ref_audio.filename).suffix or ".wav"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(ref_audio.file, tmp)
+                temp_ref_path = tmp.name
+        elif voice_id:
+            temp_ref_path = _resolve_voice_path(voice_id)
+        audio_url = fish_engine.generate(
+            gen_text=gen_text,
+            ref_audio_path=temp_ref_path,
+            ref_text=ref_text or "",
+            language=language or "en",
+            speed=float(speed),
+            emotion=emotion or "",
+        )
+        return {"status": "success", "audio_url": audio_url, "text": gen_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        _cleanup_temp(temp_ref_path)
+
+
+@app.get("/api/xtts/languages")
+def get_xtts_languages():
+    from xtts_engine import SUPPORTED_LANGUAGES as XTTS_LANGS
+    return [{"code": k, "name": v} for k, v in XTTS_LANGS.items()]
+
+
+@app.get("/api/fish/languages")
+def get_fish_languages():
+    from fish_engine import SUPPORTED_LANGUAGES as FISH_LANGS
+    return [{"code": k, "name": v} for k, v in FISH_LANGS.items()]
+
 
 @app.post("/api/sfx/generate")
 def generate_sfx(req: SFXGenerateRequest):

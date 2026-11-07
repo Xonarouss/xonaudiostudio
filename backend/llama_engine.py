@@ -122,6 +122,14 @@ class LlamaEngine:
         if not user_input:
             return user_input
 
+        # Load model on demand if installed but not yet loaded
+        from models_manager import is_llama_installed
+        if is_llama_installed() and not self.is_loaded:
+            try:
+                self.load_model()
+            except Exception as _le:
+                print(f"[LlamaEngine] Could not auto-load for enhance: {_le}")
+
         # If neural model is loaded, use Llama generation
         if self.is_loaded and self.model is not None and self.tokenizer is not None:
             try:
@@ -144,9 +152,9 @@ class LlamaEngine:
                     {"role": "user", "content": f"Enhance this: {user_input}"}
                 ]
 
-                response = self._run_inference(messages, max_new_tokens=90)
-                response = re.sub(r'^["\']|["\']$', '', response)
-                if len(response) > 10:
+                response = self._run_inference(messages, max_new_tokens=200)
+                response = re.sub(r'^["\']|["\']$', '', response).strip()
+                if response:
                     return response
             except Exception as e:
                 print(f"[LlamaEngine] Neural enhance error: {e}")

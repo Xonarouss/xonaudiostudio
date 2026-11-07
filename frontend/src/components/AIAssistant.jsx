@@ -10,18 +10,19 @@ export default function AIAssistant({ onApplyPrompt, activeTab, modelsStatus, on
   const [isDownloading, setIsDownloading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const isLlamaInstalled = modelsStatus?.llama?.installed === true;
+  const isLlamaInstalled = Boolean(modelsStatus?.llama?.installed);
   const prevInstalledRef = React.useRef(null);
 
   // Initialize welcome message based on install status
-  // Use a ref to avoid resetting real conversation history when status toggles
+  // Wait until modelsStatus is loaded to prevent flash of "Not Installed" error
   useEffect(() => {
-    // Only set the initial message when the installed state genuinely transitions
+    if (!modelsStatus || modelsStatus.llama === undefined) return;
+
     if (prevInstalledRef.current === isLlamaInstalled) return;
     prevInstalledRef.current = isLlamaInstalled;
 
     if (isLlamaInstalled) {
-      // Only replace if the current message is the "not installed" banner
+      // Only replace if the current message is empty or the "not installed" banner
       setMessages(prev => {
         const isNotInstalledMsg = prev.length === 1 && prev[0].content?.includes('Not Installed');
         if (prev.length === 0 || isNotInstalledMsg) {
@@ -38,7 +39,7 @@ export default function AIAssistant({ onApplyPrompt, activeTab, modelsStatus, on
         content: '⚠️ **Llama 3 Model Not Installed**\n\nThe AI Assistant requires the local Llama 3 neural weights (2.8 GB). Please download the model to enable interactive studio chat and Magic Wand prompt refinement.'
       }]);
     }
-  }, [isLlamaInstalled]);
+  }, [isLlamaInstalled, modelsStatus]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -24,6 +24,9 @@ MODELS_DIR = BASE_DIR / "models"
 F5_DIR = MODELS_DIR / "f5-tts"
 STABLE_AUDIO_DIR = MODELS_DIR / "stable-audio-open"
 LLAMA_DIR = MODELS_DIR / "llama"
+XTTS_DIR = MODELS_DIR / "xtts-v2"
+FISH_MODEL_DIR = MODELS_DIR / "fish-speech-1.5"
+FISH_REPO_DIR = MODELS_DIR / "fish-speech-repo"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 
@@ -31,6 +34,9 @@ VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 F5_DIR.mkdir(parents=True, exist_ok=True)
 STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 LLAMA_DIR.mkdir(parents=True, exist_ok=True)
+XTTS_DIR.mkdir(parents=True, exist_ok=True)
+FISH_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+FISH_REPO_DIR.mkdir(parents=True, exist_ok=True)
 
 def is_llama_installed() -> bool:
     """Checks if Llama weights exist in models/llama."""
@@ -38,6 +44,21 @@ def is_llama_installed() -> bool:
         return False
     files = list(LLAMA_DIR.glob("**/*.safetensors")) + list(LLAMA_DIR.glob("**/*.bin")) + list(LLAMA_DIR.glob("**/*.gguf"))
     return len(files) > 0
+
+def is_xtts_installed() -> bool:
+    """Checks if XTTS-v2 weights exist in models/xtts-v2."""
+    if not XTTS_DIR.exists():
+        return False
+    has_weights = len(list(XTTS_DIR.glob("**/*.pth"))) > 0 or len(list(XTTS_DIR.glob("**/*.safetensors"))) > 0
+    return has_weights
+
+def is_fish_installed() -> bool:
+    """Checks if Fish Speech 1.5 weights exist in models/fish-speech-1.5."""
+    if not FISH_MODEL_DIR.exists():
+        return False
+    weights = (list(FISH_MODEL_DIR.glob("*.pth")) + list(FISH_MODEL_DIR.glob("*.safetensors"))
+               + list(FISH_MODEL_DIR.glob("*.ckpt")))
+    return len(weights) > 0
 
 def load_version_cache() -> Dict[str, Any]:
     if VERSION_CACHE_FILE.exists():
@@ -132,6 +153,8 @@ def get_all_models_status() -> Dict[str, Any]:
     f5_size = get_dir_size_gb(F5_DIR)
     stable_size = get_dir_size_gb(STABLE_AUDIO_DIR)
     llama_size = get_dir_size_gb(LLAMA_DIR)
+    xtts_size = get_dir_size_gb(XTTS_DIR)
+    fish_size = get_dir_size_gb(FISH_MODEL_DIR)
 
     f5_ready = is_f5_installed()
     stable_ready = is_stable_audio_installed()
@@ -145,6 +168,22 @@ def get_all_models_status() -> Dict[str, Any]:
             "size_gb": f"{f5_size:.2f}",
             "path": str(F5_DIR),
             "vram_estimate": "2.2 GB"
+        },
+        "xtts": {
+            "name": "XTTS-v2 Multilingual Voice",
+            "repo": "coqui/XTTS-v2",
+            "installed": is_xtts_installed(),
+            "size_gb": f"{xtts_size:.2f}",
+            "path": str(XTTS_DIR),
+            "vram_estimate": "~3.5 GB"
+        },
+        "fish_speech": {
+            "name": "Fish Speech 1.5 Ultra",
+            "repo": "fishaudio/fish-speech-1.5",
+            "installed": is_fish_installed(),
+            "size_gb": f"{fish_size:.2f}",
+            "path": str(FISH_MODEL_DIR),
+            "vram_estimate": "~2.0 GB"
         },
         "stable_audio": {
             "name": "Stable Audio Open 1.0",
@@ -161,7 +200,7 @@ def get_all_models_status() -> Dict[str, Any]:
             "size_gb": f"{llama_size:.2f}",
             "path": str(LLAMA_DIR),
             "vram_estimate": "2.8 GB"
-        }
+        },
     }
 
 def download_model(model_key: str) -> Dict[str, Any]:
@@ -249,6 +288,44 @@ def download_model(model_key: str) -> Dict[str, Any]:
         except Exception as e:
             raise RuntimeError(f"Error downloading Llama model: {e}")
 
+    elif model_key == "xtts":
+        print("[ModelManager] Downloading XTTS-v2 from Hugging Face (~2 GB)...")
+        try:
+            snapshot_download(
+                repo_id="coqui/XTTS-v2",
+                local_dir=str(XTTS_DIR),
+            )
+            return {"status": "success", "message": "XTTS-v2 multilingual model downloaded! Supports 17 languages including Dutch."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading XTTS-v2: {e}")
+
+    elif model_key == "fish_speech":
+        print("[ModelManager] Downloading Fish Speech 1.5 from Hugging Face (~700 MB)...")
+        try:
+            # Download model weights
+            snapshot_download(
+                repo_id="fishaudio/fish-speech-1.5",
+                local_dir=str(FISH_MODEL_DIR),
+            )
+            # Clone the fish-speech repo for inference scripts
+            if not (FISH_REPO_DIR / "fish_speech").exists():
+                print("[ModelManager] Cloning fish-speech repository for inference scripts...")
+                try:
+                    result = subprocess.run(
+                        ["git", "clone", "--depth=1",
+                         "https://github.com/fishaudio/fish-speech.git",
+                         str(FISH_REPO_DIR)],
+                        capture_output=True, text=True, timeout=180
+                    )
+                    if result.returncode != 0:
+                        print(f"[ModelManager] Git clone warning: {result.stderr[:200]}")
+                except Exception as repo_err:
+                    print(f"[ModelManager] Could not clone fish-speech repo: {repo_err}")
+                    print("[ModelManager] Model weights downloaded. Install fish-speech manually if needed.")
+            return {"status": "success", "message": "Fish Speech 1.5 downloaded! Ultra-high quality TTS ready."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading Fish Speech 1.5: {e}")
+
     else:
         raise ValueError(f"Unknown model: {model_key}")
 
@@ -277,6 +354,18 @@ def delete_model(model_key: str) -> Dict[str, Any]:
             shutil.rmtree(LLAMA_DIR, ignore_errors=True)
             LLAMA_DIR.mkdir(parents=True, exist_ok=True)
             deleted_items.append("Llama 3 Local AI")
+
+    if model_key in ("xtts", "all"):
+        if XTTS_DIR.exists():
+            shutil.rmtree(XTTS_DIR, ignore_errors=True)
+            XTTS_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("XTTS-v2")
+
+    if model_key in ("fish_speech", "all"):
+        if FISH_MODEL_DIR.exists():
+            shutil.rmtree(FISH_MODEL_DIR, ignore_errors=True)
+            FISH_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("Fish Speech 1.5")
 
     if not deleted_items:
         raise ValueError(f"No valid model selected: {model_key}")

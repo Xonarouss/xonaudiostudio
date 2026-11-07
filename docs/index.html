@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XonAudio Studio — Professional Local AI Audio Workstation</title>
-  <meta name="description" content="Next-Gen Local AI Audio Workstation. Zero-shot voice cloning with F5-TTS, 44.1kHz stereo Foley sound effects with Stable Audio Open, and Llama 3 prompt engineering. 100% on-device on NVIDIA RTX GPUs.">
-  <meta name="keywords" content="AI Audio, F5-TTS, Stable Audio Open, Voice Cloning, Text to Speech, Sound Effects, RTX 5080, Blackwell sm_120, Local AI, Open Source">
+  <title>XonAudio Studio — Professional Local AI Audio Workstation (3 Voice Engines · Dutch Support · 100% Local)</title>
+  <meta name="description" content="Next-Gen Local AI Audio Workstation. 3 State-of-the-art TTS engines (F5-TTS, XTTS-v2 with 17 languages incl. Dutch, Fish Speech 1.5 Ultra), 44.1kHz stereo Foley with Stable Audio Open, and Llama 3 Studio AI. 100% on-device on NVIDIA RTX GPUs. Zero cloud, zero API.">
+  <meta name="keywords" content="AI Audio, F5-TTS, XTTS-v2, Fish Speech 1.5, Dutch TTS, Nederlandse AI stem, Stable Audio Open, Voice Cloning, Text to Speech, Sound Effects, RTX 5080, Blackwell sm_120, Local AI, Open Source">
   <meta name="author" content="Xonarous Inc">
   <link rel="icon" type="image/x-icon" href="assets/icon.ico">
   <link rel="apple-touch-icon" href="assets/logo.png">
@@ -94,8 +94,8 @@
 
   <!-- TOP ANNOUNCEMENT BANNER -->
   <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white text-xs font-semibold py-2 px-4 text-center tracking-wide flex items-center justify-center gap-2 shadow-sm">
-    <span class="inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] uppercase font-bold tracking-wider">New</span>
-    <span class="truncate">XonAudio Studio v1.0 • RTX 5080 Blackwell sm_120 acceleration &amp; Llama 3 AI Co-Pilot</span>
+    <span class="inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] uppercase font-bold tracking-wider">v1.2 Release</span>
+    <span class="truncate">XonAudio Studio v1.2 • 3 Voice Engines (F5-TTS, XTTS-v2, Fish Speech 1.5) • 🇳🇱 Dutch Support • 100% Fully Local</span>
     <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="underline hover:text-emerald-100 font-bold ml-1 hidden sm:inline-flex items-center gap-1">Download Free <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
   </div>
 
@@ -121,6 +121,9 @@
 
       <!-- Desktop Navigation Links (Clean & Compact) -->
       <nav class="hidden lg:flex items-center gap-7 text-xs sm:text-sm font-semibold text-slate-600">
+        <a href="#models" class="text-emerald-700 font-bold hover:text-emerald-600 transition-colors flex items-center gap-1">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 5 AI Models
+        </a>
         <a href="#features" class="hover:text-emerald-600 transition-colors">Features</a>
         <a href="#showcase" class="hover:text-emerald-600 transition-colors">Live Demos</a>
         <a href="#telemetry" class="hover:text-emerald-600 transition-colors">Diagnostics</a>
@@ -190,14 +193,14 @@
 
       <!-- Subtitle -->
       <p class="mt-4 sm:mt-6 text-base sm:text-xl text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed px-2">
-        High-fidelity zero-shot voice cloning with <strong>F5-TTS</strong>, pristine 44.1kHz Foley sound effects with <strong>Stable Audio Open</strong>, and intelligent prompt refinement with <strong>Llama 3</strong>. Running 100% locally on your NVIDIA GPU with real-time hardware telemetry.
+        Choose from <strong>3 state-of-the-art TTS engines</strong> (<strong>F5-TTS</strong>, <strong>XTTS-v2</strong> with 17 languages incl. 🇳🇱 Dutch, and <strong>Fish Speech 1.5 Ultra</strong>), generate pristine 44.1kHz Foley sound effects with <strong>Stable Audio Open</strong>, and refine prompts with <strong>Llama 3</strong>. 100% on-device on your NVIDIA GPU with zero cloud dependencies.
       </p>
 
       <!-- CTA Action Group -->
       <div class="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-2">
         <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 sm:py-4 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 rounded-2xl shadow-glow-emerald hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0">
           <i data-lucide="download-cloud" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span>Download Portable v1.0.0 (.zip)</span>
+          <span>Download Portable v1.2.0 (.zip)</span>
         </a>
         <a href="#quickstart" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs hover:shadow transition-all">
           <i data-lucide="terminal" class="w-4 h-4 text-emerald-600"></i>
@@ -221,7 +224,13 @@
       <!-- Feature Pill Badges -->
       <div class="mt-10 sm:mt-12 flex flex-wrap justify-center items-center gap-2 sm:gap-3 text-xs font-bold text-slate-600">
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
-          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> 100% Offline &amp; Private
+          <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i> 3 SOTA Voice Engines
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <span class="text-xs">🇳🇱</span> Dutch Support (XTTS + Fish)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> 100% Offline &amp; Private (No API)
         </span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
           <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Blackwell sm_120 Ready
@@ -334,6 +343,179 @@
     </div>
   </section>
 
+  <!-- 5 LOCAL AI MODELS SHOWCASE -->
+  <section id="models" class="py-16 sm:py-20 bg-slate-50 border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 5 Neural AI Architectures
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Five World-Class Models. 100% Local. Zero API.</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-500">
+          No cloud tokens, no monthly fees, and zero latency to remote servers. All 5 neural models execute directly in PyTorch CUDA on your local NVIDIA RTX GPU.
+        </p>
+      </div>
+
+      <!-- Models Grid (5 Models) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Model 1: F5-TTS -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-slate-200 bg-white">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 border border-cyan-200 rounded-lg text-xs font-mono font-bold">
+                F5-TTS v1
+              </span>
+              <span class="text-xs font-semibold text-cyan-700 font-mono">~2.3 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">F5-TTS Flow-Matching</h3>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Zero-Shot Voice Cloning</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              State-of-the-art non-autoregressive flow-matching architecture. Synthesizes natural, human speech with flawless rhythm and inflection from just 5-10 seconds of reference audio. Supports English and Chinese Mandarin natively with instant zero-shot adaptation.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇬🇧 English</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇨🇳 Chinese</span>
+            <span class="px-2 py-0.5 rounded bg-cyan-50 text-cyan-700 font-mono">24kHz ODE Solver</span>
+          </div>
+        </div>
+
+        <!-- Model 2: XTTS-v2 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-orange-200 bg-white shadow-sm ring-1 ring-orange-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-orange-100 text-orange-800 border border-orange-200 rounded-lg text-xs font-mono font-bold">
+                XTTS-v2
+              </span>
+              <span class="text-xs font-semibold text-orange-700 font-mono">~2.0 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              XTTS-v2 Multilingual
+              <span class="text-sm">🇳🇱</span>
+            </h3>
+            <p class="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-3">17 Languages Supported</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Coqui XTTS-v2 brings industry-standard multilingual voice cloning with native high-quality pronunciation for 17 languages including <strong>Dutch (Nederlands)</strong>, German, French, Spanish, Italian, Portuguese, Polish, Russian, and more.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-orange-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">🇳🇱 Dutch (NL)</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇩🇪 German</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇫🇷 French</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">+14 More</span>
+          </div>
+        </div>
+
+        <!-- Model 3: Fish Speech 1.5 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-teal-200 bg-white shadow-sm ring-1 ring-teal-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold">
+                Fish Speech 1.5
+              </span>
+              <span class="text-xs font-semibold text-teal-700 font-mono">~0.7 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              Fish Speech 1.5 Ultra
+              <span class="text-sm">🇳🇱</span>
+            </h3>
+            <p class="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Dual-AR + VQ-GAN Neural Codec</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              The latest cutting-edge architecture in neural speech. Combines a dual autoregressive transformer with a high-fidelity VQ-GAN vocoder. Blazing fast generation, studio-grade prosody, and 100% offline local inference with Dutch support.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-teal-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-bold">🇳🇱 Dutch (NL)</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇬🇧 English</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇯🇵 Japanese</span>
+            <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-mono">Ultra-Low VRAM</span>
+          </div>
+        </div>
+
+        <!-- Model 4: Stable Audio Open -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-purple-200 bg-white shadow-sm">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-mono font-bold">
+                Stable Audio Open
+              </span>
+              <span class="text-xs font-semibold text-purple-700 font-mono">~4.8 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Stable Audio Open 1.0</h3>
+            <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-3">Stereo Foley &amp; SFX Diffusion</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Stability AI's generative audio diffusion model for pristine 44.1kHz full-stereo sound design. Synthesizes Hollywood trailer impacts, organic atmospheric ambiances, rainstorms, futuristic weapons, and instruments up to 47 continuous seconds.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-purple-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold">44.1kHz Stereo</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">Up to 47 Seconds</span>
+            <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-mono">CFG Guidance</span>
+          </div>
+        </div>
+
+        <!-- Model 5: Llama 3 Studio AI -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-emerald-200 bg-white shadow-sm">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-mono font-bold">
+                Llama 3
+              </span>
+              <span class="text-xs font-semibold text-emerald-700 font-mono">~2.8 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Meta Llama 3 Studio AI</h3>
+            <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-3">Magic Wand Prompt Director</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Meta Llama 3 operating as your local audio director. Transforms short, plain descriptions into rich cinematic acoustic directions with the Magic Wand (🪄), scripts voice acting cues with proper punctuation, and chats via the built-in Studio Assistant.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-emerald-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Magic Wand 🪄</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">Voice Director</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono">On-Demand VRAM</span>
+          </div>
+        </div>
+
+        <!-- Storage & GPU Summary Box -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-950 text-white shadow-lg">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-mono font-bold">
+                Zero Cloud
+              </span>
+              <span class="text-xs font-semibold text-slate-400">Windows 10/11</span>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">100% Sovereign Local AI</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              All models are downloaded once and cached in your <code class="text-emerald-400 font-mono">/models</code> directory. Manage individual weights, clear GPU VRAM instantly, or wipe any model in 1 click via Model Manager.
+            </p>
+            <div class="space-y-2 text-xs font-mono text-slate-300 border-t border-slate-800 pt-3">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Audio Telemetry:</span>
+                <span class="text-emerald-400 font-bold">Sub-second NVML</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Offline Ready:</span>
+                <span class="text-emerald-400 font-bold">Air-gapped capable</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Dutch Voice Engine:</span>
+                <span class="text-orange-400 font-bold">XTTS-v2 &amp; Fish</span>
+              </div>
+            </div>
+          </div>
+          <a href="#quickstart" class="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 text-center transition-colors block">
+            Start Producing Audio Now &rarr;
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
   <!-- FEATURES DEEP DIVE -->
   <section id="features" class="py-16 sm:py-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -349,18 +531,21 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
         
         <!-- Feature 1 -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-emerald-200/60 shadow-xs">
           <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 border border-emerald-100 shadow-xs">
             <i data-lucide="mic" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Voice Lab (F5-TTS)</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            Voice Lab (3 Engines)
+            <span class="text-xs">🇳🇱</span>
+          </h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Upload any 5–10 second voice sample (MP3, WAV, M4A) and clone timbre, tone, and pacing without any model fine-tuning. Non-autoregressive flow matching ensures smooth prosody and zero word repetition.
+            Switch effortlessly between <strong>F5-TTS</strong>, <strong>XTTS-v2</strong>, and <strong>Fish Speech 1.5</strong>. Zero-shot clone timbre, cadence, and emotion from any 5–10s audio clip. Full native support for <strong>Dutch (Nederlands)</strong> and 16 other languages.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Speed scaling from 0.6x to 1.6x</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Silence auto-trimming &amp; normalization</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> SoundFile fallback (no FFmpeg DLL errors)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 3 interchangeable local voice engines</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 🇳🇱 Dutch, English, Chinese, German &amp; 13 more</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Speed scaling, emotion cues &amp; auto-trim</li>
           </ul>
         </div>
 

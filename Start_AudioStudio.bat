@@ -49,21 +49,38 @@ echo =====================================================================
 echo   FIRST-TIME SETUP: INSTALLING NEURAL PACKAGES ^& CUDA RUNTIME
 echo =====================================================================
 echo.
-echo [*] Step 1/3: Upgrading pip...
+echo [*] Step 1/4: Upgrading pip...
 python -m pip install --upgrade pip
 
 echo.
-echo [*] Step 2/3: Installing PyTorch with CUDA 12.8 (RTX 50-series / sm_120 support)...
+echo [*] Step 2/4: Installing PyTorch with CUDA 12.8 (RTX 50-series / sm_120 support)...
 pip install torch torchvision torchaudio --pre --index-url https://download.pytorch.org/whl/nightly/cu128
 
 echo.
-echo [*] Step 3/3: Installing neural studio dependencies (F5-TTS, Diffusers, etc.)...
+echo [*] Step 3/4: Installing neural studio dependencies (F5-TTS, Diffusers, XTTS, torchsde)...
 pip install -r backend\requirements.txt
+pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg
+
 echo.
-echo [+] Core dependencies installed successfully!
+echo [*] Step 4/4: Setting up FFmpeg audio processing binaries...
+python -c "import shutil, os, sys, imageio_ffmpeg; dst=os.path.join(os.path.dirname(sys.executable),'ffmpeg.exe'); os.path.exists(dst) or shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), dst)" >nul 2>&1
+echo.
+echo [+] Core dependencies and FFmpeg installed successfully!
 echo.
 
 :CHECK_UPDATES
+:: 3.5 Verify critical dependencies (torchsde, FFmpeg)
+python -c "import torchsde, einops" >nul 2>&1
+if errorlevel 1 (
+    echo [*] Installing missing audio processing libraries (torchsde, einops)...
+    pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg
+)
+python -c "import os, sys; sys.exit(0 if os.path.exists(os.path.join(os.path.dirname(sys.executable), 'ffmpeg.exe')) else 1)" >nul 2>&1
+if errorlevel 1 (
+    echo [*] Ensuring FFmpeg audio binaries are linked...
+    python -c "import shutil, os, sys, imageio_ffmpeg; dst=os.path.join(os.path.dirname(sys.executable),'ffmpeg.exe'); shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), dst)" >nul 2>&1
+)
+
 :: 4. Check GitHub Repository for Updates (Auto-Pull)
 python backend\check_github_update.py
 

@@ -40,6 +40,11 @@ pip install torch torchvision torchaudio --pre --index-url https://download.pyto
 echo.
 echo [*] Installing XonAudio Studio backend dependencies...
 pip install -r backend\requirements.txt
+pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg
+
+echo.
+echo [*] Setting up FFmpeg audio processing binaries...
+python -c "import shutil, os, sys, imageio_ffmpeg; dst=os.path.join(os.path.dirname(sys.executable),'ffmpeg.exe'); os.path.exists(dst) or shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), dst)" >nul 2>&1
 
 echo.
 echo [*] Verifying frontend web dependencies...

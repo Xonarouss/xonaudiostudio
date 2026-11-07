@@ -112,9 +112,12 @@ export default function ModelManager({
   const f5 = modelsStatus?.f5_tts || {};
   const stable = modelsStatus?.stable_audio || {};
   const llama = modelsStatus?.llama || {};
+  const xtts = modelsStatus?.xtts || {};
+  const fish = modelsStatus?.fish_speech || {};
 
   const totalSize = (
-    parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(llama.size_gb || 0)
+    parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(llama.size_gb || 0) +
+    parseFloat(xtts.size_gb || 0) + parseFloat(fish.size_gb || 0)
   ).toFixed(2);
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
@@ -274,7 +277,7 @@ export default function ModelManager({
       </div>
 
       {/* Model Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Model 1: F5-TTS */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
           <div className="space-y-3">
@@ -529,6 +532,168 @@ export default function ModelManager({
                   <>
                     <Download className="w-4 h-4" />
                     <span>Download Llama 3 (~2.8 GB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 4: XTTS-v2 Multilingual TTS */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-orange-100 text-orange-800 border border-orange-200">
+                  XTTS-v2
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Multilingual Voice Cloning</span>
+              </div>
+              {xtts.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({xtts.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~2.0 GB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">XTTS-v2 Multilingual TTS</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Coqui XTTS-v2: state-of-the-art multilingual voice cloning supporting 17 languages including 🇳🇱 Dutch, German, French, Spanish and more. Zero-shot cloning from 6+ seconds of reference audio.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">coqui/XTTS-v2</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/xtts-v2</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-orange-700 font-bold">~3.5 GB VRAM</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Languages:</span>
+                <span className="text-orange-700 font-bold">17 Languages incl. Dutch</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {xtts.installed ? (
+              <button
+                onClick={() => handleDelete('xtts')}
+                disabled={deletingModel === 'xtts'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({xtts.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('xtts')}
+                disabled={downloadingModel === 'xtts'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-orange-600/20"
+              >
+                {downloadingModel === 'xtts' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~2.0 GB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download XTTS-v2 (~2.0 GB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 5: Fish Speech 1.5 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                  Fish Speech
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Ultra-Quality Cloning</span>
+              </div>
+              {fish.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({fish.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~700 MB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">Fish Speech 1.5 Ultra</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              State-of-the-art dual autoregressive architecture (DAR) + VQ-GAN decoder. Near-perfect voice cloning from 10 seconds of reference audio. Blazing fast, natural prosody, virtually zero artifacts.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">fishaudio/fish-speech-1.5</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/fish-speech-1.5</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-teal-700 font-bold">~2.0 GB VRAM</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Architecture:</span>
+                <span className="text-teal-700 font-bold">DAR + VQ-GAN</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {fish.installed ? (
+              <button
+                onClick={() => handleDelete('fish_speech')}
+                disabled={deletingModel === 'fish_speech'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({fish.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('fish_speech')}
+                disabled={downloadingModel === 'fish_speech'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-teal-600/20"
+              >
+                {downloadingModel === 'fish_speech' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~700 MB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download Fish Speech (~700 MB)</span>
                   </>
                 )}
               </button>

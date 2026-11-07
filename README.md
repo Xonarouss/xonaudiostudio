@@ -1,12 +1,14 @@
 <div align="center">
 
-# 🎙️ XONAUDIO STUDIO
-### Next-Gen Local AI Audio Workstation • Zero-Shot Voice Cloning & Foley Diffusion
+# 🎙️ XONAUDIO STUDIO v1.2
+### Next-Gen Local AI Audio Workstation • 3 Voice Engines (Dutch Support) • Foley & SFX Diffusion
 **Built & Maintained by [Xonarous Inc](https://xonarous.nl)**
 
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-blue.svg?style=for-the-badge&logo=windows)](https://xonarous.nl)
 [![CUDA](https://img.shields.io/badge/CUDA-12.8%2B%20%7C%20PyTorch%202.12-green.svg?style=for-the-badge&logo=nvidia)](https://xonarous.nl)
 [![Architecture](https://img.shields.io/badge/Architecture-Blackwell%20sm__120%20%7C%20Ada%20%7C%20Ampere-purple.svg?style=for-the-badge)](https://xonarous.nl)
+[![Dutch](https://img.shields.io/badge/🇳🇱%20Dutch%20TTS-Supported%20(XTTS%20+%20Fish)-orange.svg?style=for-the-badge)](https://xonarous.nl)
+[![Engines](https://img.shields.io/badge/Voice%20Engines-F5--TTS%20%7C%20XTTS--v2%20%7C%20Fish%20Speech-teal.svg?style=for-the-badge)](https://xonarous.nl)
 [![Website](https://img.shields.io/badge/Live_Site-GitHub%20Pages-0ea5e9.svg?style=for-the-badge&logo=githubpages&logoColor=white)](https://xonarouss.github.io/xonaudiostudio/)
 [![Buy me a beer](https://img.shields.io/badge/🍺%20Buy%20me%20a%20beer-buymeacoffee.com%2Fxonarous-amber.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/xonarous)
 [![License](https://img.shields.io/badge/License-MIT%20Open%20Source-emerald.svg?style=for-the-badge)](https://github.com/Xonarouss/xonaudiostudio/blob/main/LICENSE)
@@ -19,9 +21,16 @@
 
 ## 🌟 Overview
 
-**XonAudio Studio** is a turn-key, professional desktop workstation engineered for **100% on-device AI voice cloning, speech synthesis, and cinematic sound effects / foley generation**.
+**XonAudio Studio** is a turn-key, professional desktop workstation engineered for **100% on-device AI voice cloning, multilingual speech synthesis, and cinematic sound effects / foley generation**.
 
-Unlike cloud-dependent platforms with monthly subscriptions, privacy concerns, and latency delays, XonAudio Studio runs completely on your local NVIDIA GPU. Clone any human voice with just 5 to 10 seconds of reference audio using **F5-TTS**, or generate up to 47 seconds of pristine 44.1kHz stereo foley and ambient soundscapes with **Stable Audio Open 1.0**.
+Unlike cloud-dependent platforms with monthly subscriptions, privacy concerns, and latency delays, XonAudio Studio runs completely on your local NVIDIA GPU with **zero cloud dependencies and zero remote API calls**. 
+
+Switch effortlessly between **three neural voice synthesis engines**:
+1. **F5-TTS v1 Base:** Flow-matching zero-shot voice cloning with fast ODE solver (English & Chinese Mandarin).
+2. **Coqui XTTS-v2:** High-fidelity multilingual voice cloning across 17 languages, including native **Dutch (Nederlands 🇳🇱)**, German, French, Spanish, Italian, and more.
+3. **Fish Speech 1.5 Ultra:** The newest dual autoregressive (DAR) + VQ-GAN neural audio codec architecture. Extremely fast, natural prosody, virtually artifact-free, with **Dutch (🇳🇱)** support.
+
+Also includes **Stable Audio Open 1.0** for 44.1kHz stereo Foley diffusion up to 47 seconds, and **Meta Llama 3** for Magic Wand prompt expansion and creative studio direction.
 
 Featuring a clean, ultra-modern **White Mode desktop interface** with live real-time hardware telemetry (GPU %, Temp, GDDR7 VRAM, Power Draw, RAM, CPU).
 
@@ -31,14 +40,14 @@ Featuring a clean, ultra-modern **White Mode desktop interface** with live real-
 
 - **🔒 100% Local & Private:** Zero cloud telemetry, zero remote audio uploads. Your voice recordings, scripts, and generated WAV files stay strictly on your local PC.
 - **⚡ Blackwell sm_120 Native Acceleration:** Powered by PyTorch CUDA 12.8 with native support for RTX 5080, 5090, 4080, and 4090 GPUs, plus automatic safe CPU fallback.
-- **🗣️ Voice Lab (F5-TTS v1):** Zero-shot flow-matching voice cloning. Fine-tune speaking speed (0.6x–1.6x), NFE sampling steps (16–64), and auto-trim silence with high-fidelity 24kHz/48kHz output.
+- **🗣️ 3-Engine Voice Lab Switcher:** 
+  - **F5-TTS:** Fast non-autoregressive diffusion.
+  - **XTTS-v2:** 17 Languages natively supported including 🇳🇱 **Dutch**.
+  - **Fish Speech 1.5:** SOTA DAR + VQ-GAN vocoder, ultra-high quality, 🇳🇱 **Dutch** supported.
+- **🇳🇱 Native Dutch Language Support:** Full high-fidelity Dutch speech synthesis and voice cloning via XTTS-v2 and Fish Speech 1.5.
 - **🎛️ Sound Studio (Stable Audio Open):** 44.1kHz stereo audio diffusion up to 47 seconds per clip. Full control over duration, CFG guidance scale, inference steps (25–100), and custom/random seeds.
-- **📊 Real-Time Dynamic Hardware Monitor:** Live floating monitor widget matching Genux AI diagnostics:
-  - GPU Utilization % and Real-Time Temperature (°C)
-  - VRAM Consumption (e.g. `1.5 GB / 15.9 GB`)
-  - Board Power Draw (e.g. `33 / 388 W`)
-  - Dynamic System RAM & CPU Usage %
-  - Audio Engine Process Footprint
+- **🪄 Llama 3 Magic Wand & AI Assistant:** Local Meta Llama 3 expands simple ideas into Hollywood acoustic directions, writes voice acting scripts with punctuation cues, and answers studio production questions.
+- **📊 Real-Time Dynamic Hardware Monitor:** Live floating monitor widget displaying GPU Utilization, Temperature (°C), GDDR7 VRAM Consumption, System RAM, and CPU %.
 - **📈 Live Neural Progress Bars:** Visual percentage bars (0% ➔ 100%), elapsed time, and stage indicators during audio synthesis.
 - **💾 Automated Model Manager & Clean Storage:** Monitor local model sizes in GB, download weights on-demand, or purge checkpoints in 1 click to instantly reclaim tens of gigabytes.
 - **🔄 Auto-Update Checking:** Automatically checks the official GitHub repo and Hugging Face commit hashes on launch; if a newer model revision or release exists, it updates automatically.
@@ -48,12 +57,15 @@ Featuring a clean, ultra-modern **White Mode desktop interface** with live real-
 
 ## 🧠 Neural Architecture & Foundation Models
 
-XonAudio Studio coordinates state-of-the-art open research foundation models:
+XonAudio Studio coordinates 5 state-of-the-art open research foundation models (all 100% local):
 
-| Model | Checkpoint Location | Size | Role | Precision / Sample Rate |
+| Model | Checkpoint Location | Size | Role | Precision / Output |
 | :--- | :--- | :--- | :--- | :--- |
-| **F5-TTS v1 Base** | `models/f5-tts/model_1250000.safetensors` | 2.3 GB | Zero-Shot Voice Cloning & Flow-Matching Speech | FP16 / 24kHz Vocos |
-| **Stable Audio Open 1.0** | `models/stable-audio-open/` | 4.8 GB | High-Resolution Foley & Sound FX Diffusion | FP16 / 44.1kHz Stereo |
+| **F5-TTS v1 Base** | `models/f5-tts/model_1250000.safetensors` | 2.3 GB | Zero-Shot Flow-Matching Speech (EN/ZH) | FP16 / 24kHz Vocos |
+| **Coqui XTTS-v2** | `models/xtts-v2/` | 2.0 GB | Multilingual Voice Cloning (17 Langs incl. 🇳🇱 Dutch) | FP16 / 24kHz |
+| **Fish Speech 1.5 Ultra** | `models/fish-speech-1.5/` | 0.7 GB | Dual-AR + VQ-GAN Neural Codec (incl. 🇳🇱 Dutch) | FP16 / 44.1kHz VQ-GAN |
+| **Stable Audio Open 1.0** | `models/stable-audio-open/` | 4.8 GB | High-Resolution Stereo Foley & SFX Diffusion | FP16 / 44.1kHz Stereo |
+| **Meta Llama 3 Studio AI** | `models/llama/` | 2.8 GB | Creative Prompt Engineering (Magic Wand 🪄) & Assistant | FP16 / Text Generation |
 
 ---
 

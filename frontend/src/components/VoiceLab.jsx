@@ -6,6 +6,42 @@ import {
 } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
 
+// ─── TTS Engine Language Lists ─────────────────────────────────────────────
+const XTTS_LANGUAGES = [
+  { code: 'en', name: '🇬🇧 English' },
+  { code: 'nl', name: '🇳🇱 Dutch' },
+  { code: 'de', name: '🇩🇪 German' },
+  { code: 'fr', name: '🇫🇷 French' },
+  { code: 'es', name: '🇪🇸 Spanish' },
+  { code: 'it', name: '🇮🇹 Italian' },
+  { code: 'pt', name: '🇵🇹 Portuguese' },
+  { code: 'pl', name: '🇵🇱 Polish' },
+  { code: 'tr', name: '🇹🇷 Turkish' },
+  { code: 'ru', name: '🇷🇺 Russian' },
+  { code: 'cs', name: '🇨🇿 Czech' },
+  { code: 'ar', name: '🇸🇦 Arabic' },
+  { code: 'zh-cn', name: '🇨🇳 Chinese' },
+  { code: 'ja', name: '🇯🇵 Japanese' },
+  { code: 'hu', name: '🇭🇺 Hungarian' },
+  { code: 'ko', name: '🇰🇷 Korean' },
+  { code: 'hi', name: '🇮🇳 Hindi' },
+];
+
+const FISH_LANGUAGES = [
+  { code: 'en', name: '🇬🇧 English' },
+  { code: 'nl', name: '🇳🇱 Dutch' },
+  { code: 'zh', name: '🇨🇳 Chinese' },
+  { code: 'ja', name: '🇯🇵 Japanese' },
+  { code: 'ko', name: '🇰🇷 Korean' },
+  { code: 'fr', name: '🇫🇷 French' },
+  { code: 'de', name: '🇩🇪 German' },
+  { code: 'ar', name: '🇸🇦 Arabic' },
+  { code: 'es', name: '🇪🇸 Spanish' },
+  { code: 'pt', name: '🇵🇹 Portuguese' },
+  { code: 'it', name: '🇮🇹 Italian' },
+  { code: 'ru', name: '🇷🇺 Russian' },
+];
+
 const GENDER_COLORS = {
   female: { bg: 'bg-pink-50', border: 'border-pink-200', badge: 'bg-pink-100 text-pink-700', icon: '👩' },
   male:   { bg: 'bg-blue-50',  border: 'border-blue-200',  badge: 'bg-blue-100  text-blue-700',  icon: '👨' },
@@ -75,6 +111,9 @@ function VoiceCard({ voice, selected, onSelect, onPreview, onDelete }) {
 export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
   const [text, setText] = useState('Welcome to XonAudio Studio. This voice is generated locally with the F5-TTS architecture on your GPU.');
 
+  // TTS Engine selection
+  const [ttsEngine, setTtsEngine] = useState('f5tts'); // 'f5tts' | 'xtts' | 'fish'
+
   // Voice selection state
   const [voices, setVoices] = useState([]);
   const [loadingVoices, setLoadingVoices] = useState(true);
@@ -116,6 +155,17 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
   const uploadInputRef = useRef(null);
   const previewAudioRef = useRef(null);
   const isF5Ready = modelsStatus?.f5_tts?.installed;
+  const isXttsReady = modelsStatus?.xtts?.installed;
+  const isFishReady = modelsStatus?.fish_speech?.installed;
+
+  const isEngineReady =
+    ttsEngine === 'f5tts' ? Boolean(isF5Ready) :
+    ttsEngine === 'xtts' ? Boolean(isXttsReady) :
+    Boolean(isFishReady);
+
+  const currentEngineName =
+    ttsEngine === 'f5tts' ? 'F5-TTS' :
+    ttsEngine === 'xtts' ? 'XTTS-v2' : 'Fish Speech 1.5';
 
   // Load voices from API
   const loadVoices = useCallback(async () => {
@@ -270,49 +320,114 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
 
   const handleGenerate = async () => {
     if (!text.trim()) { setErrorMessage('Please enter the text you want the voice to speak.'); return; }
-    if (!isF5Ready) { setErrorMessage('F5-TTS model checkpoint is missing. Please download it via the Model Manager.'); return; }
+
+    // Check engine readiness
+    if (ttsEngine === 'f5tts' && !isF5Ready) {
+      setErrorMessage('F5-TTS model checkpoint is missing. Please download it via the Model Manager.');
+      return;
+    }
+    if (ttsEngine === 'xtts' && !modelsStatus?.xtts?.installed) {
+      setErrorMessage('XTTS-v2 model is not installed. Please download it via the Model Manager.');
+      return;
+    }
+    if (ttsEngine === 'fish' && !modelsStatus?.fish_speech?.installed) {
+      setErrorMessage('Fish Speech 1.5 model is not installed. Please download it via the Model Manager.');
+      return;
+    }
 
     setIsGenerating(true);
     setErrorMessage('');
 
     try {
-      const formData = new FormData();
-      formData.append('gen_text', text);
-      formData.append('speed', speed.toString());
-      formData.append('nfe_steps', nfeSteps.toString());
-      formData.append('remove_silence', removeSilence.toString());
-      formData.append('language', language);
-      formData.append('emotion', emotion);
+      let audioUrl = null;
 
-      if (refAudioFile) {
-        // One-time file upload takes priority
-        formData.append('ref_audio', refAudioFile);
-        formData.append('ref_text', refText);
-      } else if (selectedVoice) {
-        // Use voice from library
-        formData.append('voice_id', selectedVoice.id);
-        formData.append('ref_text', selectedVoice.ref_text || '');
+      if (ttsEngine === 'f5tts') {
+        // ── F5-TTS ──────────────────────────────────────────
+        const formData = new FormData();
+        formData.append('gen_text', text);
+        formData.append('speed', speed.toString());
+        formData.append('nfe_steps', nfeSteps.toString());
+        formData.append('remove_silence', removeSilence.toString());
+        formData.append('language', language);
+        formData.append('emotion', emotion);
+
+        if (refAudioFile) {
+          formData.append('ref_audio', refAudioFile);
+          formData.append('ref_text', refText);
+        } else if (selectedVoice) {
+          formData.append('voice_id', selectedVoice.id);
+          formData.append('ref_text', selectedVoice.ref_text || '');
+        }
+
+        const res = await fetch('/api/tts/generate', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Generation error' }));
+          throw new Error(err.detail || 'Voice generation failed');
+        }
+        const data = await res.json();
+        audioUrl = data.audio_url;
+
+      } else if (ttsEngine === 'xtts') {
+        // ── XTTS-v2 ─────────────────────────────────────────
+        const formData = new FormData();
+        formData.append('gen_text', text);
+        formData.append('language', language);
+        formData.append('speed', speed.toString());
+        formData.append('emotion', emotion);
+
+        if (refAudioFile) {
+          formData.append('ref_audio', refAudioFile);
+          formData.append('ref_text', refText);
+        } else if (selectedVoice) {
+          formData.append('voice_id', selectedVoice.id);
+          formData.append('ref_text', selectedVoice.ref_text || '');
+        }
+
+        const res = await fetch('/api/xtts/generate', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Generation error' }));
+          throw new Error(err.detail || 'XTTS-v2 generation failed');
+        }
+        const data = await res.json();
+        audioUrl = data.audio_url;
+
+      } else if (ttsEngine === 'fish') {
+        // ── Fish Speech 1.5 ──────────────────────────────────
+        const formData = new FormData();
+        formData.append('gen_text', text);
+        formData.append('language', language);
+        formData.append('speed', speed.toString());
+        formData.append('emotion', emotion);
+
+        if (refAudioFile) {
+          formData.append('ref_audio', refAudioFile);
+          formData.append('ref_text', refText);
+        } else if (selectedVoice) {
+          formData.append('voice_id', selectedVoice.id);
+          formData.append('ref_text', selectedVoice.ref_text || '');
+        }
+
+        const res = await fetch('/api/fish/generate', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Generation error' }));
+          throw new Error(err.detail || 'Fish Speech generation failed');
+        }
+        const data = await res.json();
+        audioUrl = data.audio_url;
       }
 
-      const res = await fetch('/api/tts/generate', { method: 'POST', body: formData });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Generation error' }));
-        throw new Error(err.detail || 'Voice generation failed');
-      }
-
-      const data = await res.json();
       setProgressPercent(100);
       setProgressStage('Voice rendered successfully!');
-      setGeneratedAudioUrl(data.audio_url);
+      setGeneratedAudioUrl(audioUrl);
       setLastGenText(text);
 
+      const engineLabel = ttsEngine === 'f5tts' ? 'F5-TTS' : ttsEngine === 'xtts' ? 'XTTS-v2' : 'Fish Speech';
       setHistory(prev => [{
         id: Date.now(),
         title: text.length > 45 ? text.substring(0, 45) + '...' : text,
-        url: data.audio_url,
+        url: audioUrl,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        voice: selectedVoice?.name || (refAudioFile ? refAudioName : 'Default'),
+        voice: `${selectedVoice?.name || (refAudioFile ? refAudioName : 'Default')} · ${engineLabel}`,
       }, ...prev.slice(0, 9)]);
     } catch (err) {
       setErrorMessage(err.message || 'An error occurred during voice synthesis.');
@@ -330,8 +445,12 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200/90 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">F5-TTS v1</span>
-            <span className="text-xs text-slate-500 font-medium">Zero-Shot Voice Cloning & High-Fidelity Neural Speech</span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">
+              {currentEngineName}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">
+              3 High-Performance Local AI Voice Engines · 100% On-Device
+            </span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Mic className="w-6 h-6 text-cyan-600" />
@@ -339,17 +458,131 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          {isF5Ready ? (
+          {isEngineReady ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Model Ready</span>
+              <span>{currentEngineName} Ready</span>
             </div>
           ) : (
             <button onClick={onOpenModelManager} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors">
               <AlertCircle className="w-4 h-4 text-amber-600" />
-              <span>Model Missing — Download</span>
+              <span>{currentEngineName} Missing — Download</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* TTS Engine Switcher Cards */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            ⚡ Select Voice Engine
+          </p>
+          <span className="text-xs text-slate-500 font-medium">
+            Switch freely between architectures depending on language and style
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Engine 1: F5-TTS */}
+          <div
+            onClick={() => { setTtsEngine('f5tts'); if (language !== 'en' && language !== 'zh' && language !== 'auto') setLanguage('en'); }}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              ttsEngine === 'f5tts'
+                ? 'border-cyan-500 bg-cyan-50/70 shadow-sm ring-1 ring-cyan-500'
+                : 'border-slate-200 bg-white hover:border-cyan-300 hover:bg-slate-50/50'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-cyan-100 text-cyan-800">
+                FLOW-MATCHING
+              </span>
+              {isF5Ready ? (
+                <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Installed
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-amber-600">Not Installed</span>
+              )}
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">F5-TTS v1</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Diffusion flow-matching with fast ODE solver. Best for English &amp; Chinese zero-shot voice cloning.
+            </p>
+            <div className="mt-2 text-[10px] text-slate-600 font-medium flex gap-2">
+              <span>🇬🇧 English</span>
+              <span>🇨🇳 Chinese</span>
+              <span className="ml-auto font-mono text-cyan-700">~2.3 GB</span>
+            </div>
+          </div>
+
+          {/* Engine 2: XTTS-v2 */}
+          <div
+            onClick={() => { setTtsEngine('xtts'); }}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              ttsEngine === 'xtts'
+                ? 'border-orange-500 bg-orange-50/70 shadow-sm ring-1 ring-orange-500'
+                : 'border-slate-200 bg-white hover:border-orange-300 hover:bg-slate-50/50'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-orange-100 text-orange-800">
+                17 LANGUAGES
+              </span>
+              {isXttsReady ? (
+                <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Installed
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-amber-600">Not Installed</span>
+              )}
+            </div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              XTTS-v2 Multilingual
+              <span className="text-xs">🇳🇱</span>
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Coqui XTTS-v2 architecture with high-fidelity Dutch, German, French, Spanish, Italian &amp; 12 more.
+            </p>
+            <div className="mt-2 text-[10px] text-slate-600 font-medium flex gap-2 items-center">
+              <span className="font-bold text-orange-700">🇳🇱 Dutch Included</span>
+              <span className="ml-auto font-mono text-orange-700">~2.0 GB</span>
+            </div>
+          </div>
+
+          {/* Engine 3: Fish Speech 1.5 */}
+          <div
+            onClick={() => { setTtsEngine('fish'); }}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              ttsEngine === 'fish'
+                ? 'border-teal-500 bg-teal-50/70 shadow-sm ring-1 ring-teal-500'
+                : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-slate-50/50'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-teal-100 text-teal-800">
+                DAR + VQGAN
+              </span>
+              {isFishReady ? (
+                <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Installed
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-amber-600">Not Installed</span>
+              )}
+            </div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              Fish Speech 1.5 Ultra
+              <span className="text-xs">🇳🇱</span>
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Latest autoregressive + neural audio codec model. Ultra-crisp speech, 100% local, virtually no artifacts.
+            </p>
+            <div className="mt-2 text-[10px] text-slate-600 font-medium flex gap-2 items-center">
+              <span className="font-bold text-teal-700">🇳🇱 Dutch + 11 Langs</span>
+              <span className="ml-auto font-mono text-teal-700">~0.7 GB</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -677,29 +910,68 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
 
             {/* Language selector */}
             <div className="space-y-1.5">
-              <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">Language</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: '🇬🇧 English', value: 'en' },
-                  { label: '🇨🇳 Chinese', value: 'zh' },
-                  { label: '🌐 Auto-detect', value: 'auto' },
-                ].map((lang) => (
-                  <button
-                    key={lang.value}
-                    type="button"
-                    onClick={() => setLanguage(lang.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
-                      language === lang.value
-                        ? 'bg-cyan-600 text-white border-cyan-700 shadow-sm'
-                        : 'bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 border-slate-200 hover:border-cyan-300'
-                    }`}
-                  >
-                    {lang.label}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">Language</p>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {ttsEngine === 'f5tts' ? '2 Languages + Auto' : ttsEngine === 'xtts' ? '17 Languages' : '12 Languages'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                {ttsEngine === 'f5tts' ? (
+                  [
+                    { label: '🇬🇧 English', value: 'en' },
+                    { label: '🇨🇳 Chinese', value: 'zh' },
+                    { label: '🌐 Auto-detect', value: 'auto' },
+                  ].map((lang) => (
+                    <button
+                      key={lang.value}
+                      type="button"
+                      onClick={() => setLanguage(lang.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                        language === lang.value
+                          ? 'bg-cyan-600 text-white border-cyan-700 shadow-sm'
+                          : 'bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 border-slate-200 hover:border-cyan-300'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))
+                ) : ttsEngine === 'xtts' ? (
+                  XTTS_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLanguage(lang.code)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                        language === lang.code
+                          ? 'bg-orange-600 text-white border-orange-700 shadow-sm font-bold'
+                          : 'bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-orange-700 border-slate-200 hover:border-orange-300'
+                      }`}
+                    >
+                      {lang.name}
+                    </button>
+                  ))
+                ) : (
+                  FISH_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLanguage(lang.code)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                        language === lang.code
+                          ? 'bg-teal-600 text-white border-teal-700 shadow-sm font-bold'
+                          : 'bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-700 border-slate-200 hover:border-teal-300'
+                      }`}
+                    >
+                      {lang.name}
+                    </button>
+                  ))
+                )}
               </div>
               <p className="text-[10px] text-slate-400">
-                F5-TTS v1 supports English and Chinese Mandarin natively. Auto-detect works for mixed-language scripts.
+                {ttsEngine === 'f5tts' && 'F5-TTS v1 supports English and Chinese Mandarin natively. Auto-detect works for mixed-language scripts.'}
+                {ttsEngine === 'xtts' && 'XTTS-v2 supports 17 languages natively including 🇳🇱 Dutch, German, French, Spanish, Italian, and Portuguese.'}
+                {ttsEngine === 'fish' && 'Fish Speech 1.5 supports Dutch, English, Chinese, Japanese, Korean, French, German, Spanish and more.'}
               </p>
             </div>
           </div>
@@ -718,6 +990,10 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
             {/* Active voice indicator */}
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
               <div>
+                <span className="text-slate-500 font-medium">Active engine: </span>
+                <span className="font-bold text-slate-800">{currentEngineName}</span>
+              </div>
+              <div>
                 <span className="text-slate-500 font-medium">Active voice: </span>
                 <span className="font-bold text-slate-800">
                   {refAudioFile ? `📎 ${refAudioName} (one-time)` : selectedVoice ? `${GENDER_COLORS[selectedVoice.gender]?.icon} ${selectedVoice.name}` : '🤖 Default (basic_ref_en)'}
@@ -731,7 +1007,7 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
               )}
               <div>
                 <span className="text-slate-500 font-medium">Language: </span>
-                <span className="font-semibold text-cyan-700">{language === 'en' ? '🇬🇧 English' : language === 'zh' ? '🇨🇳 Chinese' : '🌐 Auto-detect'}</span>
+                <span className="font-semibold text-cyan-700">{language.toUpperCase()}</span>
               </div>
             </div>
 
@@ -783,21 +1059,25 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
             {/* Generate button */}
             <button
               onClick={handleGenerate}
-              disabled={isGenerating || !text.trim() || !isF5Ready}
+              disabled={isGenerating || !text.trim() || !isEngineReady}
               className={`w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-md transition-all duration-200 ${
                 isGenerating
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
-                  : !isF5Ready
+                  : !isEngineReady
                   ? 'bg-amber-100 text-amber-800 cursor-not-allowed border border-amber-300'
+                  : ttsEngine === 'xtts'
+                  ? 'bg-gradient-to-r from-orange-500 via-amber-600 to-red-500 text-white hover:brightness-105 active:scale-[0.99] shadow-orange-600/20'
+                  : ttsEngine === 'fish'
+                  ? 'bg-gradient-to-r from-teal-500 via-emerald-600 to-cyan-600 text-white hover:brightness-105 active:scale-[0.99] shadow-teal-600/20'
                   : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 text-white hover:brightness-105 active:scale-[0.99] shadow-cyan-600/20'
               }`}
             >
               {isGenerating ? (
                 <><RefreshCw className="w-5 h-5 animate-spin text-cyan-600" /><span>Synthesizing Voice ({progressPercent}%)...</span></>
-              ) : !isF5Ready ? (
-                <><AlertCircle className="w-5 h-5 text-amber-700" /><span>F5-TTS Not Installed (Download in Manager)</span></>
+              ) : !isEngineReady ? (
+                <><AlertCircle className="w-5 h-5 text-amber-700" /><span>{currentEngineName} Not Installed (Download in Manager)</span></>
               ) : (
-                <><Sparkles className="w-5 h-5" /><span>Generate Voice (F5-TTS)</span></>
+                <><Sparkles className="w-5 h-5" /><span>Generate Voice ({currentEngineName})</span></>
               )}
             </button>
           </div>
@@ -807,7 +1087,7 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
             <div className="space-y-2">
               <AudioPlayer
                 audioUrl={generatedAudioUrl}
-                title="F5-TTS Voice Synthesis"
+                title={`${currentEngineName} Voice Synthesis`}
                 subtitle={lastGenText.length > 50 ? lastGenText.substring(0, 50) + '...' : lastGenText}
               />
             </div>
