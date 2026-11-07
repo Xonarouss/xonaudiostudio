@@ -10,6 +10,7 @@ cd /d "%SCRIPT_DIR%"
 echo =====================================================================
 echo                  XONAUDIO STUDIO - XONAROUS INC
 echo   Next-Gen Local AI Audio Workstation (Voice Cloning ^& Foley FX)
+echo   Official Repository: https://github.com/Xonarouss/xonaudiostudio
 echo =====================================================================
 echo.
 
@@ -41,7 +42,7 @@ call venv\Scripts\activate.bat
 :: 3. Check Python dependencies
 python -c "import fastapi" >nul 2>&1
 if errorlevel 1 goto INSTALL_DEPS
-goto CHECK_FRONTEND
+goto CHECK_UPDATES
 
 :INSTALL_DEPS
 echo =====================================================================
@@ -52,9 +53,8 @@ echo [*] Step 1/3: Upgrading pip...
 python -m pip install --upgrade pip
 
 echo.
-echo [*] Step 2/3: Installing PyTorch with CUDA 12.4 acceleration...
-echo     (This takes a few minutes on initial startup...)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+echo [*] Step 2/3: Installing PyTorch with CUDA 12.8 (RTX 50-series / sm_120 support)...
+pip install torch torchvision torchaudio --pre --index-url https://download.pytorch.org/whl/nightly/cu128
 
 echo.
 echo [*] Step 3/3: Installing neural studio dependencies (F5-TTS, Diffusers, etc.)...
@@ -63,8 +63,11 @@ echo.
 echo [+] Core dependencies installed successfully!
 echo.
 
-:CHECK_FRONTEND
-:: 4. Check Frontend modules
+:CHECK_UPDATES
+:: 4. Check GitHub Repository for Updates (Auto-Pull)
+python backend\check_github_update.py
+
+:: 5. Check Frontend web dependencies
 if not exist "frontend\node_modules" (
     echo [*] Installing frontend web dependencies...
     cd /d "%SCRIPT_DIR%\frontend"
@@ -72,7 +75,7 @@ if not exist "frontend\node_modules" (
     cd /d "%SCRIPT_DIR%"
 )
 
-:: 5. Desktop Shortcut Prompt (if shortcut doesn't exist on Desktop)
+:: 6. Desktop Shortcut Prompt (if shortcut doesn't exist on Desktop)
 set "DESKTOP_LNK=%USERPROFILE%\Desktop\XonAudio Studio.lnk"
 if not exist "!DESKTOP_LNK!" (
     echo.
@@ -85,24 +88,29 @@ if not exist "!DESKTOP_LNK!" (
 )
 
 echo.
-:: 6. Model Verification & Auto-Update Check
+:: 7. Model Verification & Auto-Update Check
 echo [*] Checking neural model weights and Hugging Face updates...
 python backend\download_models.py
 
 echo.
-:: 7. Start Backend and Frontend Servers
-echo [*] Starting XonAudio Studio servers...
-echo.
-
-:: Start FastAPI backend in dedicated window
+:: 8. Start Backend Server
+echo [*] Starting FastAPI Backend on http://127.0.0.1:8000...
 start "XonAudio Studio - Backend (FastAPI)" cmd /k "cd /d "%SCRIPT_DIR%" && call venv\Scripts\activate.bat && python backend\main.py"
 
-:: Start React Frontend in dedicated window
+:: 9. Wait for Backend to be online (Eliminates ECONNREFUSED in Vite proxy)
+echo [*] Waiting for FastAPI backend to initialize...
+:WAIT_BACKEND
+timeout /t 1 /nobreak >nul
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8000/api/health' -UseBasicParsing -TimeoutSec 1; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if errorlevel 1 goto WAIT_BACKEND
+echo [+] Backend is online and ready!
+
+:: 10. Start Frontend & Open Browser
+echo [*] Starting React Frontend on http://localhost:5173...
 start "XonAudio Studio - Frontend (Vite)" cmd /k "cd /d "%SCRIPT_DIR%\frontend" && npm run dev"
 
-:: 8. Wait 3 seconds and open default browser
-echo [*] Launching XonAudio Studio in your browser...
-timeout /t 3 /nobreak >nul
+timeout /t 2 /nobreak >nul
+echo [*] Launching XonAudio Studio in your web browser...
 start http://localhost:5173
 
 echo.
@@ -110,6 +118,7 @@ echo =====================================================================
 echo    XonAudio Studio is now running!
 echo    - Web UI: http://localhost:5173 (or http://localhost:8000)
 echo    - API Docs: http://127.0.0.1:8000/docs
+echo    - GitHub: https://github.com/Xonarouss/xonaudiostudio
 echo.
 echo    Keep the server terminal windows open during your session.
 echo    Close them anytime to stop the studio.

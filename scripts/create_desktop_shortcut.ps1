@@ -1,4 +1,4 @@
-﻿# Create Windows Desktop Shortcut for XonAudio Studio
+# Create Windows Desktop Shortcut for XonAudio Studio
 $scriptRoot = Split-Path -Parent $PSScriptRoot
 if (-not $scriptRoot) { $scriptRoot = "D:\TTS + Effects" }
 

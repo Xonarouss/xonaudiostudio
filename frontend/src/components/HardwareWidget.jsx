@@ -156,3 +156,4 @@ export default function HardwareWidget({ systemInfo }) {
     </div>
   );
 }
+

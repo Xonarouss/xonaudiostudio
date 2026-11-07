@@ -128,3 +128,4 @@ frontend_favicon = ASSETS_DIR.parent / "frontend" / "public" / "favicon.ico"
 if frontend_favicon.parent.exists():
     img.save(frontend_favicon, format="ICO", sizes=[(32, 32), (16, 16)])
     print(f"[+] Updated frontend favicon: {frontend_favicon}")
+

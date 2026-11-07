@@ -82,3 +82,4 @@ def create_zip():
 if __name__ == "__main__":
     build_frontend()
     create_zip()
+

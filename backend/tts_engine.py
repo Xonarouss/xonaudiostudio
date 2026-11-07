@@ -45,8 +45,24 @@ class TTSEngine:
                 device=self.device
             )
             self.is_loaded = True
-            print("[TTSEngine] F5-TTS successfully loaded into memory!")
+            print(f"[TTSEngine] F5-TTS successfully loaded on {self.device} into memory!")
         except Exception as e:
+            if self.device == "cuda":
+                print(f"[TTSEngine] CUDA initialization error ({e}). Retrying with CPU fallback...")
+                try:
+                    self.device = "cpu"
+                    from f5_tts.api import F5TTS
+                    self.f5 = F5TTS(
+                        model="F5TTS_v1_Base",
+                        ckpt_file=ckpt_file,
+                        vocab_file=vocab_file,
+                        device="cpu"
+                    )
+                    self.is_loaded = True
+                    print("[TTSEngine] F5-TTS successfully loaded on CPU!")
+                    return
+                except Exception as e_cpu:
+                    raise RuntimeError(f"Could not load F5-TTS on CPU: {e_cpu}")
             self.is_loaded = False
             print(f"[TTSEngine] Error instantiating F5-TTS: {e}")
             raise RuntimeError(f"Could not load F5-TTS model: {e}")

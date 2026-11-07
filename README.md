@@ -10,7 +10,7 @@
   <a href="https://xonarous.nl" target="_blank">
     <img src="https://img.shields.io/badge/Official_Website-xonarous.nl-0891B2?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Xonarous Inc" />
   </a>
-  <a href="https://github.com/your-username/xonaudio-studio/releases" target="_blank">
+  <a href="https://github.com/Xonarouss/xonaudiostudio/releases" target="_blank">
     <img src="https://img.shields.io/badge/Download_Portable_ZIP-v1.0.0-10B981?style=for-the-badge&logo=windows&logoColor=white" alt="Download Release" />
   </a>
   <a href="https://buymeacoffee.com" target="_blank">
@@ -21,7 +21,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="MIT License" />
   <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11-3776AB.svg?style=flat-square&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/PyTorch-CUDA%2012.4-EE4C2C.svg?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch" />
+  <img src="https://img.shields.io/badge/PyTorch-CUDA%2012.8%20(sm__120)-EE4C2C.svg?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch CUDA 12.8" />
   <img src="https://img.shields.io/badge/React%2018-Vite%20%2B%20Tailwind-61DAFB.svg?style=flat-square&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Theme-Clean%20White%20Mode-slate.svg?style=flat-square" alt="White Mode" />
 </p>
@@ -72,7 +72,7 @@
 ## 📦 Quickstart (Portable & 1-Click)
 
 ### Option 1: Download Pre-Packaged Release (Easiest)
-1. Download `XonAudio-Studio-v1.0.0-Portable.zip` from [GitHub Releases](https://github.com/your-username/xonaudio-studio/releases).
+1. Download `XonAudio-Studio-v1.0.0-Portable.zip` from [GitHub Releases](https://github.com/Xonarouss/xonaudiostudio/releases).
 2. Extract the folder anywhere on your computer.
 3. Double-click **`Start_AudioStudio.bat`**.
 
@@ -80,8 +80,8 @@
 
 ### Option 2: Clone with Git
 ```bash
-git clone https://github.com/your-username/xonaudio-studio.git
-cd xonaudio-studio
+git clone https://github.com/Xonarouss/xonaudiostudio.git
+cd xonaudiostudio
 ```
 Then double-click **`Start_AudioStudio.bat`** (Windows) or run `./start_audiostudio.sh` (Linux).
 

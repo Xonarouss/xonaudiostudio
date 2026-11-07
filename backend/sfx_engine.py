@@ -43,16 +43,29 @@ class SFXEngine:
                 torch_dtype=dtype,
             )
             self.pipe = self.pipe.to(self.device)
-            # Memory optimization for RTX 5080
+            # Memory optimization for modern GPUs
             if hasattr(self.pipe, "enable_attention_slicing"):
                 self.pipe.enable_attention_slicing()
 
             self.is_loaded = True
-            print("[SFXEngine] Stable Audio Open successfully loaded into VRAM!")
+            print(f"[SFXEngine] Stable Audio Open successfully loaded onto {self.device}!")
         except Exception as e:
+            if self.device == "cuda":
+                print(f"[SFXEngine] CUDA initialization warning ({e}). Falling back to CPU...")
+                try:
+                    self.device = "cpu"
+                    self.pipe = StableAudioPipeline.from_pretrained(
+                        model_source,
+                        torch_dtype=torch.float32,
+                    ).to("cpu")
+                    self.is_loaded = True
+                    print("[SFXEngine] Stable Audio Open loaded successfully on CPU!")
+                    return
+                except Exception as e_cpu:
+                    raise RuntimeError(f"Could not load Stable Audio Open on CPU: {e_cpu}")
             self.is_loaded = False
             print(f"[SFXEngine] Error loading Stable Audio Open: {e}")
-            raise RuntimeError(f"Fout bij inladen Stable Audio Open: {e}")
+            raise RuntimeError(f"Error loading Stable Audio Open: {e}")
 
     def generate(
         self,
