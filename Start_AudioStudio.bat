@@ -113,7 +113,7 @@ python backend\download_models.py
 echo.
 :: 8. Start Backend Server
 echo [*] Starting FastAPI Backend on http://127.0.0.1:8000...
-start "XonAudio Studio - Backend (FastAPI)" cmd /k "cd /d "%SCRIPT_DIR%" && call venv\Scripts\activate.bat && python backend\main.py"
+start "XonAudio Studio - Backend (FastAPI)" /d "%SCRIPT_DIR%" cmd /k "call venv\Scripts\activate.bat && python backend\main.py"
 
 :: 9. Wait for Backend to be online (Eliminates ECONNREFUSED in Vite proxy)
 echo [*] Waiting for FastAPI backend to initialize...
@@ -125,7 +125,7 @@ echo [+] Backend is online and ready!
 
 :: 10. Start Frontend & Open Browser
 echo [*] Starting React Frontend on http://localhost:5173...
-start "XonAudio Studio - Frontend (Vite)" cmd /k "cd /d "%SCRIPT_DIR%\frontend" && npm run dev"
+start "XonAudio Studio - Frontend (Vite)" /d "%SCRIPT_DIR%\frontend" cmd /k "npm run dev"
 
 timeout /t 2 /nobreak >nul
 echo [*] Launching XonAudio Studio in your web browser...

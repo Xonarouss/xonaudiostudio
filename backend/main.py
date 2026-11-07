@@ -1,7 +1,14 @@
 import os
+import sys
 import shutil
 import tempfile
 from pathlib import Path
+
+# Ensure backend directory is in sys.path regardless of execution working directory
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -638,4 +645,4 @@ if FRONTEND_DIST.exists():
 if __name__ == "__main__":
     import uvicorn
     print("[XonAudio Studio] Starting FastAPI server on http://127.0.0.1:8000...")
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
