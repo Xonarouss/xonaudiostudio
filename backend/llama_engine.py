@@ -145,10 +145,18 @@ class LlamaEngine:
     def chat(self, user_message: str, history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         Conversational assistant for creative sound design, scriptwriting, and studio advice.
+        Raises an error if the model is not installed.
         """
         user_message = user_message.strip()
         if not user_message:
             return "How can I assist you with your audio production today?"
+
+        from models_manager import is_llama_installed
+        if not is_llama_installed():
+            raise RuntimeError("Llama 3 model is not installed. Please download Llama 3 in Model Manager or run Start_AudioStudio.bat.")
+
+        if not self.is_loaded or self.model is None:
+            self.load_model()
 
         if self.is_loaded and self.model is not None and self.tokenizer is not None:
             try:

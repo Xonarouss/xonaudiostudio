@@ -1,18 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, X, ChevronDown, ChevronUp, Copy, Check, MessageSquare, Wand2, Lightbulb } from 'lucide-react';
+import { Bot, Send, Sparkles, X, ChevronDown, ChevronUp, Copy, Check, Wand2, AlertCircle, DownloadCloud } from 'lucide-react';
 
-export default function AIAssistant({ onApplyPrompt, activeTab }) {
+export default function AIAssistant({ onApplyPrompt, activeTab, modelsStatus, onOpenModelManager }) {
   const [isOpen, setIsOpen] = useState(true);
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Hello! I am your **XonAudio AI Assistant** powered by local Llama.\n\nI can brainstorm sound effects, craft cinematic prompts, or write natural voice scripts for you. How can I help?'
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const isLlamaInstalled = modelsStatus?.llama?.installed === true;
+
+  // Initialize welcome message based on install status
+  useEffect(() => {
+    if (isLlamaInstalled) {
+      if (messages.length === 0) {
+        setMessages([
+          {
+            role: 'assistant',
+            content: 'Hello! I am your **XonAudio AI Assistant** powered by local Llama 3.\n\nI can brainstorm sound effects, craft cinematic prompts, or write natural voice scripts for you. How can I help?'
+          }
+        ]);
+      }
+    } else {
+      setMessages([
+        {
+          role: 'assistant',
+          content: '⚠️ **Llama 3 Model Not Installed**\n\nThe AI Assistant requires the local Llama 3 neural weights (2.8 GB). Please download the model to enable interactive studio chat and Magic Wand prompt refinement.'
+        }
+      ]);
+    }
+  }, [isLlamaInstalled]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -24,9 +43,36 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
     }
   }, [messages, isOpen]);
 
+  const handleDownloadLlama = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const res = await fetch('/api/models/download/llama', { method: 'POST' });
+      if (!res.ok) throw new Error('Download failed');
+      if (onOpenModelManager) onOpenModelManager();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleSend = async (textToSend) => {
     const text = textToSend || input;
     if (!text.trim() || isTyping) return;
+
+    if (!isLlamaInstalled) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: text },
+        {
+          role: 'assistant',
+          content: '⚠️ **Cannot generate response:** Llama 3 model weights are missing. Please download Llama 3 in the Model Manager tab or run Start_AudioStudio.bat to install all models.'
+        }
+      ]);
+      setInput('');
+      return;
+    }
 
     const newMessages = [...messages, { role: 'user', content: text }];
     setMessages(newMessages);
@@ -43,14 +89,21 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
         })
       });
 
-      if (!res.ok) throw new Error('Failed to get reply');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Failed to get reply' }));
+        throw new Error(err.detail || 'Llama engine error');
+      }
+
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (err) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'I had trouble connecting to the local Llama engine. Please verify the backend is running.'
-      }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `⚠️ **Error:** ${err.message || 'Could not communicate with local Llama engine. Please verify the model is installed.'}`
+        }
+      ]);
     } finally {
       setIsTyping(false);
     }
@@ -62,60 +115,82 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const quickPrompts = [
-    "Suggest a sci-fi laser sound prompt",
-    "Write a short commercial voice script",
-    "Describe a massive cinematic explosion",
-    "How to get the cleanest voice clone?"
+  const quickPrompts = activeTab === 'voicelab' ? [
+    "Refine this voice script with emotional pacing",
+    "Write a 15-second tech product introduction",
+    "How to make F5-TTS sound more conversational?"
+  ] : [
+    "Cinematic thunder and heavy rain on glass",
+    "Deep futuristic laser cannon explosion",
+    "Footsteps crunching on wet autumn leaves"
   ];
 
   return (
-    <aside 
-      aria-label="Llama AI Assistant"
-      className="fixed bottom-[390px] right-6 z-40 w-80 bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden font-sans transition-all duration-200 flex flex-col hover:shadow-2xl max-h-[460px]"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-cyan-50 border-b border-slate-100 select-none">
+    <aside className="w-80 sm:w-[340px] bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden font-sans transition-all duration-200 hover:shadow-2xl flex flex-col">
+      {/* Header matching Hardware Widget perfectly */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 via-purple-50/30 to-indigo-50/40 border-b border-slate-100 select-none">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-cyan-600 flex items-center justify-center text-white shadow-2xs">
-            <Bot className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-600 to-purple-600 text-white flex items-center justify-center shadow-xs">
+            <Bot className="w-3.5 h-3.5" />
           </div>
           <div>
             <span className="font-extrabold text-xs text-slate-900 tracking-tight block">Llama AI Assistant</span>
-            <span className="text-[10px] text-slate-500 block leading-tight">Prompt &amp; Foley Director</span>
+            <span className="text-[10px] text-slate-500 font-medium block">Prompt &amp; Foley Director</span>
           </div>
         </div>
-
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors"
-          title={isOpen ? "Minimize assistant" : "Expand assistant"}
-        >
-          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+            title={isOpen ? "Collapse assistant" : "Expand assistant"}
+          >
+            {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
+      {/* Collapsible Content */}
       {isOpen && (
         <>
-          {/* Chat Messages */}
-          <div className="p-3.5 space-y-3 overflow-y-auto flex-1 text-xs max-h-64 bg-slate-50/50">
+          {/* Missing Model Banner if not installed */}
+          {!isLlamaInstalled && (
+            <div className="p-3 bg-amber-50 border-b border-amber-200/80">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-[11px] text-amber-800 leading-tight">
+                  <span className="font-bold block">Model Not Installed</span>
+                  <span>Llama 3 is required for AI chat &amp; Magic Wand.</span>
+                </div>
+              </div>
+              <button
+                onClick={onOpenModelManager || handleDownloadLlama}
+                className="mt-2 w-full py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <DownloadCloud className="w-3.5 h-3.5" />
+                <span>Download Llama 3 (2.8 GB)</span>
+              </button>
+            </div>
+          )}
+
+          {/* Messages Container */}
+          <div className="h-60 sm:h-64 overflow-y-auto p-3 space-y-3 bg-slate-50/50 text-xs">
             {messages.map((m, idx) => (
               <div
                 key={idx}
                 className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`p-3 rounded-2xl max-w-[90%] leading-relaxed ${
+                  className={`p-3 rounded-2xl max-w-[92%] leading-relaxed ${
                     m.role === 'user'
-                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-xs shadow-xs'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs shadow-xs'
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-br-xs shadow-xs'
+                      : 'bg-white border border-slate-200/90 text-slate-800 rounded-bl-xs shadow-xs'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  <p className="whitespace-pre-wrap select-text text-[11px] sm:text-xs">{m.content}</p>
                 </div>
 
-                {m.role === 'assistant' && idx > 0 && (
-                  <div className="flex items-center gap-2 mt-1 ml-1 text-[10px] text-slate-400">
+                {m.role === 'assistant' && (
+                  <div className="flex items-center gap-3 mt-1.5 px-1 text-[10px] text-slate-400">
                     <button
                       onClick={() => copyToClipboard(m.content, idx)}
                       className="flex items-center gap-1 hover:text-slate-700 transition-colors"
@@ -147,14 +222,14 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Suggestions */}
-          {messages.length <= 2 && (
+          {/* Quick Suggestions (if installed) */}
+          {isLlamaInstalled && messages.length <= 2 && (
             <div className="px-3 py-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto text-[10px]">
               {quickPrompts.slice(0, 2).map((qp, i) => (
                 <button
                   key={i}
                   onClick={() => handleSend(qp)}
-                  className="px-2 py-1 rounded-md bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border border-slate-200 flex-shrink-0 transition-colors"
+                  className="px-2 py-1 rounded-md bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border border-slate-200 flex-shrink-0 transition-colors truncate max-w-[150px]"
                 >
                   {qp}
                 </button>
@@ -174,12 +249,13 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Llama for prompts or advice..."
-              className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600/30 text-slate-800 placeholder-slate-400"
+              disabled={!isLlamaInstalled}
+              placeholder={!isLlamaInstalled ? "Download Llama 3 in Settings to chat..." : "Ask Llama for prompts or advice..."}
+              className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600/30 text-slate-800 placeholder-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
-              disabled={!input.trim() || isTyping}
+              disabled={!isLlamaInstalled || !input.trim() || isTyping}
               className="p-2 rounded-xl bg-gradient-to-r from-cyan-600 to-purple-600 text-white disabled:opacity-40 hover:brightness-105 active:scale-95 transition-all shadow-xs"
             >
               <Send className="w-3.5 h-3.5" />
@@ -190,4 +266,3 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
     </aside>
   );
 }
-

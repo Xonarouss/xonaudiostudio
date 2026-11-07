@@ -396,10 +396,12 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             {/* Generate Action Button */}
             <button
               onClick={handleGenerate}
-              disabled={isGenerating}
+              disabled={isGenerating || !prompt.trim() || !isStableAudioReady}
               className={`w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-md transition-all duration-200 ${
                 isGenerating
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                  : !isStableAudioReady
+                  ? 'bg-amber-100 text-amber-800 cursor-not-allowed border border-amber-300'
                   : 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white hover:brightness-105 active:scale-[0.99] shadow-purple-600/20'
               }`}
             >
@@ -407,6 +409,11 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin text-purple-600" />
                   <span>Synthesizing Sound ({progressPercent}%)...</span>
+                </>
+              ) : !isStableAudioReady ? (
+                <>
+                  <AlertCircle className="w-5 h-5 text-amber-700" />
+                  <span>Stable Audio Not Installed (Download in Manager)</span>
                 </>
               ) : (
                 <>

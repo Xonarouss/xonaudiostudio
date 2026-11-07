@@ -28,7 +28,7 @@ export default function HardwareWidget({ systemInfo }) {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-72 bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden font-sans transition-all duration-200 hover:shadow-2xl">
+    <div className="w-80 sm:w-[340px] bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden font-sans transition-all duration-200 hover:shadow-2xl">
       {/* Header matching user's widget */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100 select-none">
         <div className="flex items-center gap-2">

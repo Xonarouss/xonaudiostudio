@@ -1,0 +1,74 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish Release Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build Standalone Portable ZIP
+        run: |
+          python scripts/build_release_zip.py
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "XonAudio Studio v1.0.0 — Production Release"
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            XonAudio-Studio-v1.0.0-Portable.zip
+          body: |
+            ## 🎙️ XonAudio Studio v1.0.0
+            ### The Sovereign Local AI Audio Workstation
+            **Built with passion by [Xonarous Inc](https://xonarous.nl)**
+
+            [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-blue.svg?style=for-the-badge&logo=windows)](https://xonarous.nl)
+            [![CUDA](https://img.shields.io/badge/CUDA-12.8%2B%20%7C%20PyTorch%202.12-green.svg?style=for-the-badge&logo=nvidia)](https://xonarous.nl)
+            [![Architecture](https://img.shields.io/badge/Architecture-Blackwell%20sm__120%20%7C%20Ada%20%7C%20Ampere-purple.svg?style=for-the-badge)](https://xonarous.nl)
+
+            ---
+
+            ### 📦 Quickstart (Standalone Portable ZIP)
+            1. Download `XonAudio-Studio-v1.0.0-Portable.zip` below.
+            2. Extract anywhere on your PC (e.g. `D:\XonAudio`).
+            3. Double-click `Start_AudioStudio.bat`. All AI models and dependencies are automatically verified and initialized!
+
+            ### ✨ Key Features
+            - **🗣️ Voice Lab:** High-fidelity zero-shot voice cloning with **F5-TTS v1 Base** (5–10s reference audio).
+            - **🎛️ Sound Studio:** 44.1kHz stereo cinematic Foley and sound effects with **Stable Audio Open 1.0** (1 to 47 seconds).
+            - **🪄 Llama 3 AI Co-Pilot:** Built-in prompt engineer and real-time audio advisor.
+            - **📊 Live Hardware Telemetry:** Real-time GPU utilization %, temperature (°C), VRAM, board power (W), RAM, and CPU.
+            - **💾 1-Click Clean Storage:** Purge checkpoints to instantly reclaim SSD space.
+            - **⚡ Native Blackwell Acceleration:** Optimized for NVIDIA RTX 5080/5090 (`sm_120`), Ada Lovelace, and Ampere.
+
+            ---
+            *Built and maintained by [Xonarous Inc](https://xonarous.nl). MIT Licensed.*

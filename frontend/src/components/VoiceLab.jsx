@@ -407,10 +407,12 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
             {/* Generate Action Button */}
             <button
               onClick={handleGenerate}
-              disabled={isGenerating}
+              disabled={isGenerating || !text.trim() || !isF5Ready}
               className={`w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-md transition-all duration-200 ${
                 isGenerating
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                  : !isF5Ready
+                  ? 'bg-amber-100 text-amber-800 cursor-not-allowed border border-amber-300'
                   : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 text-white hover:brightness-105 active:scale-[0.99] shadow-cyan-600/20'
               }`}
             >
@@ -418,6 +420,11 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin text-cyan-600" />
                   <span>Synthesizing Voice ({progressPercent}%)...</span>
+                </>
+              ) : !isF5Ready ? (
+                <>
+                  <AlertCircle className="w-5 h-5 text-amber-700" />
+                  <span>F5-TTS Not Installed (Download in Manager)</span>
                 </>
               ) : (
                 <>

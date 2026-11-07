@@ -33,6 +33,9 @@ from models_manager import (
     delete_model,
     get_system_metrics,
     get_all_generations,
+    is_f5_installed,
+    is_stable_audio_installed,
+    is_llama_installed,
     MODELS_DIR,
     OUTPUTS_DIR
 )
@@ -135,6 +138,11 @@ def api_unload_models():
 
 @app.post("/api/llama/enhance")
 def enhance_prompt(req: LlamaEnhanceRequest):
+    if not is_llama_installed():
+        raise HTTPException(
+            status_code=400,
+            detail="Llama 3 model is not installed. Please download Llama 3 in the Model Manager tab or run Start_AudioStudio.bat."
+        )
     try:
         enhanced = llama_engine.enhance_prompt(req.prompt, req.mode)
         return {"status": "success", "original": req.prompt, "enhanced": enhanced}
@@ -143,6 +151,11 @@ def enhance_prompt(req: LlamaEnhanceRequest):
 
 @app.post("/api/llama/chat")
 def llama_chat(req: LlamaChatRequest):
+    if not is_llama_installed():
+        raise HTTPException(
+            status_code=400,
+            detail="Llama 3 model is not installed. Please download Llama 3 in the Model Manager tab or run Start_AudioStudio.bat."
+        )
     try:
         reply = llama_engine.chat(req.message, req.history)
         return {"status": "success", "reply": reply}
@@ -187,6 +200,11 @@ async def generate_tts(
     nfe_steps: Optional[int] = Form(32),
     remove_silence: Optional[bool] = Form(True)
 ):
+    if not is_f5_installed():
+        raise HTTPException(
+            status_code=400,
+            detail="F5-TTS model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
+        )
     temp_ref_path = None
     try:
         if ref_audio:
@@ -220,6 +238,11 @@ async def generate_tts(
 
 @app.post("/api/sfx/generate")
 def generate_sfx(req: SFXGenerateRequest):
+    if not is_stable_audio_installed():
+        raise HTTPException(
+            status_code=400,
+            detail="Stable Audio Open model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
+        )
     try:
         audio_url = sfx_engine.generate(
             prompt=req.prompt,
