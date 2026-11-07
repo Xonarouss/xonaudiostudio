@@ -106,13 +106,15 @@ def clean_audio(
     output_path: Optional[str] = None,
     target_lufs: float = -20.0,
     trim_silence_enabled: bool = True,
+    max_duration_sec: Optional[float] = None,
 ) -> str:
     """
     Complete audio cleaning pipeline:
-    1. Loads audio (any format)
+    1. Loads audio (any format via soundfile)
     2. VAD: Trims leading & trailing silences (preserving 120ms safety pad)
-    3. Normalizes volume to -20 LUFS with peak limiter
-    4. Exports clean WAV file
+    3. Clamps duration to max_duration_sec (e.g. 10.0s for reference voices to prevent token overflow)
+    4. Normalizes volume to -20 LUFS with peak limiter
+    5. Exports clean WAV file
     """
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Audio file not found: {input_path}")
@@ -124,6 +126,12 @@ def clean_audio(
     if trim_silence_enabled and len(audio) > 0:
         audio = trim_silence(audio, sr, threshold_db=-42.0, pad_ms=120)
 
+    # Clamp maximum duration if specified (e.g. 10-12s for reference cloning audio)
+    if max_duration_sec is not None and max_duration_sec > 0 and len(audio) > 0:
+        max_samples = int(sr * max_duration_sec)
+        if len(audio) > max_samples:
+            audio = audio[:max_samples]
+
     # Normalize to -20 LUFS
     audio = normalize_lufs(audio, sr, target_lufs=target_lufs, peak_limit=0.95)
 
@@ -133,7 +141,7 @@ def clean_audio(
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             output_path = tmp.name
 
-    # Save as 24-bit PCM or float32 WAV
+    # Save as 16-bit PCM WAV
     sf.write(str(output_path), audio, sr, subtype='PCM_16')
     return str(output_path)
 

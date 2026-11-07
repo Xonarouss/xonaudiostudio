@@ -86,14 +86,17 @@ VOICES_DIR = BASE_DIR / "backend" / "voices"
 VOICES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Preset voice catalog — matches files in backend/voices/
-# ref_text="" means F5-TTS auto-transcribes using its built-in ASR
 PRESET_VOICES = [
-    {"id": "aria",    "name": "Aria",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "", "file": "aria.wav"},
-    {"id": "nova",    "name": "Nova",   "description": "Female · Expressive Story Voice", "gender": "female",  "ref_text": "",  "file": "nova.flac"},
-    {"id": "echo",    "name": "Echo",   "description": "Male · Deep Country Voice",       "gender": "male",    "ref_text": "",  "file": "echo.flac"},
-    {"id": "sage",    "name": "Sage",   "description": "Male · Town Narrator",            "gender": "male",    "ref_text": "",  "file": "sage.flac"},
-    {"id": "atlas",   "name": "Atlas",  "description": "Neutral · Professional",          "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature.", "file": "atlas.wav"},
-    {"id": "default", "name": "Default","description": "Built-in F5-TTS reference voice", "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature.", "file": "default.wav"},
+    {"id": "daan",    "name": "Daan 🇳🇱",   "description": "Nederlands (Man) · Helder & Krachtig",   "gender": "male",    "ref_text": "Hallo, mijn naam is Daan. Ik spreek vloeiend Nederlands met een heldere en natuurlijke stem.", "file": "daan_nl.wav"},
+    {"id": "femke",   "name": "Femke 🇳🇱",  "description": "Nederlands (Vrouw) · Warm & Vriendelijk","gender": "female",  "ref_text": "Hoi, ik ben Femke. Welkom bij de Nederlandse stem presets voor XonAudio Studio.", "file": "femke_nl.wav"},
+    {"id": "bram",    "name": "Bram 🇳🇱",   "description": "Nederlands (Man) · Diep & Rustgevend",   "gender": "male",    "ref_text": "Goedendag. Mijn naam is Bram. Ik ben een rustige en betrouwbare Nederlandse stem voor al jouw verhalen.", "file": "bram_nl.wav"},
+    {"id": "lotte",   "name": "Lotte 🇳🇱",  "description": "Nederlands (Vrouw) · Expressief & Fris", "gender": "female",  "ref_text": "Hoi allemaal! Ik ben Lotte. Laten we samen geweldige en expressieve Nederlandse audio maken.", "file": "lotte_nl.wav"},
+    {"id": "aria",    "name": "Aria 🇬🇧",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "", "file": "aria.wav"},
+    {"id": "nova",    "name": "Nova 🇬🇧",   "description": "Female · Expressive Story Voice", "gender": "female",  "ref_text": "",  "file": "nova.flac"},
+    {"id": "echo",    "name": "Echo 🇬🇧",   "description": "Male · Deep Country Voice",       "gender": "male",    "ref_text": "",  "file": "echo.flac"},
+    {"id": "sage",    "name": "Sage 🇬🇧",   "description": "Male · Town Narrator",            "gender": "male",    "ref_text": "",  "file": "sage.flac"},
+    {"id": "atlas",   "name": "Atlas 🇬🇧",  "description": "Neutral · Professional",          "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature.", "file": "atlas.wav"},
+    {"id": "default", "name": "Default",  "description": "Built-in F5-TTS reference voice", "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature.", "file": "default.wav"},
 ]
 
 app = FastAPI(
@@ -539,11 +542,11 @@ async def generate_tts(
                         if not resolved_ref_text:
                             resolved_ref_text = voice_def.get("ref_text", "")
 
-        # Clean reference audio: VAD silence trim + -20 LUFS volume normalization
+        # Clean reference audio: VAD silence trim + -20 LUFS volume normalization + clamp to 10s
         active_ref_path = temp_ref_path
         if temp_ref_path and os.path.exists(temp_ref_path):
             try:
-                cleaned_ref_path = clean_audio(temp_ref_path)
+                cleaned_ref_path = clean_audio(temp_ref_path, max_duration_sec=10.0)
                 active_ref_path = cleaned_ref_path
             except Exception as _c_err:
                 print(f"[TTS] Warning cleaning reference audio: {_c_err}")
@@ -609,7 +612,7 @@ async def generate_xtts(
         active_ref_path = temp_ref_path
         if temp_ref_path and os.path.exists(temp_ref_path):
             try:
-                cleaned_ref_path = clean_audio(temp_ref_path)
+                cleaned_ref_path = clean_audio(temp_ref_path, max_duration_sec=10.0)
                 active_ref_path = cleaned_ref_path
             except Exception as _c_err:
                 print(f"[XTTS] Warning cleaning reference audio: {_c_err}")
@@ -662,7 +665,7 @@ async def generate_fish(
         active_ref_path = temp_ref_path
         if temp_ref_path and os.path.exists(temp_ref_path):
             try:
-                cleaned_ref_path = clean_audio(temp_ref_path)
+                cleaned_ref_path = clean_audio(temp_ref_path, max_duration_sec=10.0)
                 active_ref_path = cleaned_ref_path
             except Exception as _c_err:
                 print(f"[Fish] Warning cleaning reference audio: {_c_err}")
@@ -742,7 +745,7 @@ def generate_sfx(req: SFXGenerateRequest):
                 prompt=req.prompt,
                 negative_prompt=req.negative_prompt,
                 duration=req.duration or 10.0,
-                steps=req.steps or 50,
+                steps=req.steps or 8,
                 cfg_scale=req.cfg_scale or 7.0,
                 seed=req.seed if req.seed is not None else -1
             )

@@ -8,10 +8,13 @@ import numpy as np
 import soundfile as sf
 import scipy.io.wavfile
 
+import json
+import sys
 import torch
 from models_manager import STABLE_AUDIO_DIR, AUDIOLDM_DIR, STABLE_AUDIO_3_DIR
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+SA3_REPO_DIR = BASE_DIR / "models" / "stable-audio-3-repo"
 OUTPUTS_DIR = BASE_DIR / "outputs" / "sfx"
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -20,7 +23,7 @@ class SFXEngine:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipe = None
         self.is_loaded = False
-        self.stable_3_pipe = None
+        self.sa3_model = None
         self.is_stable_3_loaded = False
         self.audioldm_pipe = None
         self.is_audioldm_loaded = False
@@ -30,6 +33,12 @@ class SFXEngine:
         """Loads Stable Audio Open pipeline onto CUDA (RTX 5080)."""
         if self.is_loaded and self.pipe is not None:
             return
+
+        # VRAM protection: offload heavy pipelines before loading SAO
+        if self.is_stable_3_loaded:
+            self.unload_stable_audio_3()
+        if self.is_audioldm_loaded:
+            self.unload_audioldm()
 
         print(f"[SFXEngine] Loading Stable Audio Open pipeline onto {self.device}...")
 
@@ -146,6 +155,12 @@ class SFXEngine:
         if self.is_audioldm_loaded and self.audioldm_pipe is not None:
             return
 
+        # VRAM protection: offload heavy pipelines before loading AudioLDM 2
+        if self.is_stable_3_loaded:
+            self.unload_stable_audio_3()
+        if self.is_loaded:
+            self.unload()
+
         print(f"[SFXEngine] Loading AudioLDM 2 pipeline onto {self.device}...")
         from diffusers import AudioLDM2Pipeline
 
@@ -248,51 +263,53 @@ class SFXEngine:
             torch.cuda.empty_cache()
 
     def load_stable_audio_3(self):
-        """Loads Stable Audio 3 Medium pipeline onto CUDA (RTX 5080)."""
-        if self.is_stable_3_loaded and self.stable_3_pipe is not None:
+        """Loads Stable Audio 3 Medium pipeline onto CUDA (RTX 5080) using the official local SA3 engine."""
+        if self.is_stable_3_loaded and self.sa3_model is not None:
             return
 
+        # Ensure VRAM headroom: offload other audio synthesis pipelines before loading SA3 (~8GB fp16)
+        if self.is_audioldm_loaded:
+            self.unload_audioldm()
+        if self.is_loaded:
+            self.unload()
+
         print(f"[SFXEngine] Loading Stable Audio 3 Medium pipeline onto {self.device}...")
-        from diffusers import StableAudioPipeline
 
-        local_files = list(STABLE_AUDIO_3_DIR.glob("**/*.safetensors")) + list(STABLE_AUDIO_3_DIR.glob("**/model_index.json"))
-        model_source = str(STABLE_AUDIO_3_DIR) if len(local_files) > 0 else "stabilityai/stable-audio-3-medium"
-        dtype = torch.float16 if self.device == "cuda" else torch.float32
+        if SA3_REPO_DIR.exists() and str(SA3_REPO_DIR) not in sys.path:
+            sys.path.insert(0, str(SA3_REPO_DIR))
 
-        try:
-            self.stable_3_pipe = StableAudioPipeline.from_pretrained(
-                model_source,
-                torch_dtype=dtype,
+        from stable_audio_3.loading_utils import load_diffusion_cond
+        from stable_audio_3.model import StableAudioModel
+
+        config_path = STABLE_AUDIO_3_DIR / "model_config.json"
+        ckpt_path = STABLE_AUDIO_3_DIR / "model.safetensors"
+
+        if not config_path.exists() or not ckpt_path.exists():
+            raise RuntimeError(
+                f"Stable Audio 3 Medium model files not found in {STABLE_AUDIO_3_DIR}. "
+                f"Please download it via Model Manager."
             )
-            self.stable_3_pipe = self.stable_3_pipe.to(self.device)
-            if hasattr(self.stable_3_pipe, "enable_attention_slicing"):
-                self.stable_3_pipe.enable_attention_slicing()
 
-            self.is_stable_3_loaded = True
-            print(f"[SFXEngine] Stable Audio 3 Medium successfully loaded onto {self.device}!")
-        except Exception as e:
-            if self.device == "cuda":
-                print(f"[SFXEngine] CUDA Stable Audio 3 warning ({e}). Falling back to CPU...")
-                try:
-                    self.device = "cpu"
-                    self.stable_3_pipe = StableAudioPipeline.from_pretrained(
-                        model_source,
-                        torch_dtype=torch.float32,
-                    ).to("cpu")
-                    self.is_stable_3_loaded = True
-                    print("[SFXEngine] Stable Audio 3 Medium loaded on CPU!")
-                    return
-                except Exception as e_cpu:
-                    raise RuntimeError(f"Could not load Stable Audio 3 Medium on CPU: {e_cpu}")
-            self.is_stable_3_loaded = False
-            raise RuntimeError(f"Error loading Stable Audio 3 Medium: {e}")
+        with open(config_path, "r", encoding="utf-8") as f:
+            sa3_config = json.load(f)
+
+        # Force local offline path for t5gemma text conditioning
+        for c in sa3_config.get("model", {}).get("conditioning", {}).get("configs", []):
+            if c.get("id") == "prompt" and "config" in c:
+                c["config"]["repo_id"] = str(STABLE_AUDIO_3_DIR)
+
+        use_half = (self.device == "cuda")
+        raw_model = load_diffusion_cond(sa3_config, str(ckpt_path), device=self.device, model_half=use_half)
+        self.sa3_model = StableAudioModel(raw_model, sa3_config, device=self.device, model_half=use_half)
+        self.is_stable_3_loaded = True
+        print(f"[SFXEngine] Stable Audio 3 Medium successfully loaded onto {self.device}!")
 
     def generate_stable_audio_3(
         self,
         prompt: str,
         negative_prompt: str = "low quality, harsh, distorted, speech",
         duration: float = 10.0,
-        steps: int = 50,
+        steps: int = 8,
         cfg_scale: float = 7.0,
         seed: int = -1
     ) -> str:
@@ -300,31 +317,32 @@ class SFXEngine:
         Generates 44.1kHz stereo sound effect from prompt using Stable Audio 3 Medium.
         Returns the relative URL path of the generated WAV file.
         """
-        if not self.is_stable_3_loaded:
+        if not self.is_stable_3_loaded or self.sa3_model is None:
             self.load_stable_audio_3()
 
         duration = max(1.0, min(47.0, float(duration)))
-        generator = None
-        if seed is not None and seed >= 0:
-            generator = torch.Generator(device=self.device).manual_seed(int(seed))
+        # SA3 Flow-Matching DiT: 8-12 steps produces pristine acoustic quality rapidly
+        effective_steps = max(4, min(30, int(steps))) if steps else 8
 
         filename = f"sfx_sa3_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename
 
-        print(f"[SFXEngine] Generating Stable Audio 3 Medium SFX: '{prompt}' ({duration}s, {steps} steps)...")
+        print(f"[SFXEngine] Generating Stable Audio 3 Medium SFX: '{prompt}' ({duration}s, {effective_steps} steps)...")
         try:
-            output = self.stable_3_pipe(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                audio_end_in_s=duration,
-                num_inference_steps=steps,
-                guidance_scale=cfg_scale,
-                generator=generator
-            )
+            with torch.inference_mode():
+                output_tensor = self.sa3_model.generate(
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
+                    duration=duration,
+                    steps=effective_steps,
+                    cfg_scale=float(cfg_scale),
+                    seed=int(seed) if seed is not None and seed >= 0 else -1,
+                )
 
-            audio = output.audios[0]
-            audio_np = audio.T.cpu().float().numpy()
-            sr = getattr(self.stable_3_pipe.vae, "sampling_rate", 44100)
+            # output_tensor shape: [batch, channels, samples]
+            audio = output_tensor[0].cpu().float().numpy()
+            audio_np = audio.T  # [samples, channels]
+            sr = self.sa3_model.model_config.get("sample_rate", 44100)
 
             max_val = np.max(np.abs(audio_np))
             if max_val > 0.99:
@@ -340,7 +358,7 @@ class SFXEngine:
     def unload_stable_audio_3(self):
         """Frees Stable Audio 3 Medium from VRAM."""
         print("[SFXEngine] Unloading Stable Audio 3 Medium from VRAM...")
-        self.stable_3_pipe = None
+        self.sa3_model = None
         self.is_stable_3_loaded = False
         gc.collect()
         if torch.cuda.is_available():

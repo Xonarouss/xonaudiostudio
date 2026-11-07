@@ -103,6 +103,11 @@ class FishEngine:
         from fish_speech.models.text2semantic.inference import load_model as load_llm
         from fish_speech.models.vqgan.inference import load_model as load_vqgan
 
+        if self.device == "cuda" and torch.cuda.is_available():
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+            torch.backends.cudnn.benchmark = True
+
         precision = torch.bfloat16 if self.device == "cuda" else torch.float32
 
         # Load the LLM (text → semantic tokens)
@@ -158,13 +163,30 @@ class FishEngine:
 
         if ref_audio_path and os.path.exists(ref_audio_path):
             try:
-                audio, sr = torchaudio.load(str(ref_audio_path))
-                if audio.shape[0] > 1:
-                    audio = audio.mean(0, keepdim=True)
-                audio = torchaudio.functional.resample(audio, sr, self._decoder.spec_transform.sample_rate)
+                # Load with soundfile to avoid TorchCodec errors on Windows
+                data, sr = sf.read(str(ref_audio_path), dtype="float32")
+                # Clamp reference audio to max 10.0 seconds to prevent token cache overflow
+                max_samples = int(sr * 10.0)
+                if len(data) > max_samples:
+                    data = data[:max_samples]
+
+                tensor = torch.from_numpy(data)
+                if tensor.ndim == 1:
+                    tensor = tensor.unsqueeze(0)
+                elif tensor.ndim == 2:
+                    tensor = tensor.mean(dim=1, keepdim=True).t() if tensor.shape[1] > 1 else tensor.t()
+
+                target_sr = self._decoder.spec_transform.sample_rate
+                audio = torchaudio.functional.resample(tensor, sr, target_sr)
                 audios = audio[None].to(self.device)
                 audio_lengths = torch.tensor([audios.shape[2]], device=self.device, dtype=torch.long)
-                prompt_tokens = self._decoder.encode(audios, audio_lengths)[0][0]
+                raw_tokens = self._decoder.encode(audios, audio_lengths)[0][0]
+
+                # Clamp semantic tokens to max 220 tokens (~10s at 21.5Hz) so KV cache never overflows 8192
+                if raw_tokens.shape[1] > 220:
+                    raw_tokens = raw_tokens[:, :220]
+
+                prompt_tokens = raw_tokens
                 prompt_text = ref_text or ""
             except Exception as e:
                 print(f"[FishEngine] Warning: Reference audio encode failed: {e}")
@@ -173,31 +195,32 @@ class FishEngine:
         char_count = len(gen_text)
         est_tokens = max(50, min(1024, int(char_count * 2.2) + 35))
 
-        responses = list(generate_long(
-            model=self._model,
-            device=self.device,
-            decode_one_token=self._decode_one_token,
-            text=gen_text,
-            num_samples=1,
-            max_new_tokens=est_tokens,
-            top_p=0.7,
-            repetition_penalty=1.5,
-            temperature=0.7,
-            compile=False,
-            iterative_prompt=True,
-            chunk_length=150,
-            prompt_text=[prompt_text] if prompt_text else None,
-            prompt_tokens=[prompt_tokens] if prompt_tokens is not None else None,
-        ))
+        with torch.inference_mode():
+            responses = list(generate_long(
+                model=self._model,
+                device=self.device,
+                decode_one_token=self._decode_one_token,
+                text=gen_text,
+                num_samples=1,
+                max_new_tokens=est_tokens,
+                top_p=0.7,
+                repetition_penalty=1.5,
+                temperature=0.7,
+                compile=False,
+                iterative_prompt=True,
+                chunk_length=150,
+                prompt_text=[prompt_text] if prompt_text else None,
+                prompt_tokens=[prompt_tokens] if prompt_tokens is not None else None,
+            ))
 
-        codes_list = [r.codes for r in responses if r.action == "sample" and r.codes is not None]
-        if not codes_list:
-            raise RuntimeError("Fish Speech produced no audio codes.")
+            codes_list = [r.codes for r in responses if r.action == "sample" and r.codes is not None]
+            if not codes_list:
+                raise RuntimeError("Fish Speech produced no audio codes.")
 
-        all_codes = torch.cat(codes_list, dim=1)
-        feature_lengths = torch.tensor([all_codes.shape[1]], device=self.device)
-        fake_audios, _ = self._decoder.decode(indices=all_codes[None], feature_lengths=feature_lengths)
-        audio = fake_audios[0, 0].float().detach().cpu().numpy()
+            all_codes = torch.cat(codes_list, dim=1)
+            feature_lengths = torch.tensor([all_codes.shape[1]], device=self.device)
+            fake_audios, _ = self._decoder.decode(indices=all_codes[None], feature_lengths=feature_lengths)
+            audio = fake_audios[0, 0].float().detach().cpu().numpy()
 
         sf.write(str(output_path), audio, self._decoder.spec_transform.sample_rate)
 

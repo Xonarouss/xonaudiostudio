@@ -43,9 +43,11 @@ def clean_speech_text(text: str) -> str:
 
     processed = text
 
-    # 1. Convert laughter tags to natural laugh interjection
-    processed = re.sub(r"\[(laugh|laughs|laughter|chuckle|giggle|haha)\]", " Haha! ", processed, flags=re.IGNORECASE)
-    processed = re.sub(r"\((laugh|laughs|laughter|chuckle|giggle|haha)\)", " Haha! ", processed, flags=re.IGNORECASE)
+    # 1. Convert laughter tags to natural expressive laugh interjections
+    # Modern neural TTS models (Fish Speech, XTTS-v2) produce authentic acoustic laughter
+    # when given rhythmic, multi-syllable laughter phrasing rather than a flat single 'Ha'
+    processed = re.sub(r"\[(laugh|laughs|laughter|chuckle|giggle|haha)\]", " haha, hahaha! ", processed, flags=re.IGNORECASE)
+    processed = re.sub(r"\((laugh|laughs|laughter|chuckle|giggle|haha)\)", " haha, hahaha! ", processed, flags=re.IGNORECASE)
 
     # 2. Convert sigh & pause to natural speech pauses
     processed = re.sub(r"\[(sigh|sighs|sighing|pause)\]", "... ", processed, flags=re.IGNORECASE)
