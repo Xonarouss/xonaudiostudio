@@ -1,3 +1,6 @@
+# Packages / Releases
+*.zip
+
 # Python
 venv/
 __pycache__/

@@ -3,12 +3,10 @@ import time
 import uuid
 import gc
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 import numpy as np
 import soundfile as sf
-
 import torch
-import torchaudio
 
 from models_manager import F5_DIR
 
@@ -19,56 +17,39 @@ OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 class TTSEngine:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = None
-        self.vocoder = None
+        self.f5 = None
         self.is_loaded = False
         print(f"[TTSEngine] Initialized on device: {self.device}")
 
     def load_model(self):
-        """Loads F5-TTS checkpoint into GPU memory."""
-        if self.is_loaded and self.model is not None:
+        """Loads F5-TTS model onto CUDA/CPU."""
+        if self.is_loaded and self.f5 is not None:
             return
 
         print(f"[TTSEngine] Loading F5-TTS onto {self.device}...")
 
-        # Search for local checkpoint in F5_DIR
+        # Search for local checkpoints in F5_DIR
         ckpt_files = list(F5_DIR.glob("**/*.safetensors")) + list(F5_DIR.glob("**/*.pt"))
         vocab_files = list(F5_DIR.glob("**/vocab.txt"))
 
-        ckpt_file = str(ckpt_files[0]) if ckpt_files else None
-        vocab_file = str(vocab_files[0]) if vocab_files else None
+        ckpt_file = str(ckpt_files[0]) if ckpt_files else ""
+        vocab_file = str(vocab_files[0]) if vocab_files else ""
 
         try:
-            # Try importing official f5_tts
-            from f5_tts.infer.utils_infer import load_model as f5_load_model, load_vocoder
-            from f5_tts.model import CFM, DiT
-
-            # Default model params
-            model_cls = DiT
-            model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)
-
-            self.model = f5_load_model(
-                model_cls=model_cls,
-                model_cfg=model_cfg,
-                ckpt_path=ckpt_file or "F5TTS_v1_Base/model_1200000.safetensors",
+            from f5_tts.api import F5TTS
+            # Instantiate using official F5TTS api
+            self.f5 = F5TTS(
+                model="F5TTS_v1_Base",
+                ckpt_file=ckpt_file,
                 vocab_file=vocab_file,
                 device=self.device
             )
-            self.vocoder = load_vocoder(vocoder_name="vocos", is_local=False, local_path="")
             self.is_loaded = True
-            print("[TTSEngine] F5-TTS successfully loaded!")
+            print("[TTSEngine] F5-TTS successfully loaded into memory!")
         except Exception as e:
-            print(f"[TTSEngine] Note on loading f5-tts: {e}")
-            # Try high-level F5TTS API if available
-            try:
-                from f5_tts.api import F5TTS
-                self.model = F5TTS(model_type="F5-TTS", ckpt_file=ckpt_file, vocab_file=vocab_file, device=self.device)
-                self.is_loaded = True
-                print("[TTSEngine] F5-TTS high level API loaded!")
-            except Exception as e2:
-                print(f"[TTSEngine] Warning: Could not instantiate F5-TTS yet: {e2}")
-                self.is_loaded = False
-                raise RuntimeError(f"F5-TTS model initialisatie mislukt: {e2}")
+            self.is_loaded = False
+            print(f"[TTSEngine] Error instantiating F5-TTS: {e}")
+            raise RuntimeError(f"Could not load F5-TTS model: {e}")
 
     def generate(
         self,
@@ -83,73 +64,56 @@ class TTSEngine:
         Synthesizes speech from text using F5-TTS voice cloning.
         Returns the relative URL path of the generated WAV file.
         """
-        if not self.is_loaded:
+        if not self.is_loaded or self.f5 is None:
             self.load_model()
 
         filename = f"tts_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename
 
-        print(f"[TTSEngine] Generating audio for text ({len(gen_text)} chars)...")
+        print(f"[TTSEngine] Generating voice audio ({len(gen_text)} chars)...")
 
-        # Create dummy reference if none provided
-        temp_ref_created = False
+        # Provide clean default reference if none given
         if not ref_audio_path or not os.path.exists(ref_audio_path):
-            dummy_ref = OUTPUTS_DIR / "_default_ref.wav"
-            if not dummy_ref.exists():
-                # Generate a clean 3-second tone or silence as baseline
+            default_ref = BASE_DIR / "backend" / "default_sample.wav"
+            if not default_ref.exists():
+                # Generate a clean 3-second gentle reference tone to bootstrap zero-shot
                 sr = 24000
                 t = np.linspace(0, 3, sr * 3, endpoint=False)
-                tone = 0.1 * np.sin(2 * np.pi * 220 * t)
-                sf.write(str(dummy_ref), tone, sr)
-            ref_audio_path = str(dummy_ref)
+                tone = 0.05 * np.sin(2 * np.pi * 220 * t)
+                sf.write(str(default_ref), tone, sr)
+            ref_audio_path = str(default_ref)
             if not ref_text:
-                ref_text = "Hallo en welkom."
-            temp_ref_created = True
+                ref_text = "Welcome to XonAudio Studio."
 
         try:
-            # If using f5_tts.api.F5TTS
-            if hasattr(self.model, 'infer'):
-                wav, sr, _ = self.model.infer(
-                    ref_file=ref_audio_path,
-                    ref_text=ref_text,
-                    gen_text=gen_text,
-                    file_wave=str(output_path),
-                    speed=speed,
-                    nfe_step=nfe_steps,
-                    remove_silence=remove_silence
-                )
-            else:
-                # Direct infer_process
-                from f5_tts.infer.utils_infer import infer_process
-                wav, sr, _ = infer_process(
-                    ref_audio=ref_audio_path,
-                    ref_text=ref_text,
-                    gen_text=gen_text,
-                    model_obj=self.model,
-                    vocoder=self.vocoder,
-                    mel_spec_type="vocos",
-                    speed=speed,
-                    nfe_step=nfe_steps,
-                    device=self.device
-                )
+            wav, sr, _ = self.f5.infer(
+                ref_file=ref_audio_path,
+                ref_text=ref_text or "Hello there.",
+                gen_text=gen_text,
+                file_wave=str(output_path),
+                speed=float(speed),
+                nfe_step=int(nfe_steps),
+                remove_silence=bool(remove_silence)
+            )
+
+            # Ensure file was written
+            if not output_path.exists() and wav is not None:
                 sf.write(str(output_path), wav, sr)
 
-            print(f"[TTSEngine] Generated successfully: {output_path}")
+            print(f"[TTSEngine] Audio generated successfully: {output_path}")
             return f"/outputs/tts/{filename}"
 
         except Exception as e:
-            print(f"[TTSEngine] Error during F5-TTS inference: {e}")
-            raise RuntimeError(f"F5-TTS generatiefout: {e}")
+            print(f"[TTSEngine] Error during inference: {e}")
+            raise RuntimeError(f"F5-TTS Voice Generation Error: {e}")
 
     def unload(self):
         """Frees model from VRAM."""
         print("[TTSEngine] Unloading F5-TTS from VRAM...")
-        self.model = None
-        self.vocoder = None
+        self.f5 = None
         self.is_loaded = False
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
 tts_engine = TTSEngine()
-

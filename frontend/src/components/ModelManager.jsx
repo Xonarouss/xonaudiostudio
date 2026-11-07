@@ -26,7 +26,7 @@ export default function ModelManager({
 
   const handleDownload = async (modelKey) => {
     setDownloadingModel(modelKey);
-    setMessage({ text: `Downloaden gestart voor ${modelKey}... Dit kan enkele minuten duren afhankelijk van je verbinding.`, type: 'info' });
+    setMessage({ text: `Downloading ${modelKey}... This might take a few moments depending on your network connection.`, type: 'info' });
 
     try {
       const res = await fetch(`/api/models/download/${modelKey}`, {
@@ -34,12 +34,12 @@ export default function ModelManager({
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Fout bij downloaden');
+        throw new Error(data.detail || 'Download error');
       }
-      setMessage({ text: `${data.message || 'Model succesvol gedownload!'}`, type: 'success' });
+      setMessage({ text: `${data.message || 'Model downloaded successfully!'}`, type: 'success' });
       await onRefresh();
     } catch (err) {
-      setMessage({ text: err.message || 'Download mislukt.', type: 'error' });
+      setMessage({ text: err.message || 'Download failed.', type: 'error' });
     } finally {
       setDownloadingModel(null);
     }
@@ -47,13 +47,13 @@ export default function ModelManager({
 
   const handleDelete = async (modelKey) => {
     const confirmText = modelKey === 'all'
-      ? 'Weet je zeker dat je ALLE modellen wilt verwijderen om schijfruimte vrij te maken?'
-      : `Weet je zeker dat je het checkpoint van ${modelKey} wilt verwijderen?`;
+      ? 'Are you sure you want to delete ALL models to free up storage space?'
+      : `Are you sure you want to delete the ${modelKey} checkpoint from your drive?`;
 
     if (!window.confirm(confirmText)) return;
 
     setDeletingModel(modelKey);
-    setMessage({ text: 'Modelbestanden verwijderen van schijf...', type: 'info' });
+    setMessage({ text: 'Removing model files from disk...', type: 'info' });
 
     try {
       const res = await fetch('/api/models/delete', {
@@ -63,12 +63,12 @@ export default function ModelManager({
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Fout bij verwijderen');
+        throw new Error(data.detail || 'Failed to delete model files');
       }
-      setMessage({ text: data.message || 'Bestanden succesvol verwijderd.', type: 'success' });
+      setMessage({ text: data.message || 'Files deleted successfully.', type: 'success' });
       await onRefresh();
     } catch (err) {
-      setMessage({ text: err.message || 'Verwijderen mislukt.', type: 'error' });
+      setMessage({ text: err.message || 'Deletion failed.', type: 'error' });
     } finally {
       setDeletingModel(null);
     }
@@ -78,10 +78,10 @@ export default function ModelManager({
     try {
       const res = await fetch('/api/models/unload', { method: 'POST' });
       const data = await res.json();
-      setMessage({ text: data.message || 'GPU VRAM succesvol vrijgemaakt!', type: 'success' });
+      setMessage({ text: data.message || 'GPU VRAM cleared successfully!', type: 'success' });
       await onRefresh();
     } catch (err) {
-      setMessage({ text: 'Kon VRAM niet vrijmaken.', type: 'error' });
+      setMessage({ text: 'Could not free VRAM.', type: 'error' });
     }
   };
 
@@ -92,22 +92,31 @@ export default function ModelManager({
     parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0)
   ).toFixed(2);
 
+  const gpuName = systemInfo?.gpu_name || 'GPU';
+  const vramUsed = systemInfo?.gpu_vram_used_gb || '0.0';
+  const vramTotal = systemInfo?.gpu_vram_total_gb || '0.0';
+  const vramPct = systemInfo?.gpu_vram_percent || 0;
+  const ramUsed = systemInfo?.ram_used_gb || '0.0';
+  const ramTotal = systemInfo?.ram_total_gb || '0.0';
+  const ramPct = systemInfo?.ram_percent || 0;
+  const diskFree = systemInfo?.disk_free_gb || '0.0';
+
   return (
     <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 glass-panel rounded-2xl border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200/90 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              Opslag &amp; Hardware Management
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Storage &amp; Hardware Management
             </span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <HardDrive className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <HardDrive className="w-6 h-6 text-cyan-600" />
             Model Manager &amp; Settings
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Beheer lokale AI-gewichten, monitor VRAM op de RTX 5080 en maak direct schijfruimte vrij.
+          <p className="text-xs text-slate-500 mt-1">
+            Manage neural weights, check for updates, monitor live GPU VRAM, and clean storage on demand.
           </p>
         </div>
 
@@ -115,19 +124,19 @@ export default function ModelManager({
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-studio-900 hover:bg-studio-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all active:scale-95"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all active:scale-95 shadow-2xs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
-            <span>Vernieuw Status</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-600' : ''}`} />
+            <span>Refresh Status</span>
           </button>
 
           <button
             onClick={() => handleDelete('all')}
             disabled={deletingModel === 'all' || totalSize === '0.00'}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
           >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-            <span>Verwijder Alles ({totalSize} GB)</span>
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            <span>Purge All ({totalSize} GB)</span>
           </button>
         </div>
       </div>
@@ -135,121 +144,106 @@ export default function ModelManager({
       {/* Alert / Feedback message */}
       {message.text && (
         <div
-          className={`p-4 rounded-xl border text-sm flex items-center justify-between ${
+          className={`p-4 rounded-xl border text-sm flex items-center justify-between animate-fadeIn shadow-xs ${
             message.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : message.type === 'error'
-              ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-              : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-cyan-50 border-cyan-200 text-cyan-800'
           }`}
         >
           <div className="flex items-center gap-2">
             {message.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
             ) : message.type === 'error' ? (
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 text-rose-600" />
             ) : (
-              <RefreshCw className="w-5 h-5 flex-shrink-0 animate-spin" />
+              <RefreshCw className="w-5 h-5 flex-shrink-0 animate-spin text-cyan-600" />
             )}
-            <span>{message.text}</span>
+            <span className="font-medium">{message.text}</span>
           </div>
           <button
             onClick={() => setMessage({ text: '', type: '' })}
             className="text-xs font-semibold hover:underline"
           >
-            Sluiten
+            Close
           </button>
         </div>
       )}
 
-      {/* Hardware Monitor Overview (RTX 5080 + Ryzen 7800X3D + Disk) */}
+      {/* Hardware Monitor Overview (White Mode) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* GPU VRAM Card */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Cpu className="w-4 h-4 text-cyan-400" />
-              Nvidia GeForce RTX 5080
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span className="flex items-center gap-1.5 text-slate-800">
+              <Cpu className="w-4 h-4 text-cyan-600" />
+              {gpuName}
             </span>
-            <span className="font-mono text-cyan-400">
-              {systemInfo?.gpu_vram_used_gb || '0.0'} / {systemInfo?.gpu_vram_total_gb || '16.0'} GB
+            <span className="font-mono text-cyan-700 font-bold">
+              {vramUsed} / {vramTotal} GB
             </span>
           </div>
-          {/* Progress bar */}
-          <div className="w-full bg-studio-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
             <div
-              className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${Math.min(
-                  100,
-                  ((parseFloat(systemInfo?.gpu_vram_used_gb || 0) /
-                    parseFloat(systemInfo?.gpu_vram_total_gb || 16)) *
-                    100)
-                )}%`,
-              }}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 h-full rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(100, Math.max(2, vramPct))}%` }}
             />
           </div>
           <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] text-slate-500 font-mono">16 GB GDDR7 VRAM</span>
+            <span className="text-[11px] text-slate-500 font-mono">Dedicated Video Memory</span>
             <button
               onClick={handleUnloadVRAM}
-              className="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium hover:underline"
+              className="text-[11px] text-cyan-700 hover:text-cyan-800 font-bold hover:underline"
             >
-              Maak VRAM Vrij
+              Clear VRAM Cache
             </button>
           </div>
         </div>
 
         {/* Disk Space Card */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Database className="w-4 h-4 text-purple-400" />
-              Schijfruimte (D: Schijf)
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span className="flex items-center gap-1.5 text-slate-800">
+              <Database className="w-4 h-4 text-purple-600" />
+              Storage Drive
             </span>
-            <span className="font-mono text-purple-400">
-              {systemInfo?.disk_free_gb || 'Beschikbaar'} GB Vrij
+            <span className="font-mono text-purple-700 font-bold">
+              {diskFree} GB Free
             </span>
           </div>
-          <div className="w-full bg-studio-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
             <div
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full"
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 h-full rounded-full"
               style={{ width: '45%' }}
             />
           </div>
           <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 font-mono">
-            <span>Model map: /models</span>
-            <span className="text-slate-400 font-medium">{totalSize} GB in gebruik</span>
+            <span>Model dir: /models</span>
+            <span className="text-slate-700 font-semibold">{totalSize} GB in use</span>
           </div>
         </div>
 
         {/* System RAM Card */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Layers className="w-4 h-4 text-emerald-400" />
-              Systeemgeheugen (RAM)
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span className="flex items-center gap-1.5 text-slate-800">
+              <Layers className="w-4 h-4 text-emerald-600" />
+              System RAM
             </span>
-            <span className="font-mono text-emerald-400">
-              {systemInfo?.ram_used_gb || '8.2'} / {systemInfo?.ram_total_gb || '64.0'} GB
+            <span className="font-mono text-emerald-700 font-bold">
+              {ramUsed} / {ramTotal} GB
             </span>
           </div>
-          <div className="w-full bg-studio-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
             <div
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full"
-              style={{
-                width: `${Math.min(
-                  100,
-                  ((parseFloat(systemInfo?.ram_used_gb || 8) /
-                    parseFloat(systemInfo?.ram_total_gb || 64)) *
-                    100)
-                )}%`,
-              }}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full"
+              style={{ width: `${Math.min(100, Math.max(2, ramPct))}%` }}
             />
           </div>
           <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 font-mono">
-            <span>AMD Ryzen 7 7800X3D</span>
-            <span className="text-emerald-400 font-medium">64 GB DDR5</span>
+            <span>Dynamic System Memory</span>
+            <span className="text-emerald-700 font-bold">{ramPct}% Utilized</span>
           </div>
         </div>
       </div>
@@ -257,45 +251,45 @@ export default function ModelManager({
       {/* Model Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Model 1: F5-TTS */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-5">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">
                   F5-TTS
                 </span>
-                <span className="text-xs text-slate-400">Voice Synthesis &amp; Cloning</span>
+                <span className="text-xs text-slate-500 font-medium">Voice Synthesis &amp; Cloning</span>
               </div>
               {f5.installed ? (
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Geïnstalleerd ({f5.size_gb} GB)
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({f5.size_gb} GB)
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Niet geïnstalleerd (~2.3 GB)
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~2.3 GB)
                 </span>
               )}
             </div>
 
-            <h3 className="text-lg font-bold text-white">F5-TTS Base Model</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              State-of-the-art non-autoregressieve flow-matching architectuur voor natuurlijke stemgeneratie en zero-shot stemkloonen met slechts 5-10 seconden referentie-audio.
+            <h3 className="text-lg font-bold text-slate-900">F5-TTS Base Model</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              State-of-the-art non-autoregressive flow-matching architecture for natural speech generation and zero-shot voice cloning with just 5-10s of reference audio.
             </p>
 
-            <div className="p-3 rounded-xl bg-studio-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
               <div className="flex justify-between">
-                <span>Bron:</span>
-                <span className="text-slate-300">Hugging Face (SWivid/F5-TTS)</span>
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">Hugging Face (SWivid/F5-TTS)</span>
               </div>
               <div className="flex justify-between">
-                <span>Lokale Map:</span>
-                <span className="text-slate-300 truncate max-w-[200px]">/models/f5-tts</span>
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/f5-tts</span>
               </div>
               <div className="flex justify-between">
-                <span>VRAM Voetafdruk:</span>
-                <span className="text-cyan-400">~2.2 GB VRAM</span>
+                <span>VRAM Footprint:</span>
+                <span className="text-cyan-700 font-bold">~2.2 GB VRAM</span>
               </div>
             </div>
           </div>
@@ -306,21 +300,21 @@ export default function ModelManager({
               <button
                 onClick={() => handleDelete('f5_tts')}
                 disabled={deletingModel === 'f5_tts'}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
               >
-                <Trash2 className="w-4 h-4 text-rose-400" />
-                <span>Verwijder ({f5.size_gb} GB)</span>
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({f5.size_gb} GB)</span>
               </button>
             ) : (
               <button
                 onClick={() => handleDownload('f5_tts')}
                 disabled={downloadingModel === 'f5_tts'}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-glow-cyan"
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-cyan-600/20"
               >
                 {downloadingModel === 'f5_tts' ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
-                    <span>Downloaden (~2.3 GB)...</span>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~2.3 GB)...</span>
                   </>
                 ) : (
                   <>
@@ -334,45 +328,45 @@ export default function ModelManager({
         </div>
 
         {/* Model 2: Stable Audio Open */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-5">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-purple-100 text-purple-800 border border-purple-200">
                   Stable Audio Open
                 </span>
-                <span className="text-xs text-slate-400">SFX &amp; Foley Diffusion</span>
+                <span className="text-xs text-slate-500 font-medium">SFX &amp; Foley Diffusion</span>
               </div>
               {stable.installed ? (
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Geïnstalleerd ({stable.size_gb} GB)
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({stable.size_gb} GB)
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Niet geïnstalleerd (~4.8 GB)
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~4.8 GB)
                 </span>
               )}
             </div>
 
-            <h3 className="text-lg font-bold text-white">Stable Audio Open 1.0</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Generatieve audiomodel van Stability AI voor geluidseffecten, foley, achtergrondatmosferen en instrumentale samples in 44.1kHz stereo tot 47 seconden.
+            <h3 className="text-lg font-bold text-slate-900">Stable Audio Open 1.0</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Generative diffusion audio model by Stability AI for sound effects, foley, background atmospheres, and instrumental samples in 44.1kHz stereo up to 47 seconds.
             </p>
 
-            <div className="p-3 rounded-xl bg-studio-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
               <div className="flex justify-between">
-                <span>Bron:</span>
-                <span className="text-slate-300">stabilityai/stable-audio-open-1.0</span>
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">stabilityai/stable-audio-open-1.0</span>
               </div>
               <div className="flex justify-between">
-                <span>Lokale Map:</span>
-                <span className="text-slate-300 truncate max-w-[200px]">/models/stable-audio-open</span>
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/stable-audio-open</span>
               </div>
               <div className="flex justify-between">
-                <span>VRAM Voetafdruk:</span>
-                <span className="text-purple-400">~4.5 GB VRAM (Float16)</span>
+                <span>VRAM Footprint:</span>
+                <span className="text-purple-700 font-bold">~4.5 GB VRAM (Float16)</span>
               </div>
             </div>
           </div>
@@ -383,21 +377,21 @@ export default function ModelManager({
               <button
                 onClick={() => handleDelete('stable_audio')}
                 disabled={deletingModel === 'stable_audio'}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
               >
-                <Trash2 className="w-4 h-4 text-rose-400" />
-                <span>Verwijder ({stable.size_gb} GB)</span>
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({stable.size_gb} GB)</span>
               </button>
             ) : (
               <button
                 onClick={() => handleDownload('stable_audio')}
                 disabled={downloadingModel === 'stable_audio'}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-glow-purple"
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-purple-600/20"
               >
                 {downloadingModel === 'stable_audio' ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-purple-400" />
-                    <span>Downloaden (~4.8 GB)...</span>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~4.8 GB)...</span>
                   </>
                 ) : (
                   <>
@@ -413,4 +407,3 @@ export default function ModelManager({
     </div>
   );
 }
-

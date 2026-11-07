@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, Radio, HardDrive, Settings, Volume2, Cpu, Sparkles, RefreshCw } from 'lucide-react';
+import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw } from 'lucide-react';
 import VoiceLab from './components/VoiceLab';
 import SoundStudio from './components/SoundStudio';
 import ModelManager from './components/ModelManager';
+import HardwareWidget from './components/HardwareWidget';
 import Footer from './components/Footer';
 
 export default function App() {
@@ -12,12 +13,22 @@ export default function App() {
     stable_audio: { installed: false, size_gb: '0.00' }
   });
   const [systemInfo, setSystemInfo] = useState({
-    gpu_name: 'NVIDIA GeForce RTX 5080',
-    gpu_vram_used_gb: '1.2',
-    gpu_vram_total_gb: '16.0',
-    ram_used_gb: '12.4',
-    ram_total_gb: '64.0',
-    disk_free_gb: '512'
+    gpu_name: 'GPU',
+    gpu_util_percent: 0,
+    gpu_temp_c: 0,
+    gpu_vram_used_gb: '0.0',
+    gpu_vram_total_gb: '0.0',
+    gpu_vram_percent: 0,
+    power_draw_w: 0,
+    power_limit_w: 0,
+    power_percent: 0,
+    cpu_util_percent: 0,
+    ram_used_gb: '0.0',
+    ram_total_gb: '0.0',
+    ram_percent: 0,
+    engine_mem_gb: '0.1',
+    disk_free_gb: '0.0',
+    engine_status: 'Engine Online'
   });
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
 
@@ -46,45 +57,49 @@ export default function App() {
 
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(fetchStatus, 15000); // refresh every 15s
+    const interval = setInterval(fetchStatus, 3000); // 3s interval for responsive hardware monitor
     return () => clearInterval(interval);
   }, []);
 
+  const gpuName = systemInfo?.gpu_name || 'GPU';
+  const vramUsed = systemInfo?.gpu_vram_used_gb || '0';
+  const vramTotal = systemInfo?.gpu_vram_total_gb || '0';
+
   return (
-    <div className="min-h-screen flex flex-col bg-studio-950 text-slate-100 gradient-mesh selection:bg-cyan-500 selection:text-black">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-studio-950/80 backdrop-blur-xl">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 light-mesh selection:bg-cyan-500 selection:text-white">
+      {/* Top Navbar in Crisp White */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-xs">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          {/* Logo & Title */}
+          {/* Logo & Brand Title */}
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 p-[1.5px] shadow-glow-cyan">
-              <div className="w-full h-full bg-studio-950 rounded-2xl flex items-center justify-center">
-                <Volume2 className="w-6 h-6 text-cyan-400" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-purple-600 p-[1.5px] shadow-sm flex-shrink-0">
+              <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center p-2">
+                <Volume2 className="w-6 h-6 text-cyan-600" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-extrabold tracking-tight text-white font-sans">
-                  AI AUDIO STUDIO
+                <h1 className="text-xl font-extrabold tracking-tight text-slate-900 font-sans">
+                  XONAUDIO STUDIO
                 </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                  PRO
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">
+                  OPEN SOURCE
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">
-                F5-TTS Voice Cloning &amp; Stable Audio Open Foley
+              <p className="text-xs text-slate-500 font-medium">
+                Neural Voice Cloning &amp; Foley Diffusion Workstation
               </p>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center bg-studio-900/90 p-1.5 rounded-2xl border border-slate-800">
+          {/* Navigation Tabs (White Mode) */}
+          <div className="flex items-center bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200">
             <button
               onClick={() => setActiveTab('voicelab')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                 activeTab === 'voicelab'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-glow-cyan'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-studio-800/50'
+                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <Mic className="w-4 h-4" />
@@ -93,10 +108,10 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('soundstudio')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                 activeTab === 'soundstudio'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-glow-purple'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-studio-800/50'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <Radio className="w-4 h-4" />
@@ -105,10 +120,10 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('models')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                 activeTab === 'models'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-glow-emerald'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-studio-800/50'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <HardDrive className="w-4 h-4" />
@@ -116,20 +131,20 @@ export default function App() {
             </button>
           </div>
 
-          {/* Hardware Quick-Indicator */}
+          {/* Dynamic Hardware Quick-Indicator in Header */}
           <div className="hidden lg:flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-studio-900 border border-slate-800 text-xs">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span className="text-slate-300 font-mono">RTX 5080</span>
-              <span className="text-cyan-400 font-mono font-semibold">
-                {systemInfo?.gpu_vram_used_gb || '0'} / 16GB
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-slate-700 font-semibold">{gpuName}</span>
+              <span className="text-cyan-700 font-mono font-bold">
+                {vramUsed} / {vramTotal} GB
               </span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main App Workspace */}
+      {/* Main Studio Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
         {activeTab === 'voicelab' && (
           <VoiceLab
@@ -155,9 +170,11 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer Branding */}
+      {/* Floating Dynamic Hardware Monitor matching user's image */}
+      <HardwareWidget systemInfo={systemInfo} />
+
+      {/* Footer with Dynamic Hardware Specs and Xonarous Inc Link */}
       <Footer systemInfo={systemInfo} />
     </div>
   );
 }
-

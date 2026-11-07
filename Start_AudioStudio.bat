@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title AI Audio Studio Launcher - Xonarous Inc
+title XonAudio Studio Launcher - Xonarous Inc
 color 0B
 
 set "SCRIPT_DIR=%~dp0"
@@ -8,99 +8,111 @@ if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 cd /d "%SCRIPT_DIR%"
 
 echo =====================================================================
-echo               AI AUDIO STUDIO - XONAROUS INC
-echo   Hardware: Nvidia RTX 5080 (16GB) + AMD Ryzen 7 7800X3D (64GB RAM)
+echo                  XONAUDIO STUDIO - XONAROUS INC
+echo   Next-Gen Local AI Audio Workstation (Voice Cloning ^& Foley FX)
 echo =====================================================================
 echo.
 
-:: 1. Controleer of Python beschikbaar is
+:: 1. Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [FOUT] Python is niet gevonden in Windows PATH!
-    echo Zorg dat Python 3.10 of 3.11 is geinstalleerd en 'Add to PATH' is aangevinkt.
+    echo [ERROR] Python was not found in your system PATH!
+    echo Please install Python 3.10 or 3.11 from python.org and check 'Add to PATH'.
     echo.
     pause
     exit /b 1
 )
 
-:: 2. Controleer of venv bestaat
+:: 2. Check Virtual Environment
 if not exist "venv\Scripts\activate.bat" (
-    echo [*] Virtuele Python omgeving [venv] aanmaken...
+    echo [*] Creating isolated virtual Python environment [venv]...
     python -m venv venv
     if errorlevel 1 (
-        echo [FOUT] Kon virtuele omgeving niet aanmaken.
+        echo [ERROR] Could not create virtual environment.
         pause
         exit /b 1
     )
-    echo [+] Virtuele omgeving succesvol aangemaakt.
+    echo [+] Virtual environment created successfully.
 )
 
-:: Activeer venv
+:: Activate venv
 call venv\Scripts\activate.bat
 
-:: 3. Controleer of benodigde pakketten geinstalleerd zijn in venv
+:: 3. Check Python dependencies
 python -c "import fastapi" >nul 2>&1
 if errorlevel 1 goto INSTALL_DEPS
 goto CHECK_FRONTEND
 
 :INSTALL_DEPS
 echo =====================================================================
-echo   EERSTE KEER: AI AUDIO STUDIO PAKKETTEN EN CUDA INSTALLEREN
+echo   FIRST-TIME SETUP: INSTALLING NEURAL PACKAGES ^& CUDA RUNTIME
 echo =====================================================================
 echo.
-echo [*] Stap 1/3: Pip upgraden...
+echo [*] Step 1/3: Upgrading pip...
 python -m pip install --upgrade pip
 
 echo.
-echo [*] Stap 2/3: PyTorch met CUDA 12.4 installeren voor RTX 5080...
-echo     (Dit duurt een paar minuten bij de allereerste start...)
+echo [*] Step 2/3: Installing PyTorch with CUDA 12.4 acceleration...
+echo     (This takes a few minutes on initial startup...)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 echo.
-echo [*] Stap 3/3: Backend vereisten (FastAPI, Transformers, Diffusers, F5-TTS) installeren...
+echo [*] Step 3/3: Installing neural studio dependencies (F5-TTS, Diffusers, etc.)...
 pip install -r backend\requirements.txt
 echo.
-echo [+] Installatie van pakketten voltooid!
+echo [+] Core dependencies installed successfully!
 echo.
 
 :CHECK_FRONTEND
-:: 4. Frontend controle
+:: 4. Check Frontend modules
 if not exist "frontend\node_modules" (
-    echo [*] Frontend dependencies installeren via npm...
+    echo [*] Installing frontend web dependencies...
     cd /d "%SCRIPT_DIR%\frontend"
     call npm install
     cd /d "%SCRIPT_DIR%"
 )
 
+:: 5. Desktop Shortcut Prompt (if shortcut doesn't exist on Desktop)
+set "DESKTOP_LNK=%USERPROFILE%\Desktop\XonAudio Studio.lnk"
+if not exist "!DESKTOP_LNK!" (
+    echo.
+    echo ---------------------------------------------------------------------
+    set /p "MK_SHORTCUT=[?] Would you like to create a Desktop shortcut with the XonAudio logo? [Y/N]: "
+    if /i "!MK_SHORTCUT!"=="Y" (
+        powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\scripts\create_desktop_shortcut.ps1"
+    )
+    echo ---------------------------------------------------------------------
+)
+
 echo.
-:: 5. Modelverificatie en automatische download
-echo [*] Modellen in /models controleren...
+:: 6. Model Verification & Auto-Update Check
+echo [*] Checking neural model weights and Hugging Face updates...
 python backend\download_models.py
 
 echo.
-:: 6. Start Backend en Frontend
-echo [*] AI Audio Studio servers starten...
+:: 7. Start Backend and Frontend Servers
+echo [*] Starting XonAudio Studio servers...
 echo.
 
-:: Start FastAPI backend
-start "AI Audio Studio - Backend (FastAPI)" cmd /k "cd /d "%SCRIPT_DIR%" && call venv\Scripts\activate.bat && python backend\main.py"
+:: Start FastAPI backend in dedicated window
+start "XonAudio Studio - Backend (FastAPI)" cmd /k "cd /d "%SCRIPT_DIR%" && call venv\Scripts\activate.bat && python backend\main.py"
 
-:: Start React Frontend via Vite
-start "AI Audio Studio - Frontend (Vite)" cmd /k "cd /d "%SCRIPT_DIR%\frontend" && npm run dev"
+:: Start React Frontend in dedicated window
+start "XonAudio Studio - Frontend (Vite)" cmd /k "cd /d "%SCRIPT_DIR%\frontend" && npm run dev"
 
-:: 7. Wacht 3 seconden en open standaardbrowser
-echo [*] De studio wordt geopend in je browser...
+:: 8. Wait 3 seconds and open default browser
+echo [*] Launching XonAudio Studio in your browser...
 timeout /t 3 /nobreak >nul
 start http://localhost:5173
 
 echo.
 echo =====================================================================
-echo    AI Audio Studio is gelanceerd!
-echo    - Web UI: http://localhost:5173 (of http://localhost:8000)
-echo    - FastAPI Docs: http://127.0.0.1:8000/docs
+echo    XonAudio Studio is now running!
+echo    - Web UI: http://localhost:5173 (or http://localhost:8000)
+echo    - API Docs: http://127.0.0.1:8000/docs
 echo.
-echo    Laat de twee zwarte terminalvensters openstaan tijdens gebruik.
-echo    Sluit ze om de servers te stoppen.
+echo    Keep the server terminal windows open during your session.
+echo    Close them anytime to stop the studio.
 echo =====================================================================
 echo.
 pause

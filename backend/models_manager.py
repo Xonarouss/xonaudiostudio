@@ -1,9 +1,11 @@
 import os
 import shutil
 import gc
+import json
 import subprocess
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 try:
     import torch
@@ -15,16 +17,75 @@ try:
 except ImportError:
     psutil = None
 
-from huggingface_hub import hf_hub_download, snapshot_download
+from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
 F5_DIR = MODELS_DIR / "f5-tts"
 STABLE_AUDIO_DIR = MODELS_DIR / "stable-audio-open"
+VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 
 # Ensure directories exist
 F5_DIR.mkdir(parents=True, exist_ok=True)
 STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
+def load_version_cache() -> Dict[str, Any]:
+    if VERSION_CACHE_FILE.exists():
+        try:
+            with open(VERSION_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_version_cache(cache: Dict[str, Any]):
+    try:
+        with open(VERSION_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, indent=2)
+    except Exception as e:
+        print(f"[ModelManager] Warning saving version cache: {e}")
+
+def get_remote_model_sha(repo_id: str) -> Optional[str]:
+    """Retrieves the latest commit SHA of a Hugging Face model repository."""
+    try:
+        api = HfApi()
+        info = api.model_info(repo_id=repo_id, timeout=6)
+        return info.sha
+    except Exception as e:
+        return None
+
+def check_for_model_updates() -> Dict[str, Dict[str, Any]]:
+    """
+    Checks if new weights/versions exist on Hugging Face for F5-TTS and Stable Audio Open.
+    Returns status indicating whether an update is available.
+    """
+    cache = load_version_cache()
+    repos = {
+        "f5_tts": "SWivid/F5-TTS",
+        "stable_audio": "stabilityai/stable-audio-open-1.0"
+    }
+
+    results = {}
+    for key, repo in repos.items():
+        is_installed = is_f5_installed() if key == "f5_tts" else is_stable_audio_installed()
+        cached_info = cache.get(key, {})
+        cached_sha = cached_info.get("sha")
+
+        remote_sha = get_remote_model_sha(repo)
+
+        update_available = False
+        if is_installed and remote_sha and cached_sha and remote_sha != cached_sha:
+            update_available = True
+
+        results[key] = {
+            "repo": repo,
+            "installed": is_installed,
+            "cached_sha": cached_sha,
+            "remote_sha": remote_sha,
+            "update_available": update_available
+        }
+
+    return results
 
 def get_dir_size_gb(path: Path) -> float:
     """Calculates total size of a directory in GB."""
@@ -86,7 +147,7 @@ def get_all_models_status() -> Dict[str, Any]:
 def download_model(model_key: str) -> Dict[str, Any]:
     """Downloads requested model checkpoints to the local models folder."""
     if model_key == "f5_tts":
-        print("[ModelManager] Downloading F5-TTS checkpoint from Hugging Face...")
+        print("[ModelManager] Downloading/Updating F5-TTS checkpoint from Hugging Face...")
         # Download model_1200000.safetensors and vocab.txt
         # SWivid/F5-TTS repository
         try:
@@ -95,7 +156,12 @@ def download_model(model_key: str) -> Dict[str, Any]:
                 local_dir=str(F5_DIR),
                 allow_patterns=["*F5TTS_v1_Base*", "*vocab*", "*.json", "*.txt"],
             )
-            return {"status": "success", "message": "F5-TTS model succesvol gedownload!"}
+            # Update cache with current remote SHA
+            sha = get_remote_model_sha("SWivid/F5-TTS")
+            cache = load_version_cache()
+            cache["f5_tts"] = {"sha": sha, "updated_at": datetime.now().isoformat()}
+            save_version_cache(cache)
+            return {"status": "success", "message": "F5-TTS model succesvol gedownload en bijgewerkt!"}
         except Exception as e:
             # Fallback to direct file download
             try:
@@ -109,18 +175,26 @@ def download_model(model_key: str) -> Dict[str, Any]:
                     filename="F5TTS_v1_Base/vocab.txt",
                     local_dir=str(F5_DIR),
                 )
+                sha = get_remote_model_sha("SWivid/F5-TTS")
+                cache = load_version_cache()
+                cache["f5_tts"] = {"sha": sha, "updated_at": datetime.now().isoformat()}
+                save_version_cache(cache)
                 return {"status": "success", "message": "F5-TTS checkpoints succesvol gedownload!"}
             except Exception as e2:
                 raise RuntimeError(f"Fout bij downloaden F5-TTS: {e2}")
 
     elif model_key == "stable_audio":
-        print("[ModelManager] Downloading Stable Audio Open 1.0 from Hugging Face...")
+        print("[ModelManager] Downloading/Updating Stable Audio Open 1.0 from Hugging Face...")
         try:
             snapshot_download(
                 repo_id="stabilityai/stable-audio-open-1.0",
                 local_dir=str(STABLE_AUDIO_DIR),
             )
-            return {"status": "success", "message": "Stable Audio Open model succesvol gedownload!"}
+            sha = get_remote_model_sha("stabilityai/stable-audio-open-1.0")
+            cache = load_version_cache()
+            cache["stable_audio"] = {"sha": sha, "updated_at": datetime.now().isoformat()}
+            save_version_cache(cache)
+            return {"status": "success", "message": "Stable Audio Open model succesvol gedownload en bijgewerkt!"}
         except Exception as e:
             raise RuntimeError(f"Fout bij downloaden Stable Audio Open: {e}")
 
@@ -157,58 +231,94 @@ def delete_model(model_key: str) -> Dict[str, Any]:
     }
 
 def get_system_metrics() -> Dict[str, Any]:
-    """Retrieves live hardware statistics for RTX 5080, Ryzen 7800X3D and Drive D:"""
-    gpu_name = "NVIDIA GeForce RTX 5080"
+    """Retrieves live dynamic hardware statistics matching Genux monitor widget."""
+    gpu_name = "NVIDIA GPU"
+    clean_name = "GPU"
+    gpu_util = 0
+    gpu_temp = 0
     vram_used = 0.0
     vram_total = 16.0
+    power_draw = 0
+    power_limit = 0
 
-    if torch and torch.cuda.is_available():
+    # Query nvidia-smi dynamically
+    try:
+        res = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,utilization.gpu,temperature.gpu,memory.used,memory.total,power.draw,power.limit", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, check=True, timeout=3
+        )
+        line = res.stdout.strip().split("\n")[0]
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 7:
+            gpu_name = parts[0]
+            clean_name = gpu_name.replace("NVIDIA GeForce ", "").replace("NVIDIA ", "")
+            gpu_util = int(float(parts[1]))
+            gpu_temp = int(float(parts[2]))
+            vram_used = round(float(parts[3]) / 1024, 1)
+            vram_total = round(float(parts[4]) / 1024, 1)
+            power_draw = int(float(parts[5]))
+            power_limit = int(float(parts[6]))
+    except Exception:
+        clean_name = gpu_name
+
+    # CPU Utilization
+    cpu_util = 0
+    if psutil:
         try:
-            gpu_name = torch.cuda.get_device_name(0)
-            vram_total = round(torch.cuda.get_device_properties(0).total_memory / (1024 ** 3), 1)
-            vram_used = round(torch.cuda.memory_allocated(0) / (1024 ** 3), 1)
+            cpu_util = int(psutil.cpu_percent(interval=None))
         except Exception:
             pass
-    else:
-        # Fallback to nvidia-smi if torch not yet initialized
+
+    # RAM
+    ram_used = "0.0"
+    ram_total = "0.0"
+    ram_percent = 0
+    if psutil:
         try:
-            res = subprocess.run(
-                ["nvidia-smi", "--query-gpu=name,memory.used,memory.total", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, check=True
-            )
-            line = res.stdout.strip().split("\n")[0]
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) >= 3:
-                gpu_name = parts[0]
-                vram_used = round(float(parts[1]) / 1024, 1)
-                vram_total = round(float(parts[2]) / 1024, 1)
+            mem = psutil.virtual_memory()
+            ram_used = f"{mem.used / (1024 ** 3):.1f}"
+            ram_total = f"{mem.total / (1024 ** 3):.1f}"
+            ram_percent = int(mem.percent)
+        except Exception:
+            pass
+
+    # Engine memory
+    engine_mem = "0.1"
+    if psutil:
+        try:
+            proc = psutil.Process()
+            engine_mem = f"{proc.memory_info().rss / (1024 ** 3):.1f}"
         except Exception:
             pass
 
     # Disk Free on drive containing workspace
+    disk_free_gb = "N/A"
     try:
         drive_path = BASE_DIR.anchor or "D:\\"
         disk_usage = shutil.disk_usage(drive_path)
-        disk_free_gb = round(disk_usage.free / (1024 ** 3), 1)
+        disk_free_gb = f"{disk_usage.free / (1024 ** 3):.1f}"
     except Exception:
-        disk_free_gb = "N/A"
+        pass
 
-    # RAM stats
-    ram_used = "N/A"
-    ram_total = "64.0"
-    if psutil:
-        try:
-            ram = psutil.virtual_memory()
-            ram_used = f"{ram.used / (1024 ** 3):.1f}"
-            ram_total = f"{ram.total / (1024 ** 3):.1f}"
-        except Exception:
-            pass
+    vram_pct = int((vram_used / max(vram_total, 1.0)) * 100)
+    power_pct = int((power_draw / max(power_limit, 1)) * 100) if power_limit > 0 else 0
 
     return {
-        "gpu_name": gpu_name,
+        "gpu_name": clean_name,
+        "gpu_full_name": gpu_name,
+        "gpu_util_percent": gpu_util,
+        "gpu_temp_c": gpu_temp,
         "gpu_vram_used_gb": f"{vram_used:.1f}",
         "gpu_vram_total_gb": f"{vram_total:.1f}",
+        "gpu_vram_percent": vram_pct,
+        "power_draw_w": power_draw,
+        "power_limit_w": power_limit,
+        "power_percent": power_pct,
+        "cpu_util_percent": cpu_util,
         "ram_used_gb": ram_used,
         "ram_total_gb": ram_total,
-        "disk_free_gb": f"{disk_free_gb}"
+        "ram_percent": ram_percent,
+        "engine_mem_gb": engine_mem,
+        "disk_free_gb": disk_free_gb,
+        "engine_status": "Engine Online"
     }

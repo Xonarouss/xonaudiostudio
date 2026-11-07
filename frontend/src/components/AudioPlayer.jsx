@@ -1,36 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Volume2, VolumeX, RotateCcw, Sparkles } from 'lucide-react';
+import { Play, Pause, Download, Volume2, VolumeX, RotateCcw, Repeat, Sparkles } from 'lucide-react';
 
-export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", duration: initialDuration }) {
+export default function AudioPlayer({ audioUrl, title = "Generated Audio", subtitle = "Ready for playback", duration: initialDuration }) {
   const audioRef = useRef(null);
-  const canvasRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(initialDuration || 0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
   const [waveformData, setWaveformData] = useState([]);
-  const animationFrameRef = useRef(null);
 
-  // Generate pseudo-waveform bars based on url hash for visual consistency
   useEffect(() => {
     if (!audioUrl) return;
-    const bars = 60;
+    const bars = 64;
     const data = [];
     let seed = 42;
     for (let i = 0; i < audioUrl.length; i++) {
       seed = (seed * 31 + audioUrl.charCodeAt(i)) % 1000;
     }
     for (let i = 0; i < bars; i++) {
-      const v = Math.sin((i / bars) * Math.PI) * 0.5 + 0.3 + (Math.sin(i * 1.5 + seed) * 0.2);
-      data.push(Math.max(0.15, Math.min(1.0, v)));
+      const v = Math.sin((i / bars) * Math.PI) * 0.5 + 0.3 + (Math.sin(i * 1.6 + seed) * 0.22);
+      data.push(Math.max(0.12, Math.min(1.0, v)));
     }
     setWaveformData(data);
     setIsPlaying(false);
     setCurrentTime(0);
   }, [audioUrl]);
 
-  // Audio event listeners
   const onLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
@@ -44,8 +41,10 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
   };
 
   const onEnded = () => {
-    setIsPlaying(false);
-    setCurrentTime(0);
+    if (!isLooping) {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    }
   };
 
   const togglePlay = () => {
@@ -54,14 +53,14 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(e => console.warn("Playback error:", e));
       setIsPlaying(true);
     }
   };
 
   const handleSeek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const newTime = pos * duration;
     if (audioRef.current) {
       audioRef.current.currentTime = newTime;
@@ -101,29 +100,39 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
   const progress = duration > 0 ? (currentTime / duration) : 0;
 
   return (
-    <div className="w-full glass-panel-glow rounded-2xl p-5 border border-cyan-500/20 bg-studio-900/90 shadow-glass transition-all">
+    <div className="w-full bg-white rounded-2xl p-5 border border-cyan-500/30 shadow-md animate-fadeIn">
       <audio
         ref={audioRef}
         src={audioUrl}
+        loop={isLooping}
         onLoadedMetadata={onLoadedMetadata}
         onTimeUpdate={onTimeUpdate}
         onEnded={onEnded}
       />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
-          <span className="text-sm font-semibold text-slate-200 tracking-wide">{title}</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse"></div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              {title}
+              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200">
+                WAV 44.1kHz
+              </span>
+            </h4>
+            <p className="text-[11px] text-slate-500">{subtitle}</p>
+          </div>
         </div>
+
         <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-cyan-300/80 bg-studio-950/80 px-2.5 py-1 rounded-md border border-slate-800">
+          <span className="font-mono text-xs text-slate-700 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
           <a
             href={audioUrl}
             download
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 transition-all hover:scale-105 active:scale-95"
-            title="Download WAV bestand"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+            title="Download high-resolution WAV"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download WAV</span>
@@ -131,14 +140,14 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
         </div>
       </div>
 
-      {/* Interactive Waveform Visualizer */}
+      {/* Interactive Waveform Visualizer (White Mode with crisp contrast) */}
       <div
         onClick={handleSeek}
-        className="group relative h-20 w-full rounded-xl bg-studio-950/90 border border-slate-800/80 p-3 flex items-center justify-between gap-1 cursor-pointer overflow-hidden select-none hover:border-cyan-500/40 transition-colors"
+        className="group relative h-20 w-full rounded-xl bg-slate-50 border border-slate-200 p-3 flex items-center justify-between gap-1 cursor-pointer overflow-hidden select-none hover:border-cyan-400 transition-colors"
       >
-        {/* Glow progress bar */}
+        {/* Glow progress overlay */}
         <div
-          className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-cyan-500/20 border-r-2 border-cyan-400 pointer-events-none transition-all duration-75"
+          className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-cyan-500/15 via-blue-500/15 to-cyan-500/25 border-r-2 border-cyan-600 pointer-events-none transition-all duration-75"
           style={{ width: `${progress * 100}%` }}
         />
 
@@ -148,13 +157,13 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
           return (
             <div
               key={idx}
-              className={`flex-1 rounded-full transition-all duration-150 ${
+              className={`flex-1 rounded-full transition-all duration-100 ${
                 isPassed
-                  ? 'bg-gradient-to-t from-cyan-500 to-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.6)]'
-                  : 'bg-slate-700/60 group-hover:bg-slate-600/70'
+                  ? 'bg-gradient-to-t from-cyan-600 to-cyan-400 shadow-xs'
+                  : 'bg-slate-300 group-hover:bg-slate-400'
               }`}
               style={{
-                height: `${Math.max(12, val * 100)}%`,
+                height: `${Math.max(14, val * 100)}%`,
                 transform: isPlaying && isPassed ? `scaleY(${0.85 + Math.random() * 0.3})` : 'scaleY(1)',
               }}
             />
@@ -167,8 +176,8 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
         <div className="flex items-center gap-2">
           <button
             onClick={togglePlay}
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-glow-cyan hover:brightness-110 active:scale-95 transition-all"
-            aria-label={isPlaying ? 'Pauzeren' : 'Afspelen'}
+            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md hover:brightness-105 active:scale-95 transition-all"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
           </button>
@@ -180,10 +189,20 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
                 setCurrentTime(0);
               }
             }}
-            className="p-2.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-studio-800 transition-colors"
-            title="Herstarten"
+            className="p-2.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+            title="Restart from beginning"
           >
             <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setIsLooping(!isLooping)}
+            className={`p-2.5 rounded-lg transition-colors ${
+              isLooping ? 'text-cyan-700 bg-cyan-100 border border-cyan-300' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            }`}
+            title="Toggle loop"
+          >
+            <Repeat className="w-4 h-4" />
           </button>
         </div>
 
@@ -191,9 +210,9 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
         <div className="flex items-center gap-2.5">
           <button
             onClick={toggleMute}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-studio-800 transition-colors"
+            className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
           >
-            {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4" />}
+            {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4" />}
           </button>
           <input
             type="range"
@@ -202,11 +221,10 @@ export default function AudioPlayer({ audioUrl, title = "Gegenereerde Audio", du
             step="0.05"
             value={isMuted ? 0 : volume}
             onChange={handleVolumeChange}
-            className="w-20 accent-cyan-400"
+            className="w-20 accent-cyan-600"
           />
         </div>
       </div>
     </div>
   );
 }
-

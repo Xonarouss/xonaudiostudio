@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AI Audio Studio - Linux / WSL2 Launcher
+# XonAudio Studio - Linux / WSL2 Automated Launcher
 # Built by Xonarous Inc (https://xonarous.nl)
 
 set -e
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "====================================================================="
-echo "               AI AUDIO STUDIO - XONAROUS INC"
+echo "               XONAUDIO STUDIO - XONAROUS INC"
 echo "====================================================================="
 echo ""
 
@@ -32,11 +32,11 @@ fi
 
 # 3. Frontend check
 if [ ! -d "frontend/node_modules" ]; then
-    echo "[*] Installing frontend dependencies..."
+    echo "[*] Installing frontend web dependencies..."
     cd frontend && npm install && cd ..
 fi
 
-# 4. Model check
+# 4. Model check & auto-update
 python backend/download_models.py
 
 # 5. Launch Servers
