@@ -205,10 +205,26 @@ def download_model(model_key: str) -> Dict[str, Any]:
 
     elif model_key == "stable_audio":
         print("[ModelManager] Downloading/Updating Stable Audio Open 1.0 from Hugging Face...")
+        hf_token = os.environ.get("HF_TOKEN", "").strip()
+        if not hf_token:
+            # Try loading from .env file
+            env_file = BASE_DIR / ".env"
+            if env_file.exists():
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    if line.startswith("HF_TOKEN="):
+                        hf_token = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        break
+        if not hf_token:
+            raise RuntimeError(
+                "Stable Audio Open 1.0 is a gated model on Hugging Face. "
+                "You must accept the license at https://huggingface.co/stabilityai/stable-audio-open-1.0 "
+                "and set your HF_TOKEN in the .env file (HF_TOKEN=hf_your_token_here)."
+            )
         try:
             snapshot_download(
                 repo_id="stabilityai/stable-audio-open-1.0",
                 local_dir=str(STABLE_AUDIO_DIR),
+                token=hf_token,
             )
             sha = get_remote_model_sha("stabilityai/stable-audio-open-1.0")
             cache = load_version_cache()

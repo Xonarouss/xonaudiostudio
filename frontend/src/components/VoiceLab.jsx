@@ -243,17 +243,22 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
         throw new Error(err.detail || 'Upload failed');
       }
       const data = await res.json();
-      setUploadSuccess(`"${data.name}" saved to your voice library!`);
+      setUploadSuccess(`"${data.name}" saved! Click the Preset Voices tab to select it.`);
       setUploadFile(null);
       setUploadName('');
       if (uploadInputRef.current) uploadInputRef.current.value = '';
-      await loadVoices();
-      // Auto-select the newly uploaded voice
-      setVoices(prev => {
-        const v = prev.find(x => x.id === data.voice_id);
-        if (v) setSelectedVoice(v);
-        return prev;
-      });
+      // Reload voices, then auto-select the newly uploaded one
+      const refreshRes = await fetch('/api/voices');
+      if (refreshRes.ok) {
+        const freshVoices = await refreshRes.json();
+        setVoices(freshVoices);
+        const newVoice = freshVoices.find(v => v.id === data.voice_id);
+        if (newVoice) {
+          setSelectedVoice(newVoice);
+          // Switch to preset tab so user can see it selected
+          setVoiceMode('preset');
+        }
+      }
     } catch (e) {
       setErrorMessage(e.message || 'Could not upload custom voice.');
     } finally {
@@ -382,6 +387,51 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
               placeholder="Enter speech script here (multilingual support)..."
               className="w-full rounded-xl p-4 text-sm glass-input text-slate-900 placeholder-slate-400 resize-none font-sans leading-relaxed shadow-xs"
             />
+            {/* F5-TTS Style Token Quick-Insert Buttons */}
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">Quick-Insert Speech Cues</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: '😄 Ha ha ha!',   insert: ' Ha ha ha!' },
+                  { label: '😤 Hmm...',       insert: ' Hmm...' },
+                  { label: '😮 Oh!',          insert: ' Oh!' },
+                  { label: '😯 Wow!',         insert: ' Wow!' },
+                  { label: '⏸ Pause',         insert: '...' },
+                  { label: '🤔 Well...',      insert: ' Well...' },
+                  { label: '😲 Whoa!',        insert: ' Whoa!' },
+                  { label: '💨 (sighs)',       insert: ' (sighs)' },
+                  { label: '😬 Ugh',          insert: ' Ugh.' },
+                  { label: '🎉 Yes!',         insert: ' Yes!' },
+                  { label: '🔡 EMPHASIS',     insert: ' ' },
+                ].map((token) => (
+                  <button
+                    key={token.label}
+                    type="button"
+                    onClick={() => {
+                      if (token.label === '🔡 EMPHASIS') {
+                        // Uppercase the last word
+                        setText(prev => {
+                          const words = prev.trimEnd().split(' ');
+                          if (words.length > 0) {
+                            words[words.length - 1] = words[words.length - 1].toUpperCase();
+                          }
+                          return words.join(' ');
+                        });
+                      } else {
+                        setText(prev => prev + token.insert);
+                      }
+                    }}
+                    className="px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 border border-slate-200 hover:border-cyan-300 transition-all active:scale-95"
+                    title={`Insert: ${token.insert}`}
+                  >
+                    {token.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400">
+                💡 F5-TTS reads text naturally — punctuation controls rhythm. Use "..." for pauses, "!" for emphasis, and UPPERCASE WORDS for stress.
+              </p>
+            </div>
           </div>
 
           {/* ===== VOICE PICKER ===== */}

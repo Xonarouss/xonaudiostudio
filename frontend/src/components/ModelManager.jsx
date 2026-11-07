@@ -11,7 +11,9 @@ import {
   Database,
   ArrowDownCircle,
   ShieldAlert,
-  Server
+  Server,
+  Key,
+  ExternalLink
 } from 'lucide-react';
 
 export default function ModelManager({
@@ -23,6 +25,28 @@ export default function ModelManager({
   const [downloadingModel, setDownloadingModel] = useState(null);
   const [deletingModel, setDeletingModel] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [hfToken, setHfToken] = useState('');
+  const [savingToken, setSavingToken] = useState(false);
+
+  const handleSaveHFToken = async () => {
+    if (!hfToken.trim()) return;
+    setSavingToken(true);
+    try {
+      const res = await fetch('/api/settings/hf_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: hfToken.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to save token');
+      setMessage({ text: data.message, type: 'success' });
+      setHfToken('');
+    } catch (err) {
+      setMessage({ text: err.message, type: 'error' });
+    } finally {
+      setSavingToken(false);
+    }
+  };
 
   const handleDownload = async (modelKey) => {
     setDownloadingModel(modelKey);
@@ -371,6 +395,36 @@ export default function ModelManager({
               </div>
             </div>
           </div>
+
+          {/* HF Token required notice + input */}
+          {!stable.installed && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
+              <p className="text-[11px] text-amber-800 font-semibold">
+                🔑 Requires Hugging Face Token (gated model)
+              </p>
+              <p className="text-[11px] text-amber-700 leading-relaxed">
+                1. Create a free account at <a href="https://huggingface.co" target="_blank" rel="noreferrer" className="underline font-semibold">huggingface.co</a>.<br/>
+                2. Accept the license at <a href="https://huggingface.co/stabilityai/stable-audio-open-1.0" target="_blank" rel="noreferrer" className="underline font-semibold">stable-audio-open-1.0</a>.<br/>
+                3. Generate a token at <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noreferrer" className="underline font-semibold">settings/tokens</a> and paste below.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={hfToken}
+                  onChange={e => setHfToken(e.target.value)}
+                  placeholder="hf_your_token_here"
+                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-amber-300 bg-white focus:outline-none focus:border-amber-500 text-slate-800 placeholder-slate-400"
+                />
+                <button
+                  onClick={handleSaveHFToken}
+                  disabled={savingToken || !hfToken.trim()}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition-all"
+                >
+                  {savingToken ? 'Saving...' : 'Save Token'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex items-center gap-3 pt-2">

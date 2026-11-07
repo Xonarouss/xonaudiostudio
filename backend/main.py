@@ -49,13 +49,14 @@ VOICES_DIR = BASE_DIR / "backend" / "voices"
 VOICES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Preset voice catalog — matches files in backend/voices/
+# ref_text="" means F5-TTS auto-transcribes using its built-in ASR
 PRESET_VOICES = [
-    {"id": "aria",    "name": "Aria",  "description": "Female · Warm & Clear",          "gender": "female",  "ref_text": "Some call me nature, others call me mother nature."},
-    {"id": "nova",    "name": "Nova",  "description": "Female · Bright & Expressive",   "gender": "female",  "ref_text": "Some call me nature, others call me mother nature."},
-    {"id": "echo",    "name": "Echo",  "description": "Male · Deep & Authoritative",    "gender": "male",    "ref_text": "Some call me nature, others call me mother nature."},
-    {"id": "atlas",   "name": "Atlas", "description": "Male · Natural & Casual",        "gender": "male",    "ref_text": "Some call me nature, others call me mother nature."},
-    {"id": "sage",    "name": "Sage",  "description": "Neutral · Calm & Professional",  "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature."},
-    {"id": "default", "name": "Default (Basic)", "description": "Built-in reference voice", "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature."},
+    {"id": "aria",    "name": "Aria",   "description": "Female · Warm & Natural",        "gender": "female",  "ref_text": "Some call me nature, others call me mother nature.", "file": "aria.wav"},
+    {"id": "nova",    "name": "Nova",   "description": "Female · Expressive Story Voice", "gender": "female",  "ref_text": "",  "file": "nova.flac"},
+    {"id": "echo",    "name": "Echo",   "description": "Male · Deep Country Voice",       "gender": "male",    "ref_text": "",  "file": "echo.flac"},
+    {"id": "sage",    "name": "Sage",   "description": "Male · Town Narrator",            "gender": "male",    "ref_text": "",  "file": "sage.flac"},
+    {"id": "atlas",   "name": "Atlas",  "description": "Neutral · Professional",          "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature.", "file": "atlas.wav"},
+    {"id": "default", "name": "Default","description": "Built-in F5-TTS reference voice", "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature.", "file": "default.wav"},
 ]
 
 app = FastAPI(
@@ -81,6 +82,9 @@ app.mount("/outputs", StaticFiles(directory=str(OUTPUTS_DIR)), name="outputs")
 # Request Models
 class DeleteModelRequest(BaseModel):
     model_key: str  # "f5_tts", "stable_audio", "llama", or "all"
+
+class HFTokenRequest(BaseModel):
+    token: str
 
 class SFXGenerateRequest(BaseModel):
     prompt: str
@@ -147,6 +151,21 @@ def api_unload_models():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/settings/hf_token")
+def save_hf_token(req: HFTokenRequest):
+    """Saves the Hugging Face token to .env file for Stable Audio download."""
+    token = req.token.strip()
+    env_file = BASE_DIR / ".env"
+    lines = []
+    if env_file.exists():
+        existing = env_file.read_text(encoding="utf-8").splitlines()
+        lines = [l for l in existing if not l.startswith("HF_TOKEN=")]
+    lines.append(f"HF_TOKEN={token}")
+    env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Also set in current process environment
+    os.environ["HF_TOKEN"] = token
+    return {"status": "success", "message": "HF Token saved. You can now download Stable Audio Open."}
+
 # ----------------- LLAMA AI ASSISTANT & MAGIC WAND -----------------
 
 @app.post("/api/llama/enhance")
@@ -209,9 +228,17 @@ def list_voices():
     """Returns the preset voice catalog plus any user-uploaded custom voices."""
     voices = []
     for v in PRESET_VOICES:
-        wav = VOICES_DIR / f"{v['id']}.wav"
+        voice_file = v.get("file", f"{v['id']}.wav")
+        wav = VOICES_DIR / voice_file
+        # Try fallback extensions
+        if not wav.exists():
+            for ext in [".wav", ".flac", ".mp3"]:
+                candidate = VOICES_DIR / f"{v['id']}{ext}"
+                if candidate.exists():
+                    wav = candidate
+                    break
         voices.append({
-            **v,
+            **{k: val for k, val in v.items() if k != "file"},
             "type": "preset",
             "audio_url": f"/api/voices/{v['id']}/audio" if wav.exists() else None,
             "available": wav.exists(),
@@ -219,26 +246,38 @@ def list_voices():
     # Scan for user-uploaded custom voices
     custom_dir = VOICES_DIR / "custom"
     if custom_dir.exists():
-        for f in sorted(custom_dir.glob("*.wav")):
-            voices.append({
-                "id": f"custom_{f.stem}",
-                "name": f.stem.replace("_", " ").title(),
-                "description": "Custom · Uploaded by you",
-                "gender": "custom",
-                "ref_text": "",
-                "type": "custom",
-                "audio_url": f"/api/voices/custom/{f.name}/audio",
-                "available": True,
-            })
+        for f in sorted(custom_dir.glob("*.*")):
+            if f.suffix.lower() in [".wav", ".flac", ".mp3", ".m4a"]:
+                voices.append({
+                    "id": f"custom_{f.stem}",
+                    "name": f.stem.replace("_", " ").title(),
+                    "description": "Custom · Uploaded by you",
+                    "gender": "custom",
+                    "ref_text": "",
+                    "type": "custom",
+                    "audio_url": f"/api/voices/custom/{f.name}/audio",
+                    "available": True,
+                })
     return voices
 
 @app.get("/api/voices/{voice_id}/audio")
 def get_preset_voice_audio(voice_id: str):
-    """Streams a preset voice WAV for in-browser preview."""
-    wav = VOICES_DIR / f"{voice_id}.wav"
-    if not wav.exists():
-        raise HTTPException(status_code=404, detail=f"Voice '{voice_id}' audio not found")
-    return FileResponse(str(wav), media_type="audio/wav")
+    """Streams a preset voice audio file for in-browser preview."""
+    # Find the voice definition
+    voice_def = next((v for v in PRESET_VOICES if v["id"] == voice_id), None)
+    if voice_def:
+        voice_file = voice_def.get("file", f"{voice_id}.wav")
+        wav = VOICES_DIR / voice_file
+        if wav.exists():
+            media_type = "audio/flac" if wav.suffix == ".flac" else "audio/wav"
+            return FileResponse(str(wav), media_type=media_type)
+    # Fallback: try extensions
+    for ext in [".wav", ".flac", ".mp3"]:
+        wav = VOICES_DIR / f"{voice_id}{ext}"
+        if wav.exists():
+            media_type = "audio/flac" if ext == ".flac" else "audio/wav"
+            return FileResponse(str(wav), media_type=media_type)
+    raise HTTPException(status_code=404, detail=f"Voice '{voice_id}' audio not found")
 
 @app.get("/api/voices/custom/{filename}/audio")
 def get_custom_voice_audio(filename: str):
@@ -317,25 +356,35 @@ async def generate_tts(
             # Resolve preset or custom voice from library
             if voice_id.startswith("custom_"):
                 filename = voice_id[len("custom_"):]
-                # Try with .wav extension
-                candidate = VOICES_DIR / "custom" / f"{filename}.wav"
-                if not candidate.exists():
-                    # Try without extension transform
-                    for f in (VOICES_DIR / "custom").glob(f"{filename}.*"):
-                        candidate = f
+                # Try with various extensions
+                for ext in [".wav", ".flac", ".mp3", ".m4a"]:
+                    candidate = VOICES_DIR / "custom" / f"{filename}{ext}"
+                    if candidate.exists():
+                        temp_ref_path = str(candidate)
                         break
-                if candidate.exists():
-                    temp_ref_path = str(candidate)
+                # Fallback: try exact match in custom dir
+                if not temp_ref_path:
+                    for f in (VOICES_DIR / "custom").glob(f"{filename}.*"):
+                        temp_ref_path = str(f)
+                        break
             else:
-                preset_wav = VOICES_DIR / f"{voice_id}.wav"
-                if preset_wav.exists():
-                    temp_ref_path = str(preset_wav)
-                    # Look up the ref_text for this preset
-                    for pv in PRESET_VOICES:
-                        if pv["id"] == voice_id:
-                            if not resolved_ref_text:
-                                resolved_ref_text = pv["ref_text"]
-                            break
+                # Preset voice — find from PRESET_VOICES definition
+                voice_def = next((v for v in PRESET_VOICES if v["id"] == voice_id), None)
+                if voice_def:
+                    voice_file = voice_def.get("file", f"{voice_id}.wav")
+                    preset_path = VOICES_DIR / voice_file
+                    if not preset_path.exists():
+                        # Fallback: try extensions
+                        for ext in [".wav", ".flac"]:
+                            c = VOICES_DIR / f"{voice_id}{ext}"
+                            if c.exists():
+                                preset_path = c
+                                break
+                    if preset_path.exists():
+                        temp_ref_path = str(preset_path)
+                        # Use the preset's ref_text (empty string = auto-transcribe)
+                        if not resolved_ref_text:
+                            resolved_ref_text = voice_def.get("ref_text", "")
 
         audio_url = tts_engine.generate(
             gen_text=gen_text,

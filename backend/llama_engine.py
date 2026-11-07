@@ -1,6 +1,7 @@
 import os
 import gc
 import re
+import traceback
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import torch
@@ -40,7 +41,7 @@ class LlamaEngine:
 
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_path,
-                torch_dtype=dtype,
+                dtype=dtype,          # NOTE: use 'dtype=', NOT 'torch_dtype=' (deprecated)
                 low_cpu_mem_usage=True
             ).to(self.device)
 
@@ -54,7 +55,7 @@ class LlamaEngine:
                     self.tokenizer = AutoTokenizer.from_pretrained(model_path)
                     self.model = AutoModelForCausalLM.from_pretrained(
                         model_path,
-                        torch_dtype=torch.float32,
+                        dtype=torch.float32,
                         low_cpu_mem_usage=True
                     ).to("cpu")
                     self.is_loaded = True
@@ -62,8 +63,48 @@ class LlamaEngine:
                     return
                 except Exception as e_cpu:
                     print(f"[LlamaEngine] Could not load Llama on CPU: {e_cpu}")
+                    traceback.print_exc()
             self.is_loaded = False
-            print(f"[LlamaEngine] Note: Llama neural weights not yet loaded ({e}). Using expert acoustic rule engine.")
+            print(f"[LlamaEngine] Failed to load Llama: {e}")
+            traceback.print_exc()
+
+    def _run_inference(self, messages: list, max_new_tokens: int = 256) -> str:
+        """
+        Core inference helper — handles BatchEncoding vs plain tensor correctly.
+        apply_chat_template returns a BatchEncoding on newer transformers, not a plain tensor.
+        """
+        encoded = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_tensors="pt"
+        )
+
+        # Handle both BatchEncoding and plain tensor returns
+        if hasattr(encoded, "input_ids"):
+            input_ids = encoded.input_ids.to(self.device)
+        else:
+            input_ids = encoded.to(self.device)
+
+        input_len = input_ids.shape[1]
+
+        with torch.no_grad():
+            output_ids = self.model.generate(
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                pad_token_id=self.tokenizer.eos_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+            )
+
+        # Decode only the new tokens (skip prompt)
+        response = self.tokenizer.decode(
+            output_ids[0][input_len:],
+            skip_special_tokens=True
+        ).strip()
+        return response
 
     def enhance_prompt(self, user_input: str, mode: str = "sfx") -> str:
         """
@@ -82,13 +123,13 @@ class LlamaEngine:
                         "You are an expert Hollywood sound designer and Foley artist for Stable Audio Open. "
                         "Transform the user's idea into a single highly-detailed, acoustic-rich prompt. "
                         "Include environment, materials, dynamics, reverberation, and quality terms. "
-                        "OUTPUT ONLY THE ENHANCED PROMPT, no introduction, no quotes."
+                        "OUTPUT ONLY THE ENHANCED PROMPT, no introduction, no quotes, no extra lines."
                     )
                 else:
                     system_msg = (
                         "You are a master voice director for neural text-to-speech (F5-TTS). "
                         "Refine the script for maximum natural cadence, emotional resonance, and clear punctuation. "
-                        "OUTPUT ONLY THE REFINED SCRIPT, no commentary."
+                        "OUTPUT ONLY THE REFINED SCRIPT, nothing else."
                     )
 
                 messages = [
@@ -96,34 +137,17 @@ class LlamaEngine:
                     {"role": "user", "content": f"Enhance this: {user_input}"}
                 ]
 
-                inputs = self.tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=True,
-                    add_generation_prompt=True,
-                    return_tensors="pt"
-                ).to(self.device)
-
-                with torch.no_grad():
-                    outputs = self.model.generate(
-                        inputs,
-                        max_new_tokens=90,
-                        temperature=0.7,
-                        do_sample=True,
-                        pad_token_id=self.tokenizer.eos_token_id
-                    )
-
-                response = self.tokenizer.decode(outputs[0][inputs.shape[1]:], skip_special_tokens=True).strip()
-                # Clean up quotes
+                response = self._run_inference(messages, max_new_tokens=90)
                 response = re.sub(r'^["\']|["\']$', '', response)
                 if len(response) > 10:
                     return response
             except Exception as e:
-                print(f"[LlamaEngine] Neural inference note: {e}")
+                print(f"[LlamaEngine] Neural enhance error: {e}")
+                traceback.print_exc()
 
         # High-Quality Expert Acoustic Heuristics (Instant & Reliable Fallback)
         if mode == "sfx":
             lower = user_input.lower()
-            enhancements = []
             if any(w in lower for w in ["explosion", "blast", "bomb", "detonate"]):
                 return f"Massive cinematic {user_input}, deep sub-bass shockwave rumbling through the air, reverberating debris falling onto concrete, intense Hollywood trailer impact, 44.1kHz stereo"
             elif any(w in lower for w in ["rain", "storm", "thunder", "water"]):
@@ -137,7 +161,6 @@ class LlamaEngine:
             else:
                 return f"Cinematic high-definition {user_input}, rich spatial reverberation, tactile acoustic foley, dynamic frequency response, 44.1kHz high-resolution stereo"
         else:
-            # Voice refinement: adds expressive cadence
             if not user_input.endswith(('.', '!', '?')):
                 user_input += '.'
             return user_input
@@ -145,7 +168,7 @@ class LlamaEngine:
     def chat(self, user_message: str, history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         Conversational assistant for creative sound design, scriptwriting, and studio advice.
-        Raises an error if the model is not installed.
+        Raises RuntimeError if the model is not installed.
         """
         user_message = user_message.strip()
         if not user_message:
@@ -164,63 +187,26 @@ class LlamaEngine:
                     "You are the XonAudio Studio AI Assistant by Xonarous Inc. "
                     "You are an expert sound designer, Foley artist, and voice director. "
                     "Provide concise, highly actionable advice on audio generation, prompts, voice cloning, and audio acoustics. "
-                    "Keep responses professional, friendly, and structured."
+                    "Keep responses professional, friendly, and structured. Max 3 paragraphs."
                 )
 
                 messages = [{"role": "system", "content": system_prompt}]
                 if history:
-                    for h in history[-4:]: # Keep recent context
+                    for h in history[-4:]:
                         messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
                 messages.append({"role": "user", "content": user_message})
 
-                inputs = self.tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=True,
-                    add_generation_prompt=True,
-                    return_tensors="pt"
-                ).to(self.device)
+                response = self._run_inference(messages, max_new_tokens=256)
+                if response:
+                    return response
+                raise RuntimeError("Empty response from model")
 
-                with torch.no_grad():
-                    outputs = self.model.generate(
-                        inputs,
-                        max_new_tokens=256,
-                        temperature=0.7,
-                        do_sample=True,
-                        pad_token_id=self.tokenizer.eos_token_id
-                    )
-
-                response = self.tokenizer.decode(outputs[0][inputs.shape[1]:], skip_special_tokens=True).strip()
-                return response
             except Exception as e:
                 print(f"[LlamaEngine] Chat generation error: {e}")
+                traceback.print_exc()
+                raise RuntimeError(f"Llama inference failed: {e}")
 
-        # Intelligent Fallback Advisor
-        lower = user_message.lower()
-        if "f5" in lower or "voice" in lower or "clone" in lower:
-            return (
-                "🎙️ **Voice Lab Tips:**\n"
-                "• **Reference Audio:** 5–10 seconds of clear, dry speech (no background music) gives the best similarity.\n"
-                "• **Reference Transcript:** Entering what the speaker says in the audio eliminates accent mismatches.\n"
-                "• **NFE Steps:** 32 steps is the sweet spot for crisp flow-matching on your GPU.\n\n"
-                "Would you like me to write or refine a script for you?"
-            )
-        elif "sound" in lower or "sfx" in lower or "foley" in lower or "prompt" in lower:
-            return (
-                "🎛️ **Sound Studio Tips:**\n"
-                "• **Acoustic Descriptions:** Always specify materials (*metal, gravel, glass*) and acoustics (*reverberant hall, close-up, outdoor*).\n"
-                "• **Duration:** Match your duration to the natural sound (e.g. 3–5s for punches/lasers, 15–30s for ambient weather).\n"
-                "• **Magic Wand (🪄):** Type a basic keyword and click the magic wand to let me expand it into a Hollywood-grade prompt!"
-            )
-        else:
-            return (
-                f"Hello! I am your **XonAudio AI Assistant** powered by local Llama.\n\n"
-                f"You asked: *\"{user_message}\"*\n\n"
-                f"I can help you:\n"
-                f"1. 🪄 **Craft & Enhance Prompts** for Foley, ambient drones, and sound effects.\n"
-                f"2. 🗣️ **Refine Scripts** for F5-TTS voice cloning with natural cadence.\n"
-                f"3. 🎚️ **Suggest Optimal Settings** for CFG scale, NFE steps, and durations.\n\n"
-                f"What sound or voice are you looking to create?"
-            )
+        raise RuntimeError("Llama model could not be loaded. Check the backend logs for details.")
 
     def unload(self):
         """Frees Llama from VRAM."""
@@ -233,4 +219,3 @@ class LlamaEngine:
             torch.cuda.empty_cache()
 
 llama_engine = LlamaEngine()
-
