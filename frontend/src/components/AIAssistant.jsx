@@ -190,3 +190,4 @@ export default function AIAssistant({ onApplyPrompt, activeTab }) {
     </aside>
   );
 }
+
