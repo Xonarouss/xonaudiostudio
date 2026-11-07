@@ -1,0 +1,25 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Audio outputs (keep folder, ignore files except sample)
+outputs/tts/*.wav
+outputs/sfx/*.wav
+!outputs/tts/.gitkeep
+!outputs/sfx/.gitkeep
+
+# Models checkpoints (large weights)
+models/f5-tts/*
+models/stable-audio-open/*
+!models/f5-tts/.gitkeep
+!models/stable-audio-open/.gitkeep
+
