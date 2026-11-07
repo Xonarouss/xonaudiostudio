@@ -45,6 +45,18 @@ from llama_engine import llama_engine
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
+VOICES_DIR = BASE_DIR / "backend" / "voices"
+VOICES_DIR.mkdir(parents=True, exist_ok=True)
+
+# Preset voice catalog — matches files in backend/voices/
+PRESET_VOICES = [
+    {"id": "aria",    "name": "Aria",  "description": "Female · Warm & Clear",          "gender": "female",  "ref_text": "Some call me nature, others call me mother nature."},
+    {"id": "nova",    "name": "Nova",  "description": "Female · Bright & Expressive",   "gender": "female",  "ref_text": "Some call me nature, others call me mother nature."},
+    {"id": "echo",    "name": "Echo",  "description": "Male · Deep & Authoritative",    "gender": "male",    "ref_text": "Some call me nature, others call me mother nature."},
+    {"id": "atlas",   "name": "Atlas", "description": "Male · Natural & Casual",        "gender": "male",    "ref_text": "Some call me nature, others call me mother nature."},
+    {"id": "sage",    "name": "Sage",  "description": "Neutral · Calm & Professional",  "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature."},
+    {"id": "default", "name": "Default (Basic)", "description": "Built-in reference voice", "gender": "neutral", "ref_text": "Some call me nature, others call me mother nature."},
+]
 
 app = FastAPI(
     title="XonAudio Studio API",
@@ -63,6 +75,7 @@ app.add_middleware(
 
 # Ensure outputs directory exists and mount static route
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+VOICES_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=str(OUTPUTS_DIR)), name="outputs")
 
 # Request Models
@@ -189,12 +202,97 @@ def delete_generation(file_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----------------- VOICE LIBRARY ENDPOINTS -----------------
+
+@app.get("/api/voices")
+def list_voices():
+    """Returns the preset voice catalog plus any user-uploaded custom voices."""
+    voices = []
+    for v in PRESET_VOICES:
+        wav = VOICES_DIR / f"{v['id']}.wav"
+        voices.append({
+            **v,
+            "type": "preset",
+            "audio_url": f"/api/voices/{v['id']}/audio" if wav.exists() else None,
+            "available": wav.exists(),
+        })
+    # Scan for user-uploaded custom voices
+    custom_dir = VOICES_DIR / "custom"
+    if custom_dir.exists():
+        for f in sorted(custom_dir.glob("*.wav")):
+            voices.append({
+                "id": f"custom_{f.stem}",
+                "name": f.stem.replace("_", " ").title(),
+                "description": "Custom · Uploaded by you",
+                "gender": "custom",
+                "ref_text": "",
+                "type": "custom",
+                "audio_url": f"/api/voices/custom/{f.name}/audio",
+                "available": True,
+            })
+    return voices
+
+@app.get("/api/voices/{voice_id}/audio")
+def get_preset_voice_audio(voice_id: str):
+    """Streams a preset voice WAV for in-browser preview."""
+    wav = VOICES_DIR / f"{voice_id}.wav"
+    if not wav.exists():
+        raise HTTPException(status_code=404, detail=f"Voice '{voice_id}' audio not found")
+    return FileResponse(str(wav), media_type="audio/wav")
+
+@app.get("/api/voices/custom/{filename}/audio")
+def get_custom_voice_audio(filename: str):
+    """Streams a user-uploaded custom voice WAV."""
+    wav = VOICES_DIR / "custom" / filename
+    if not wav.exists():
+        raise HTTPException(status_code=404, detail="Custom voice audio not found")
+    return FileResponse(str(wav), media_type="audio/wav")
+
+@app.post("/api/voices/upload")
+async def upload_custom_voice(
+    voice_file: UploadFile = File(...),
+    voice_name: Optional[str] = Form(""),
+):
+    """Saves a user-uploaded voice reference audio as a reusable custom voice."""
+    custom_dir = VOICES_DIR / "custom"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+
+    if not voice_file.content_type or not voice_file.content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="Please upload a valid audio file (WAV, MP3, FLAC).")
+
+    stem = voice_name.strip().replace(" ", "_") if voice_name and voice_name.strip() else Path(voice_file.filename).stem
+    # Sanitize
+    stem = "".join(c for c in stem if c.isalnum() or c in "_-")[:40] or "custom_voice"
+    suffix = Path(voice_file.filename).suffix or ".wav"
+    out_path = custom_dir / f"{stem}{suffix}"
+
+    with open(str(out_path), "wb") as f:
+        shutil.copyfileobj(voice_file.file, f)
+
+    return {
+        "status": "success",
+        "voice_id": f"custom_{stem}",
+        "name": stem.replace("_", " ").title(),
+        "audio_url": f"/api/voices/custom/{stem}{suffix}/audio",
+        "message": f"Custom voice '{stem}' saved successfully."
+    }
+
+@app.delete("/api/voices/custom/{filename}")
+def delete_custom_voice(filename: str):
+    """Deletes a user-uploaded custom voice."""
+    wav = VOICES_DIR / "custom" / filename
+    if not wav.exists():
+        raise HTTPException(status_code=404, detail="Custom voice not found")
+    wav.unlink()
+    return {"status": "success", "message": f"Custom voice '{filename}' deleted."}
+
 # ----------------- AUDIO GENERATION ENDPOINTS -----------------
 
 @app.post("/api/tts/generate")
 async def generate_tts(
     gen_text: str = Form(...),
     ref_audio: Optional[UploadFile] = File(None),
+    voice_id: Optional[str] = Form(""),
     ref_text: Optional[str] = Form(""),
     speed: Optional[float] = Form(1.0),
     nfe_steps: Optional[int] = Form(32),
@@ -206,17 +304,43 @@ async def generate_tts(
             detail="F5-TTS model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
         )
     temp_ref_path = None
+    resolved_ref_text = ref_text or ""
+
     try:
-        if ref_audio:
+        if ref_audio and ref_audio.filename:
+            # User uploaded a file directly in this request
             suffix = Path(ref_audio.filename).suffix or ".wav"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                 shutil.copyfileobj(ref_audio.file, tmp)
                 temp_ref_path = tmp.name
+        elif voice_id:
+            # Resolve preset or custom voice from library
+            if voice_id.startswith("custom_"):
+                filename = voice_id[len("custom_"):]
+                # Try with .wav extension
+                candidate = VOICES_DIR / "custom" / f"{filename}.wav"
+                if not candidate.exists():
+                    # Try without extension transform
+                    for f in (VOICES_DIR / "custom").glob(f"{filename}.*"):
+                        candidate = f
+                        break
+                if candidate.exists():
+                    temp_ref_path = str(candidate)
+            else:
+                preset_wav = VOICES_DIR / f"{voice_id}.wav"
+                if preset_wav.exists():
+                    temp_ref_path = str(preset_wav)
+                    # Look up the ref_text for this preset
+                    for pv in PRESET_VOICES:
+                        if pv["id"] == voice_id:
+                            if not resolved_ref_text:
+                                resolved_ref_text = pv["ref_text"]
+                            break
 
         audio_url = tts_engine.generate(
             gen_text=gen_text,
             ref_audio_path=temp_ref_path,
-            ref_text=ref_text or "",
+            ref_text=resolved_ref_text,
             speed=float(speed),
             nfe_steps=int(nfe_steps),
             remove_silence=bool(remove_silence)
@@ -230,7 +354,8 @@ async def generate_tts(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        if temp_ref_path and os.path.exists(temp_ref_path):
+        # Only remove if it was a true temp file (not a library voice)
+        if temp_ref_path and temp_ref_path.startswith(tempfile.gettempdir()) and os.path.exists(temp_ref_path):
             try:
                 os.remove(temp_ref_path)
             except OSError:
