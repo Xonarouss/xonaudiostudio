@@ -23,11 +23,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
 F5_DIR = MODELS_DIR / "f5-tts"
 STABLE_AUDIO_DIR = MODELS_DIR / "stable-audio-open"
+LLAMA_DIR = MODELS_DIR / "llama"
+OUTPUTS_DIR = BASE_DIR / "outputs"
 VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 
 # Ensure directories exist
 F5_DIR.mkdir(parents=True, exist_ok=True)
 STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+LLAMA_DIR.mkdir(parents=True, exist_ok=True)
+
+def is_llama_installed() -> bool:
+    """Checks if Llama weights exist in models/llama."""
+    if not LLAMA_DIR.exists():
+        return False
+    files = list(LLAMA_DIR.glob("**/*.safetensors")) + list(LLAMA_DIR.glob("**/*.bin")) + list(LLAMA_DIR.glob("**/*.gguf"))
+    return len(files) > 0
 
 def load_version_cache() -> Dict[str, Any]:
     if VERSION_CACHE_FILE.exists():
@@ -121,9 +131,11 @@ def get_all_models_status() -> Dict[str, Any]:
     """Returns installation status and disk size of all managed AI models."""
     f5_size = get_dir_size_gb(F5_DIR)
     stable_size = get_dir_size_gb(STABLE_AUDIO_DIR)
+    llama_size = get_dir_size_gb(LLAMA_DIR)
 
     f5_ready = is_f5_installed()
     stable_ready = is_stable_audio_installed()
+    llama_ready = is_llama_installed()
 
     return {
         "f5_tts": {
@@ -141,6 +153,14 @@ def get_all_models_status() -> Dict[str, Any]:
             "size_gb": f"{stable_size:.2f}",
             "path": str(STABLE_AUDIO_DIR),
             "vram_estimate": "4.5 GB"
+        },
+        "llama": {
+            "name": "Llama 3 Local AI (Assistant & Prompt Enhancer)",
+            "repo": "unsloth/Llama-3.2-1B-Instruct",
+            "installed": llama_ready,
+            "size_gb": f"{llama_size:.2f}",
+            "path": str(LLAMA_DIR),
+            "vram_estimate": "2.8 GB"
         }
     }
 
@@ -194,16 +214,30 @@ def download_model(model_key: str) -> Dict[str, Any]:
             cache = load_version_cache()
             cache["stable_audio"] = {"sha": sha, "updated_at": datetime.now().isoformat()}
             save_version_cache(cache)
-            return {"status": "success", "message": "Stable Audio Open model succesvol gedownload en bijgewerkt!"}
+            return {"status": "success", "message": "Stable Audio Open model downloaded successfully!"}
         except Exception as e:
-            raise RuntimeError(f"Fout bij downloaden Stable Audio Open: {e}")
+            raise RuntimeError(f"Error downloading Stable Audio Open: {e}")
+
+    elif model_key == "llama":
+        print("[ModelManager] Downloading Llama 3 Instruct model from Hugging Face...")
+        try:
+            snapshot_download(
+                repo_id="unsloth/Llama-3.2-1B-Instruct",
+                local_dir=str(LLAMA_DIR),
+            )
+            sha = get_remote_model_sha("unsloth/Llama-3.2-1B-Instruct")
+            cache = load_version_cache()
+            cache["llama"] = {"sha": sha, "updated_at": datetime.now().isoformat()}
+            save_version_cache(cache)
+            return {"status": "success", "message": "Llama 3 Local AI model downloaded successfully!"}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading Llama model: {e}")
 
     else:
-        raise ValueError(f"Onbekend model: {model_key}")
+        raise ValueError(f"Unknown model: {model_key}")
 
 def delete_model(model_key: str) -> Dict[str, Any]:
     """Deletes model checkpoints from disk to free up storage space."""
-    # Run garbage collection and free CUDA memory first to avoid file lock on Windows
     gc.collect()
     if torch and torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -222,13 +256,67 @@ def delete_model(model_key: str) -> Dict[str, Any]:
             STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
             deleted_items.append("Stable Audio Open")
 
+    if model_key in ("llama", "all"):
+        if LLAMA_DIR.exists():
+            shutil.rmtree(LLAMA_DIR, ignore_errors=True)
+            LLAMA_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("Llama 3 Local AI")
+
     if not deleted_items:
-        raise ValueError(f"Geen geldig model geselecteerd: {model_key}")
+        raise ValueError(f"No valid model selected: {model_key}")
 
     return {
         "status": "success",
-        "message": f"Modellen succesvol verwijderd van schijf: {', '.join(deleted_items)}. Schijfruimte is vrijgemaakt!"
+        "message": f"Successfully deleted from disk: {', '.join(deleted_items)}. Storage space reclaimed!"
     }
+
+def get_all_generations() -> List[Dict[str, Any]]:
+    """Scans and lists all generated audio files across TTS and SFX directories."""
+    generations = []
+    
+    # Scan TTS outputs
+    tts_dir = OUTPUTS_DIR / "tts"
+    if tts_dir.exists():
+        for file in tts_dir.glob("*.wav"):
+            if file.name.startswith("_default"):
+                continue
+            try:
+                stat = file.stat()
+                generations.append({
+                    "id": file.stem,
+                    "filename": file.name,
+                    "type": "tts",
+                    "title": f"Voice Clip ({file.stem[-6:]})",
+                    "url": f"/outputs/tts/{file.name}",
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "created_at": datetime.fromtimestamp(stat.st_mtime).strftime("%b %d, %H:%M:%S"),
+                    "timestamp": stat.st_mtime
+                })
+            except Exception:
+                pass
+
+    # Scan SFX outputs
+    sfx_dir = OUTPUTS_DIR / "sfx"
+    if sfx_dir.exists():
+        for file in sfx_dir.glob("*.wav"):
+            try:
+                stat = file.stat()
+                generations.append({
+                    "id": file.stem,
+                    "filename": file.name,
+                    "type": "sfx",
+                    "title": f"Sound Effect ({file.stem[-6:]})",
+                    "url": f"/outputs/sfx/{file.name}",
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "created_at": datetime.fromtimestamp(stat.st_mtime).strftime("%b %d, %H:%M:%S"),
+                    "timestamp": stat.st_mtime
+                })
+            except Exception:
+                pass
+
+    # Sort newest first
+    generations.sort(key=lambda x: x["timestamp"], reverse=True)
+    return generations
 
 def get_system_metrics() -> Dict[str, Any]:
     """Retrieves live dynamic hardware statistics matching Genux monitor widget."""

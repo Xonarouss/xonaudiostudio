@@ -7,6 +7,34 @@ from typing import Optional
 import numpy as np
 import soundfile as sf
 import torch
+import torchaudio
+
+# Patch torchaudio.load to use soundfile, bypassing TorchCodec / FFmpeg DLL issues on Windows
+def _soundfile_audio_load(
+    uri,
+    frame_offset=0,
+    num_frames=-1,
+    normalize=True,
+    channels_first=True,
+    format=None,
+    buffer_size=None,
+    backend=None
+):
+    try:
+        data, sr = sf.read(str(uri), start=frame_offset, stop=None, dtype='float32')
+        if num_frames > 0:
+            data = data[:num_frames]
+        tensor = torch.from_numpy(data)
+        if tensor.ndim == 1:
+            tensor = tensor.unsqueeze(0)
+        elif tensor.ndim == 2 and channels_first:
+            tensor = tensor.t()
+        return tensor, sr
+    except Exception as e:
+        print(f"[TTSEngine] soundfile read failed for {uri}: {e}")
+        raise e
+
+torchaudio.load = _soundfile_audio_load
 
 from models_manager import F5_DIR
 
@@ -22,7 +50,7 @@ class TTSEngine:
         print(f"[TTSEngine] Initialized on device: {self.device}")
 
     def load_model(self):
-        """Loads F5-TTS model onto CUDA/CPU."""
+        """Loads F5-TTS model onto CUDA or CPU."""
         if self.is_loaded and self.f5 is not None:
             return
 
@@ -37,7 +65,6 @@ class TTSEngine:
 
         try:
             from f5_tts.api import F5TTS
-            # Instantiate using official F5TTS api
             self.f5 = F5TTS(
                 model="F5TTS_v1_Base",
                 ckpt_file=ckpt_file,
@@ -92,7 +119,6 @@ class TTSEngine:
         if not ref_audio_path or not os.path.exists(ref_audio_path):
             default_ref = BASE_DIR / "backend" / "default_sample.wav"
             if not default_ref.exists():
-                # Generate a clean 3-second gentle reference tone to bootstrap zero-shot
                 sr = 24000
                 t = np.linspace(0, 3, sr * 3, endpoint=False)
                 tone = 0.05 * np.sin(2 * np.pi * 220 * t)
@@ -112,7 +138,7 @@ class TTSEngine:
                 remove_silence=bool(remove_silence)
             )
 
-            # Ensure file was written
+            # Ensure file exists
             if not output_path.exists() and wav is not None:
                 sf.write(str(output_path), wav, sr)
 

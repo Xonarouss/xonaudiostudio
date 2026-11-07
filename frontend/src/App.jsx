@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw } from 'lucide-react';
+import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot } from 'lucide-react';
 import VoiceLab from './components/VoiceLab';
 import SoundStudio from './components/SoundStudio';
+import GenerationsLibrary from './components/GenerationsLibrary';
 import ModelManager from './components/ModelManager';
 import HardwareWidget from './components/HardwareWidget';
+import AIAssistant from './components/AIAssistant';
 import Footer from './components/Footer';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('voicelab'); // 'voicelab' | 'soundstudio' | 'models'
+  const [activeTab, setActiveTab] = useState('voicelab'); // 'voicelab' | 'soundstudio' | 'library' | 'models'
   const [modelsStatus, setModelsStatus] = useState({
     f5_tts: { installed: false, size_gb: '0.00' },
-    stable_audio: { installed: false, size_gb: '0.00' }
+    stable_audio: { installed: false, size_gb: '0.00' },
+    llama: { installed: false, size_gb: '0.00' }
   });
   const [systemInfo, setSystemInfo] = useState({
     gpu_name: 'GPU',
@@ -31,6 +34,7 @@ export default function App() {
     engine_status: 'Engine Online'
   });
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [appliedPrompt, setAppliedPrompt] = useState('');
 
   const fetchStatus = async () => {
     setIsLoadingStatus(true);
@@ -57,9 +61,25 @@ export default function App() {
 
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(fetchStatus, 3000); // 3s interval for responsive hardware monitor
+    const interval = setInterval(fetchStatus, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleApplyPromptFromAssistant = (text) => {
+    setAppliedPrompt(text);
+    // Switch to appropriate tab
+    if (activeTab === 'models' || activeTab === 'library') {
+      setActiveTab('soundstudio');
+    }
+  };
+
+  const handleLoadGenerationIntoStudio = (item) => {
+    if (item.type === 'tts') {
+      setActiveTab('voicelab');
+    } else {
+      setActiveTab('soundstudio');
+    }
+  };
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
   const vramUsed = systemInfo?.gpu_vram_used_gb || '0';
@@ -67,7 +87,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 light-mesh selection:bg-cyan-500 selection:text-white">
-      {/* Top Navbar in Crisp White */}
+      {/* Top Navbar */}
       <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-xs">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo & Brand Title */}
@@ -87,7 +107,7 @@ export default function App() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Neural Voice Cloning &amp; Foley Diffusion Workstation
+                Neural Voice Cloning, Foley Diffusion &amp; Llama 3 AI Workstation
               </p>
             </div>
           </div>
@@ -116,6 +136,18 @@ export default function App() {
             >
               <Radio className="w-4 h-4" />
               <span>Sound Studio</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('library')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                activeTab === 'library'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span>Generations</span>
             </button>
 
             <button
@@ -160,6 +192,12 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'library' && (
+          <GenerationsLibrary
+            onLoadIntoStudio={handleLoadGenerationIntoStudio}
+          />
+        )}
+
         {activeTab === 'models' && (
           <ModelManager
             modelsStatus={modelsStatus}
@@ -170,7 +208,13 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Dynamic Hardware Monitor matching user's image */}
+      {/* Floating Llama AI Assistant Chat (Docked right above the hardware widget) */}
+      <AIAssistant
+        onApplyPrompt={handleApplyPromptFromAssistant}
+        activeTab={activeTab}
+      />
+
+      {/* Floating Dynamic Hardware Monitor */}
       <HardwareWidget systemInfo={systemInfo} />
 
       {/* Footer with Dynamic Hardware Specs and Xonarous Inc Link */}

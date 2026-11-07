@@ -21,6 +21,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const [cfgScale, setCfgScale] = useState(7.0);
   const [seed, setSeed] = useState(-1);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Generation & Progress states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -74,6 +75,28 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       clearInterval(stepTimer);
     };
   }, [isGenerating, steps, duration]);
+
+  const handleEnhanceWithLlama = async () => {
+    if (!prompt.trim() || isEnhancing) return;
+    setIsEnhancing(true);
+    try {
+      const res = await fetch('/api/llama/enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt, mode: 'sfx' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.enhanced) {
+          setPrompt(data.enhanced);
+        }
+      }
+    } catch (e) {
+      console.warn("Llama enhance error:", e);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const handleApplyPreset = (preset) => {
     setPrompt(preset.prompt);
@@ -211,7 +234,19 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               <label className="text-sm font-bold text-slate-800">
                 Sound Description (Prompt)
               </label>
-              <span className="text-xs font-mono text-slate-500">{prompt.length} chars</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleEnhanceWithLlama}
+                  disabled={isEnhancing || !prompt.trim()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-all active:scale-95 disabled:opacity-50"
+                  title="Enhance with Hollywood-grade acoustics using local Llama AI"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${isEnhancing ? 'animate-spin' : ''}`} />
+                  <span>{isEnhancing ? 'Enhancing...' : 'Enhance with Llama 🪄'}</span>
+                </button>
+                <span className="text-xs font-mono text-slate-500">{prompt.length} chars</span>
+              </div>
             </div>
             <textarea
               rows={4}

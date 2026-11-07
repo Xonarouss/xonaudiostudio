@@ -11,6 +11,7 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
   const [nfeSteps, setNfeSteps] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Generation & Progress states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -64,6 +65,28 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
       clearInterval(stepTimer);
     };
   }, [isGenerating, nfeSteps]);
+
+  const handleEnhanceWithLlama = async () => {
+    if (!text.trim() || isEnhancing) return;
+    setIsEnhancing(true);
+    try {
+      const res = await fetch('/api/llama/enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text, mode: 'voice' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.enhanced) {
+          setText(data.enhanced);
+        }
+      }
+    } catch (e) {
+      console.warn("Llama enhance error:", e);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -196,7 +219,19 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
               <label className="text-sm font-bold text-slate-800">
                 Text to Speak
               </label>
-              <span className="text-xs font-mono text-slate-500">{text.length} characters</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleEnhanceWithLlama}
+                  disabled={isEnhancing || !text.trim()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-all active:scale-95 disabled:opacity-50"
+                  title="Enhance speech cadence & punctuation with local Llama AI"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${isEnhancing ? 'animate-spin' : ''}`} />
+                  <span>{isEnhancing ? 'Refining...' : 'Refine with Llama 🪄'}</span>
+                </button>
+                <span className="text-xs font-mono text-slate-500">{text.length} chars</span>
+              </div>
             </div>
             <textarea
               rows={5}

@@ -87,9 +87,10 @@ export default function ModelManager({
 
   const f5 = modelsStatus?.f5_tts || {};
   const stable = modelsStatus?.stable_audio || {};
+  const llama = modelsStatus?.llama || {};
 
   const totalSize = (
-    parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0)
+    parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(llama.size_gb || 0)
   ).toFixed(2);
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
@@ -249,7 +250,7 @@ export default function ModelManager({
       </div>
 
       {/* Model Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Model 1: F5-TTS */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
           <div className="space-y-3">
@@ -397,6 +398,83 @@ export default function ModelManager({
                   <>
                     <Download className="w-4 h-4" />
                     <span>Download Stable Audio (~4.8 GB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 3: Llama 3 Local AI */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Llama 3
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Assistant &amp; Prompt Enhancer</span>
+              </div>
+              {llama.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({llama.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~2.8 GB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">Llama 3 Studio AI</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Meta Llama 3 local LLM running on your GPU for cinematic audio prompt expansion (Magic Wand), creative foley suggestions, and voice acting scriptwriting.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">Hugging Face (unsloth/Llama-3.2)</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/llama</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-emerald-700 font-bold">~2.8 GB VRAM (Float16)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {llama.installed ? (
+              <button
+                onClick={() => handleDelete('llama')}
+                disabled={deletingModel === 'llama'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({llama.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('llama')}
+                disabled={downloadingModel === 'llama'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-emerald-600/20"
+              >
+                {downloadingModel === 'llama' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~2.8 GB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download Llama 3 (~2.8 GB)</span>
                   </>
                 )}
               </button>

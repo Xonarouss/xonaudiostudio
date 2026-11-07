@@ -2,30 +2,50 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+# Patch torchaudio for soundfile decoding across all endpoints
+import soundfile as sf
+import torch
+import torchaudio
+
+def _soundfile_load(uri, frame_offset=0, num_frames=-1, normalize=True, channels_first=True, format=None, buffer_size=None, backend=None):
+    data, sr = sf.read(str(uri), start=frame_offset, stop=None, dtype='float32')
+    if num_frames > 0:
+        data = data[:num_frames]
+    tensor = torch.from_numpy(data)
+    if tensor.ndim == 1:
+        tensor = tensor.unsqueeze(0)
+    elif tensor.ndim == 2 and channels_first:
+        tensor = tensor.t()
+    return tensor, sr
+
+torchaudio.load = _soundfile_load
+
 from models_manager import (
     get_all_models_status,
     download_model,
     delete_model,
     get_system_metrics,
-    MODELS_DIR
+    get_all_generations,
+    MODELS_DIR,
+    OUTPUTS_DIR
 )
 from tts_engine import tts_engine
 from sfx_engine import sfx_engine
+from llama_engine import llama_engine
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-OUTPUTS_DIR = BASE_DIR / "outputs"
 FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
 
 app = FastAPI(
-    title="AI Audio Studio API",
-    description="F5-TTS Voice Cloning & Stable Audio Open SFX Backend",
+    title="XonAudio Studio API",
+    description="F5-TTS Voice Cloning, Stable Audio Open Foley & Llama 3 Studio AI",
     version="1.0.0"
 )
 
@@ -44,7 +64,7 @@ app.mount("/outputs", StaticFiles(directory=str(OUTPUTS_DIR)), name="outputs")
 
 # Request Models
 class DeleteModelRequest(BaseModel):
-    model_key: str  # "f5_tts", "stable_audio", or "all"
+    model_key: str  # "f5_tts", "stable_audio", "llama", or "all"
 
 class SFXGenerateRequest(BaseModel):
     prompt: str
@@ -54,11 +74,19 @@ class SFXGenerateRequest(BaseModel):
     cfg_scale: Optional[float] = 7.0
     seed: Optional[int] = -1
 
+class LlamaEnhanceRequest(BaseModel):
+    prompt: str
+    mode: Optional[str] = "sfx"  # "sfx" or "voice"
+
+class LlamaChatRequest(BaseModel):
+    message: str
+    history: Optional[List[Dict[str, str]]] = []
+
 # ----------------- SYSTEM & MODELS ENDPOINTS -----------------
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "online", "message": "AI Audio Studio is running smoothly"}
+    return {"status": "online", "message": "XonAudio Studio is running smoothly"}
 
 @app.get("/api/system/status")
 def system_status():
@@ -84,6 +112,8 @@ def api_delete_model(req: DeleteModelRequest):
             tts_engine.unload()
         if req.model_key in ("stable_audio", "all"):
             sfx_engine.unload()
+        if req.model_key in ("llama", "all"):
+            llama_engine.unload()
 
         res = delete_model(req.model_key)
         return res
@@ -92,11 +122,57 @@ def api_delete_model(req: DeleteModelRequest):
 
 @app.post("/api/models/unload")
 def api_unload_models():
-    """Unloads all loaded AI models from GPU VRAM."""
+    """Unloads all neural models from GPU VRAM."""
     try:
         tts_engine.unload()
         sfx_engine.unload()
-        return {"status": "success", "message": "Alle modellen zijn ontladen uit het GPU VRAM geheugen."}
+        llama_engine.unload()
+        return {"status": "success", "message": "All models unloaded from GPU memory."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ----------------- LLAMA AI ASSISTANT & MAGIC WAND -----------------
+
+@app.post("/api/llama/enhance")
+def enhance_prompt(req: LlamaEnhanceRequest):
+    try:
+        enhanced = llama_engine.enhance_prompt(req.prompt, req.mode)
+        return {"status": "success", "original": req.prompt, "enhanced": enhanced}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/llama/chat")
+def llama_chat(req: LlamaChatRequest):
+    try:
+        reply = llama_engine.chat(req.message, req.history)
+        return {"status": "success", "reply": reply}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ----------------- GENERATIONS & PREVIOUS AUDIO -----------------
+
+@app.get("/api/generations")
+def list_generations():
+    """Returns persistent list of previous audio generations."""
+    try:
+        return get_all_generations()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/generations/{file_id}")
+def delete_generation(file_id: str):
+    """Deletes an audio file from outputs."""
+    try:
+        deleted = False
+        for folder in ["tts", "sfx"]:
+            target = OUTPUTS_DIR / folder / f"{file_id}.wav"
+            if target.exists():
+                target.unlink()
+                deleted = True
+                break
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Audio file not found")
+        return {"status": "success", "message": "Audio file removed from library"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -176,6 +252,5 @@ if FRONTEND_DIST.exists():
 
 if __name__ == "__main__":
     import uvicorn
-    print("[AI Audio Studio] Starting FastAPI server on http://127.0.0.1:8000...")
+    print("[XonAudio Studio] Starting FastAPI server on http://127.0.0.1:8000...")
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
-

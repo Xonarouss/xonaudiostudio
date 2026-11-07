@@ -33,6 +33,7 @@ def create_zip():
         "frontend/dist",
         "frontend/package.json",
         "assets",
+        "docs",
         "scripts",
         "models/f5-tts/.gitkeep",
         "models/stable-audio-open/.gitkeep",

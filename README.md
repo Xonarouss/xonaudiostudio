@@ -7,10 +7,11 @@
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-blue.svg?style=for-the-badge&logo=windows)](https://xonarous.nl)
 [![CUDA](https://img.shields.io/badge/CUDA-12.8%2B%20%7C%20PyTorch%202.12-green.svg?style=for-the-badge&logo=nvidia)](https://xonarous.nl)
 [![Architecture](https://img.shields.io/badge/Architecture-Blackwell%20sm__120%20%7C%20Ada%20%7C%20Ampere-purple.svg?style=for-the-badge)](https://xonarous.nl)
+[![Website](https://img.shields.io/badge/Live_Site-GitHub%20Pages-0ea5e9.svg?style=for-the-badge&logo=githubpages&logoColor=white)](https://xonarouss.github.io/xonaudiostudio/)
 [![Buy me a beer](https://img.shields.io/badge/🍺%20Buy%20me%20a%20beer-buymeacoffee.com%2Fxonarous-amber.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/xonarous)
 [![License](https://img.shields.io/badge/License-MIT%20Open%20Source-emerald.svg?style=for-the-badge)](https://github.com/Xonarouss/xonaudiostudio/blob/main/LICENSE)
 
-[**🍺 Buy Me a Beer**](https://buymeacoffee.com/xonarous) • [**Releases (.zip)**](https://github.com/Xonarouss/xonaudiostudio/releases) • [**Repository (GitHub)**](https://github.com/Xonarouss/xonaudiostudio) • [**Company (xonarous.nl)**](https://xonarous.nl)
+[**🌐 Live Website**](https://xonarouss.github.io/xonaudiostudio/) • [**🍺 Buy Me a Beer**](https://buymeacoffee.com/xonarous) • [**Releases (.zip)**](https://github.com/Xonarouss/xonaudiostudio/releases) • [**Repository (GitHub)**](https://github.com/Xonarouss/xonaudiostudio) • [**Company (xonarous.nl)**](https://xonarous.nl)
 
 </div>
 
@@ -110,6 +111,9 @@ The backend provides a high-performance FastAPI server running on `http://127.0.
 | `/api/models/unload` | `POST` | Release models from GPU VRAM |
 | `/api/tts/generate` | `POST` | F5-TTS zero-shot voice cloning endpoint |
 | `/api/sfx/generate` | `POST` | Stable Audio Open sound effect diffusion endpoint |
+| `/api/llama/enhance` | `POST` | Llama 3 Magic Wand prompt expansion endpoint |
+| `/api/llama/chat` | `POST` | Llama 3 conversational audio engineering assistant |
+| `/api/generations` | `GET` | Retrieve list of all previously generated audio clips |
 
 ---
 
