@@ -1,4 +1,5 @@
 import os
+import stat
 import shutil
 import subprocess
 import tempfile
@@ -7,11 +8,18 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DOCS_DIR = ROOT_DIR / "docs"
 
+def on_rm_error(func, path, exc_info):
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    except Exception:
+        pass
+
 def deploy():
     print("[1/4] Preparing gh-pages package from docs/...")
     temp_dir = Path(tempfile.gettempdir()) / "xonaudio_gh_pages"
     if temp_dir.exists():
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir, onerror=on_rm_error)
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     # Copy all files from docs to temp_dir
@@ -29,7 +37,7 @@ def deploy():
     print("[2/4] Initializing git repository on gh-pages branch...")
     subprocess.run(["git", "init", "-b", "gh-pages"], cwd=str(temp_dir), check=True)
     subprocess.run(["git", "add", "."], cwd=str(temp_dir), check=True)
-    subprocess.run(["git", "commit", "-m", "Deploy modern GitHub Pages showcase website"], cwd=str(temp_dir), check=True)
+    subprocess.run(["git", "commit", "-m", "Deploy modern responsive GitHub Pages website with real audio samples"], cwd=str(temp_dir), check=True)
 
     print("[3/4] Adding origin remote...")
     remote_url = "https://github.com/Xonarouss/xonaudiostudio.git"
@@ -43,4 +51,3 @@ def deploy():
 
 if __name__ == "__main__":
     deploy()
-
