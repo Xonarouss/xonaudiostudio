@@ -72,13 +72,13 @@ echo.
 :: 3.5 Verify critical dependencies (torchsde, FFmpeg)
 python -c "import torchsde, einops" >nul 2>&1
 if errorlevel 1 (
-    echo [*] Installing missing audio processing libraries (torchsde, einops)...
+    echo [*] Installing missing audio processing libraries...
     pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg
 )
-python -c "import os, sys; sys.exit(0 if os.path.exists(os.path.join(os.path.dirname(sys.executable), 'ffmpeg.exe')) else 1)" >nul 2>&1
-if errorlevel 1 (
+
+if not exist "venv\Scripts\ffmpeg.exe" (
     echo [*] Ensuring FFmpeg audio binaries are linked...
-    python -c "import shutil, os, sys, imageio_ffmpeg; dst=os.path.join(os.path.dirname(sys.executable),'ffmpeg.exe'); shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), dst)" >nul 2>&1
+    python -c "import shutil, os, sys, imageio_ffmpeg; shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), os.path.join(os.path.dirname(sys.executable), 'ffmpeg.exe'))" >nul 2>&1
 )
 
 :: 4. Check GitHub Repository for Updates (Auto-Pull)
