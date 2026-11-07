@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
 F5_DIR = MODELS_DIR / "f5-tts"
 STABLE_AUDIO_DIR = MODELS_DIR / "stable-audio-open"
+STABLE_AUDIO_3_DIR = MODELS_DIR / "stable-audio-3-medium"
 LLAMA_DIR = MODELS_DIR / "llama"
 XTTS_DIR = MODELS_DIR / "xtts-v2"
 FISH_MODEL_DIR = MODELS_DIR / "fish-speech-1.5"
@@ -36,6 +37,7 @@ VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 # Ensure directories exist
 F5_DIR.mkdir(parents=True, exist_ok=True)
 STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+STABLE_AUDIO_3_DIR.mkdir(parents=True, exist_ok=True)
 LLAMA_DIR.mkdir(parents=True, exist_ok=True)
 XTTS_DIR.mkdir(parents=True, exist_ok=True)
 FISH_MODEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -78,6 +80,13 @@ def is_whisper_installed() -> bool:
     if not WHISPER_DIR.exists():
         return False
     files = list(WHISPER_DIR.glob("*.bin")) + list(WHISPER_DIR.glob("*.safetensors"))
+    return len(files) > 0
+
+def is_stable_audio_3_installed() -> bool:
+    """Checks if Stable Audio 3 Medium weights exist in models/stable-audio-3-medium."""
+    if not STABLE_AUDIO_3_DIR.exists():
+        return False
+    files = list(STABLE_AUDIO_3_DIR.glob("**/*.safetensors")) + list(STABLE_AUDIO_3_DIR.glob("**/*.ckpt"))
     return len(files) > 0
 
 def is_stable_audio_small_installed() -> bool:
@@ -187,6 +196,7 @@ def get_all_models_status() -> Dict[str, Any]:
     fish_size = get_dir_size_gb(FISH_MODEL_DIR)
     audioldm_size = get_dir_size_gb(AUDIOLDM_DIR)
     stable_small_size = get_dir_size_gb(STABLE_AUDIO_SMALL_DIR)
+    stable_3_size = get_dir_size_gb(STABLE_AUDIO_3_DIR)
     whisper_size = get_dir_size_gb(WHISPER_DIR)
 
     f5_ready = is_f5_installed()
@@ -225,6 +235,15 @@ def get_all_models_status() -> Dict[str, Any]:
             "size_gb": f"{stable_size:.2f}",
             "path": str(STABLE_AUDIO_DIR),
             "vram_estimate": "4.5 GB"
+        },
+        "stable_audio_3": {
+            "name": "Stable Audio 3 Medium (Flagship 44.1kHz)",
+            "repo": "stabilityai/stable-audio-3-medium",
+            "installed": is_stable_audio_3_installed(),
+            "size_gb": f"{stable_3_size:.2f}",
+            "path": str(STABLE_AUDIO_3_DIR),
+            "vram_estimate": "4.8 GB",
+            "description": "Stability AI flagship 2B Diffusion Transformer (DiT) with T5Gemma for studio sound design and foley."
         },
         "audioldm2": {
             "name": "AudioLDM 2 Studio (Multi-Event SFX)",
@@ -397,6 +416,32 @@ def download_model(model_key: str) -> Dict[str, Any]:
         except Exception as e:
             raise RuntimeError(f"Error downloading AudioLDM 2: {e}")
 
+    elif model_key == "stable_audio_3":
+        print("[ModelManager] Downloading Stable Audio 3 Medium from Hugging Face (~4.8 GB)...")
+        hf_token = os.environ.get("HF_TOKEN", "").strip()
+        if not hf_token:
+            env_file = BASE_DIR / ".env"
+            if env_file.exists():
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    if line.startswith("HF_TOKEN="):
+                        hf_token = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        break
+        if not hf_token:
+            raise RuntimeError(
+                "Stable Audio 3 Medium is a gated model on Hugging Face. "
+                "You must accept the license at https://huggingface.co/stabilityai/stable-audio-3-medium "
+                "and set your HF_TOKEN in the .env file (HF_TOKEN=hf_your_token_here)."
+            )
+        try:
+            snapshot_download(
+                repo_id="stabilityai/stable-audio-3-medium",
+                local_dir=str(STABLE_AUDIO_3_DIR),
+                token=hf_token,
+            )
+            return {"status": "success", "message": "Stable Audio 3 Medium downloaded successfully!"}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading Stable Audio 3 Medium: {e}")
+
     elif model_key == "stable_audio_small":
         print("[ModelManager] Downloading Stable Audio Open Small from Hugging Face (~1.5 GB)...")
         hf_token = os.environ.get("HF_TOKEN", "").strip()
@@ -456,6 +501,12 @@ def delete_model(model_key: str) -> Dict[str, Any]:
             shutil.rmtree(STABLE_AUDIO_DIR, ignore_errors=True)
             STABLE_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
             deleted_items.append("Stable Audio Open")
+
+    if model_key in ("stable_audio_3", "all"):
+        if STABLE_AUDIO_3_DIR.exists():
+            shutil.rmtree(STABLE_AUDIO_3_DIR, ignore_errors=True)
+            STABLE_AUDIO_3_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("Stable Audio 3 Medium")
 
     if model_key in ("audioldm2", "all"):
         if AUDIOLDM_DIR.exists():

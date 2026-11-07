@@ -1,48 +1,17 @@
 import re
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
 
-# Supported Fish Speech tokens
-FISH_CANONICAL_TAGS = {
-    "laugh": "[laugh]",
-    "laughs": "[laugh]",
-    "laughter": "[laugh]",
-    "chuckle": "[laugh]",
-    "giggle": "[laugh]",
-    "snicker": "[snicker]",
-    "sigh": "[sigh]",
-    "sighs": "[sigh]",
-    "gasp": "[gasp]",
-    "gasps": "[gasp]",
-    "whisper": "[whisper]",
-    "whispers": "[whisper]",
-    "whispering": "[whisper]",
-    "scream": "[screaming]",
-    "screams": "[screaming]",
-    "screaming": "[screaming]",
-    "cry": "[crying]",
-    "cries": "[crying]",
-    "crying": "[crying]",
-    "weeping": "[crying]",
-    "yawn": "[yawn]",
-    "yawns": "[yawn]",
-    "groan": "[groan]",
-    "groans": "[groan]",
-    "cough": "[cough]",
-    "coughs": "[cough]",
-}
-
-# Regex to match any bracketed tag: [tag] or (tag)
-TAG_PATTERN = re.compile(r"\[([a-zA-Z0-9_\-\s]+)\]|\(([a-zA-Z0-9_\-\s]+)\)")
-SQUARE_BRACKET_PATTERN = re.compile(r"\[([a-zA-Z0-9_\-\s]+)\]")
+# Regex patterns
+BRACKET_CONTENT_PATTERN = re.compile(r"\[([^\]]*)\]|\(([^\)]*)\)|\{([^\}]*)\}")
 
 def extract_tags(text: str) -> List[str]:
     """Returns list of tags found in text, lowercased without brackets."""
     if not text:
         return []
-    matches = TAG_PATTERN.findall(text)
+    matches = BRACKET_CONTENT_PATTERN.findall(text)
     tags = []
     for m in matches:
-        tag = (m[0] or m[1]).strip().lower()
+        tag = (m[0] or m[1] or m[2]).strip().lower()
         if tag:
             tags.append(tag)
     return tags
@@ -52,83 +21,72 @@ def has_emotion_tags(text: str) -> bool:
     return len(extract_tags(text)) > 0
 
 def should_route_to_fish(text: str) -> bool:
-    """Returns True if text contains emotion tags that Fish Speech supports natively."""
+    """Returns True if text contains expressive cues best suited for high-quality cloning."""
     tags = extract_tags(text)
     for tag in tags:
-        if tag in FISH_CANONICAL_TAGS or tag in [
-            "angry", "sad", "happy", "excited", "whisper", "screams", "laughs", "sighs"
-        ]:
+        if any(w in tag for w in ["laugh", "whisper", "sigh", "cry", "scream", "angry", "fear", "happy"]):
             return True
     return False
 
-def preprocess_for_fish(text: str) -> str:
+def clean_speech_text(text: str) -> str:
     """
-    Normalizes emotion tags for Fish Speech 1.5.
-    Converts synonyms like [laughs] -> [laugh], [screams] -> [screaming],
-    and removes unsupported tags/brackets so they aren't vocalized as 'bracket tag bracket'.
+    Cleans text for neural TTS models so that:
+    1. Laughter tags [laugh], [laughs] are converted to natural 'Haha!'
+    2. Screams [screaming], [scream] are converted to exclamation marks
+    3. Sighs and pauses [sigh], [pause] are converted to natural speech pause ellipsis '...'
+    4. ALL other brackets AND their interior text (e.g. stage directions like
+       '(speaking with fear)', '[whisper]', '[crying]') are completely REMOVED.
+    5. No model will ever read 'bracket laugh bracket', 'screaming', or stage directions aloud!
     """
     if not text:
         return ""
 
-    def replace_fish_tag(match):
-        raw_tag = match.group(1).strip().lower()
-        if raw_tag in FISH_CANONICAL_TAGS:
-            return f" {FISH_CANONICAL_TAGS[raw_tag]} "
-        # If tag is generic descriptive emotion (e.g. [angry], [sad]) that Fish does not have
-        # a special token for, strip brackets so the model does not read 'bracket angry bracket'
-        return ""
+    processed = text
 
-    processed = SQUARE_BRACKET_PATTERN.sub(replace_fish_tag, text)
-    # Clean whitespace and punctuation
-    processed = re.sub(r"\s+([,.\?!;:])", r"\1", processed)
+    # 1. Convert laughter tags to natural laugh interjection
+    processed = re.sub(r"\[(laugh|laughs|laughter|chuckle|giggle|haha)\]", " Haha! ", processed, flags=re.IGNORECASE)
+    processed = re.sub(r"\((laugh|laughs|laughter|chuckle|giggle|haha)\)", " Haha! ", processed, flags=re.IGNORECASE)
+
+    # 2. Convert sigh & pause to natural speech pauses
+    processed = re.sub(r"\[(sigh|sighs|sighing|pause)\]", "... ", processed, flags=re.IGNORECASE)
+    processed = re.sub(r"\((sigh|sighs|sighing|pause)\)", "... ", processed, flags=re.IGNORECASE)
+
+    # 3. Convert scream to exclamation mark
+    processed = re.sub(r"\[(scream|screams|screaming)\]", "! ", processed, flags=re.IGNORECASE)
+    processed = re.sub(r"\((scream|screams|screaming)\)", "! ", processed, flags=re.IGNORECASE)
+
+    # 4. Remove ALL remaining bracketed tags and stage directions completely (including contents)
+    processed = re.sub(r"\[[^\]]*\]", "", processed)
+    processed = re.sub(r"\([^\)]*\)", "", processed)
+    processed = re.sub(r"\{[^\}]*\}", "", processed)
+
+    # 5. Remove any stray bracket characters
+    processed = re.sub(r"[\[\]\(\)\{\}<>]", "", processed)
+
+    # 6. Preserve natural pause ellipsis (...) while cleaning duplicate punctuation
+    processed = re.sub(r"\.{4,}", "...", processed)
+    processed = re.sub(r"(?:\s*\.\.\.\s*)+", "... ", processed)
+    processed = re.sub(r"(!\s*)+", "! ", processed)
+    processed = re.sub(r"(\?\s*)+", "? ", processed)
+    processed = re.sub(r"(,\s*)+", ", ", processed)
+    processed = re.sub(r"\s+([,.\?!;:])", r"\1", processed)  # Remove spaces before punctuation
+    processed = re.sub(r"^\s*([!?,;:])", "", processed)  # Remove stray leading punctuation
+
+    # 7. Clean whitespace
     processed = re.sub(r"\s+", " ", processed).strip()
+
     return processed
 
 def preprocess_for_f5tts(text: str) -> str:
-    """
-    Strips all bracketed emotion tags from text for F5-TTS so that
-    bracket tokens like [laugh] or [whisper] are NEVER read aloud as words
-    like 'bracket laughs bracket'.
-    """
-    if not text:
-        return ""
-
-    # Remove all square brackets and parentheses tags
-    processed = TAG_PATTERN.sub("", text)
-    # Also strip any stray brackets
-    processed = re.sub(r"[\[\]\(\)\{\}]", "", processed)
-    # Clean up duplicate punctuation and whitespace
-    processed = re.sub(r"\s+([,.\?!;:])", r"\1", processed)
-    processed = re.sub(r"([,.\?!;:])\s*([,.\?!;:])+", r"\1", processed)
-    processed = re.sub(r"\s+", " ", processed).strip()
-    return processed
+    return clean_speech_text(text)
 
 def preprocess_for_xtts(text: str) -> str:
-    """
-    Strips all bracketed tags for XTTS-v2 so brackets are never pronounced.
-    """
-    if not text:
-        return ""
-    processed = TAG_PATTERN.sub("", text)
-    processed = re.sub(r"[\[\]\(\)\{\}]", "", processed)
-    processed = re.sub(r"\s+([,.\?!;:])", r"\1", processed)
-    processed = re.sub(r"([,.\?!;:])\s*([,.\?!;:])+", r"\1", processed)
-    processed = re.sub(r"\s+", " ", processed).strip()
-    return processed
+    return clean_speech_text(text)
+
+def preprocess_for_fish(text: str) -> str:
+    return clean_speech_text(text)
 
 def preprocess_text_for_engine(text: str, engine: str) -> Tuple[str, List[str]]:
-    """
-    Routes and cleans text for the selected engine.
-    Returns (cleaned_text, detected_tags).
-    """
     detected_tags = extract_tags(text)
-    engine_lower = (engine or "f5_tts").lower()
-
-    if "fish" in engine_lower:
-        cleaned = preprocess_for_fish(text)
-    elif "xtts" in engine_lower:
-        cleaned = preprocess_for_xtts(text)
-    else:  # f5_tts or default
-        cleaned = preprocess_for_f5tts(text)
-
+    cleaned = clean_speech_text(text)
     return cleaned, detected_tags

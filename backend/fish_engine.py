@@ -276,10 +276,8 @@ class FishEngine:
         if language not in SUPPORTED_LANGUAGES:
             language = "en"
 
-        # Prepend emotion stage direction to text
-        effective_text = (
-            f"{emotion.strip()} {gen_text}" if emotion and emotion.strip() else gen_text
-        )
+        # Use clean text directly (never prepend stage directions to spoken text)
+        effective_text = gen_text
 
         filename = f"tts_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename

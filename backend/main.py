@@ -42,6 +42,7 @@ from models_manager import (
     get_all_generations,
     is_f5_installed,
     is_stable_audio_installed,
+    is_stable_audio_3_installed,
     is_llama_installed,
     is_xtts_installed,
     is_fish_installed,
@@ -173,6 +174,8 @@ def api_delete_model(req: DeleteModelRequest):
             tts_engine.unload()
         if req.model_key in ("stable_audio", "all"):
             sfx_engine.unload()
+        if req.model_key in ("stable_audio_3", "all"):
+            sfx_engine.unload_stable_audio_3()
         if req.model_key in ("audioldm2", "all"):
             sfx_engine.unload_audioldm()
         if req.model_key in ("llama", "all"):
@@ -193,6 +196,8 @@ def api_unload_models():
     try:
         tts_engine.unload()
         sfx_engine.unload()
+        sfx_engine.unload_stable_audio_3()
+        sfx_engine.unload_audioldm()
         llama_engine.unload()
         if XTTS_AVAILABLE and xtts_engine:
             xtts_engine.unload()
@@ -495,11 +500,8 @@ async def generate_tts(
     cleaned_ref_path = None
     resolved_ref_text = ref_text or ""
 
-    # Prepend emotion direction as a stage cue before gen_text, then strip brackets so F5-TTS NEVER reads them aloud
-    effective_gen_text = gen_text
-    if emotion and emotion.strip():
-        effective_gen_text = f"{emotion.strip()} {gen_text}"
-    effective_gen_text = preprocess_for_f5tts(effective_gen_text)
+    # Clean spoken text: strip brackets, convert [laugh] to Haha!, remove stage directions
+    effective_gen_text = preprocess_for_f5tts(gen_text)
 
     try:
         if ref_audio and ref_audio.filename:
@@ -726,6 +728,30 @@ def generate_sfx(req: SFXGenerateRequest):
                 "prompt": req.prompt,
                 "duration": req.duration,
                 "engine": "audioldm2"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    elif engine_choice == "stable_audio_3":
+        if not is_stable_audio_3_installed():
+            raise HTTPException(
+                status_code=400,
+                detail="Stable Audio 3 Medium model checkpoint is missing. Download it in Model Manager or restart via Start_AudioStudio.bat."
+            )
+        try:
+            audio_url = sfx_engine.generate_stable_audio_3(
+                prompt=req.prompt,
+                negative_prompt=req.negative_prompt,
+                duration=req.duration or 10.0,
+                steps=req.steps or 50,
+                cfg_scale=req.cfg_scale or 7.0,
+                seed=req.seed if req.seed is not None else -1
+            )
+            return {
+                "status": "success",
+                "audio_url": audio_url,
+                "prompt": req.prompt,
+                "duration": req.duration,
+                "engine": "stable_audio_3"
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

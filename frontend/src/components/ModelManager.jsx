@@ -111,6 +111,7 @@ export default function ModelManager({
 
   const f5 = modelsStatus?.f5_tts || {};
   const stable = modelsStatus?.stable_audio || {};
+  const stable3 = modelsStatus?.stable_audio_3 || {};
   const llama = modelsStatus?.llama || {};
   const xtts = modelsStatus?.xtts || {};
   const fish = modelsStatus?.fish_speech || {};
@@ -118,9 +119,9 @@ export default function ModelManager({
   const whisper = modelsStatus?.whisper || {};
 
   const totalSize = (
-    parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(llama.size_gb || 0) +
-    parseFloat(xtts.size_gb || 0) + parseFloat(fish.size_gb || 0) + parseFloat(audioldm.size_gb || 0) +
-    parseFloat(whisper.size_gb || 0)
+    parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(stable3.size_gb || 0) +
+    parseFloat(llama.size_gb || 0) + parseFloat(xtts.size_gb || 0) + parseFloat(fish.size_gb || 0) +
+    parseFloat(audioldm.size_gb || 0) + parseFloat(whisper.size_gb || 0)
   ).toFixed(2);
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
@@ -458,6 +459,115 @@ export default function ModelManager({
                   <>
                     <Download className="w-4 h-4" />
                     <span>Download Stable Audio (~4.8 GB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 2B: Stable Audio 3 Medium (Flagship 44.1kHz DiT) */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200">
+                  Stable Audio 3
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Flagship DiT Diffusion</span>
+              </div>
+              {stable3.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({stable3.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~4.8 GB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">Stable Audio 3 Medium</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Stability AI flagship 2B Diffusion Transformer (DiT) with T5Gemma for studio-grade audio synthesis, cinematic sound design, dynamic foley transients, and variable-length generations.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold">stabilityai/stable-audio-3-medium</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/stable-audio-3-medium</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-fuchsia-700 font-bold">~4.8 GB VRAM (Float16)</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Architecture:</span>
+                <span className="text-fuchsia-700 font-bold">2B Diffusion Transformer (DiT)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* HF Token required notice + input */}
+          {!stable3.installed && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
+              <p className="text-[11px] text-amber-800 font-semibold">
+                🔑 Requires Hugging Face Token (gated model)
+              </p>
+              <p className="text-[11px] text-amber-700 leading-relaxed">
+                Accept the license at <a href="https://huggingface.co/stabilityai/stable-audio-3-medium" target="_blank" rel="noreferrer" className="underline font-semibold">stable-audio-3-medium</a> and ensure your HF token is saved.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={hfToken}
+                  onChange={e => setHfToken(e.target.value)}
+                  placeholder="hf_your_token_here"
+                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-amber-300 bg-white focus:outline-none focus:border-amber-500 text-slate-800 placeholder-slate-400"
+                />
+                <button
+                  onClick={handleSaveHFToken}
+                  disabled={savingToken || !hfToken.trim()}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition-all"
+                >
+                  {savingToken ? 'Saving...' : 'Save Token'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {stable3.installed ? (
+              <button
+                onClick={() => handleDelete('stable_audio_3')}
+                disabled={deletingModel === 'stable_audio_3'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({stable3.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('stable_audio_3')}
+                disabled={downloadingModel === 'stable_audio_3'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-fuchsia-600 hover:bg-fuchsia-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-fuchsia-600/20"
+              >
+                {downloadingModel === 'stable_audio_3' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~4.8 GB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download Stable Audio 3 (~4.8 GB)</span>
                   </>
                 )}
               </button>

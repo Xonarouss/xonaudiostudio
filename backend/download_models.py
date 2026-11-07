@@ -8,6 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from models_manager import (
     is_f5_installed,
     is_stable_audio_installed,
+    is_stable_audio_3_installed,
     is_llama_installed,
     is_xtts_installed,
     is_fish_installed,
@@ -18,6 +19,7 @@ from models_manager import (
     MODELS_DIR,
     F5_DIR,
     STABLE_AUDIO_DIR,
+    STABLE_AUDIO_3_DIR,
     LLAMA_DIR,
     XTTS_DIR,
     FISH_MODEL_DIR,
@@ -97,6 +99,16 @@ MODELS_CATALOG = {
         "what_it_does": "Instant 100% reference voice auto-transcription and audio cleaning pipeline (-20 LUFS).",
         "use_for": "Eliminating voice cloning word hallucinations & repeats by generating exact reference text.",
         "recommendation": "[HIGHLY RECOMMENDED for flawless voice cloning without hallucination]"
+    },
+    "8": {
+        "key": "stable_audio_3",
+        "name": "Stable Audio 3 Medium",
+        "size": "~4.8 GB",
+        "is_installed": is_stable_audio_3_installed,
+        "arch": "2B Diffusion Transformer (stabilityai/stable-audio-3-medium)",
+        "what_it_does": "Stability AI flagship sound design and foley generator at 44.1kHz.",
+        "use_for": "Cinematic audio, sound effects, variable-length compositions (requires Hugging Face token).",
+        "recommendation": "[OPTIONAL - Gated Flagship Model]"
     }
 }
 

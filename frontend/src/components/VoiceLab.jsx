@@ -109,7 +109,7 @@ function VoiceCard({ voice, selected, onSelect, onPreview, onDelete }) {
 }
 
 export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
-  const [text, setText] = useState('Welcome to XonAudio Studio. This voice is generated locally on your GPU.');
+  const [text, setText] = useState('');
   const textareaRef = useRef(null);
 
   const insertAtCursor = (insertion) => {
@@ -711,9 +711,9 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
                   </div>
                   <p className="text-[11px] leading-relaxed text-slate-700">
                     {ttsEngine === 'fish' ? (
-                      <>Fish Speech 1.5 will vocalize these emotion tags natively into acted laughing, gasping, crying or whispering.</>
+                      <>Tags like <code>[laugh]</code> become natural laughter, <code>[sigh]</code>/<code>[pause]</code> become speech pauses, and bracket words are sanitized so they are <b>never read aloud literally</b>.</>
                     ) : (
-                      <>Brackets are automatically filtered so they are <b>never read aloud</b> as "bracket laughs bracket". For authentic acted laughter/emotions, switch to Fish Speech.</>
+                      <>Brackets and stage directions are automatically cleaned so they are <b>never read aloud</b> as "bracket laughs bracket" or meta-words.</>
                     )}
                   </p>
                 </div>
@@ -765,7 +765,7 @@ export default function VoiceLab({ modelsStatus, onOpenModelManager }) {
                     ))}
                   </div>
                   <div className="p-2.5 rounded-xl bg-teal-50/70 border border-teal-200 text-[11px] text-teal-900 leading-relaxed">
-                    🐟 <b>Fish Speech 1.5 Emotion Tags:</b> Natively decodes bracketed emotional tokens like <code>[laugh]</code>, <code>[sigh]</code>, and <code>[gasp]</code> directly into authentic emotional vocal expressions.
+                    🐟 <b>Fish Speech 1.5 Expressive Conditioning:</b> Laughter cues (<code>[laugh]</code>) become natural vocal laughs, pauses (<code>[sigh]</code>, <code>[pause]</code>) become natural speech pauses, and stage directions are cleaned so meta-words are never spoken aloud.
                   </div>
                 </div>
               ) : ttsEngine === 'xtts' ? (

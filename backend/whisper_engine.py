@@ -96,3 +96,4 @@ class WhisperEngine:
             torch.cuda.empty_cache()
 
 whisper_engine = WhisperEngine()
+

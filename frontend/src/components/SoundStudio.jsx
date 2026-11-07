@@ -6,6 +6,7 @@ const PRESET_PROMPTS = [
   { label: '🚗 Reversing Car & Screeching', prompt: 'Car engine reversing fast followed by sudden loud screeching tires skidding on asphalt', duration: 6, engine: 'audioldm2' },
   { label: '🚪 Footsteps & Door Slam', prompt: 'Heavy boots walking quickly on wooden floor followed by a loud heavy wooden door slamming shut', duration: 7, engine: 'audioldm2' },
   { label: '🌩️ Thunder & Rain', prompt: 'Cinematic thunder strike in the distance with gentle rain pouring on asphalt', duration: 12, engine: 'stable_audio' },
+  { label: '🎬 Cinematic Impact', prompt: 'Massive cinematic Hollywood trailer impact boom with reverberating brass hit and shattering glass', duration: 8, engine: 'stable_audio_3' },
   { label: '🚀 Sci-Fi Laser Weapon', prompt: 'Futuristic sci-fi laser blast weapon charging up and firing with heavy energy echo', duration: 4, engine: 'audioldm2' },
   { label: '🏎️ V8 Muscle Car', prompt: 'Aggressive V8 muscle car engine revving up and accelerating fast on asphalt', duration: 10, engine: 'stable_audio' },
   { label: '🌌 Deep Space Drone', prompt: 'Dark cinematic atmospheric drone with deep sub bass rumbling in deep space', duration: 20, engine: 'stable_audio' },
@@ -15,7 +16,7 @@ const PRESET_PROMPTS = [
 ];
 
 export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
-  const [sfxEngine, setSfxEngine] = useState('audioldm2'); // 'audioldm2' | 'stable_audio'
+  const [sfxEngine, setSfxEngine] = useState('audioldm2'); // 'audioldm2' | 'stable_audio' | 'stable_audio_3'
   const [prompt, setPrompt] = useState('Car engine reversing fast followed by sudden loud screeching tires skidding on asphalt');
   const [negativePrompt, setNegativePrompt] = useState('low quality, distortion, harsh, noisy, speech, human voice');
   const [duration, setDuration] = useState(6);
@@ -37,8 +38,14 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const [history, setHistory] = useState([]);
 
   const isStableAudioReady = !!modelsStatus?.stable_audio?.installed;
+  const isStableAudio3Ready = !!modelsStatus?.stable_audio_3?.installed;
   const isAudioLDMReady = !!modelsStatus?.audioldm2?.installed;
-  const isCurrentEngineReady = sfxEngine === 'audioldm2' ? isAudioLDMReady : isStableAudioReady;
+  const isCurrentEngineReady =
+    sfxEngine === 'audioldm2'
+      ? isAudioLDMReady
+      : sfxEngine === 'stable_audio_3'
+      ? isStableAudio3Ready
+      : isStableAudioReady;
 
   // Switch default params when engine changes
   const handleSelectEngine = (engine) => {
@@ -47,6 +54,9 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       if (duration > 30) setDuration(15);
       setSteps(35);
       setCfgScale(4.0);
+    } else if (engine === 'stable_audio_3') {
+      setSteps(50);
+      setCfgScale(7.0);
     } else {
       setSteps(50);
       setCfgScale(7.0);
@@ -62,6 +72,8 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       setProgressStage(
         sfxEngine === 'audioldm2'
           ? 'Initializing AudioLDM 2 diffusion pipeline on CUDA...'
+          : sfxEngine === 'stable_audio_3'
+          ? 'Initializing Stable Audio 3 Medium DiT pipeline on CUDA...'
           : 'Initializing Stable Audio Open diffusion pipeline on CUDA...'
       );
       setElapsedSeconds(0);
@@ -76,6 +88,8 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             setProgressStage(
               sfxEngine === 'audioldm2'
                 ? 'Encoding dual CLAP + T5 narrative text conditioning...'
+                : sfxEngine === 'stable_audio_3'
+                ? 'Encoding T5 text conditioning with DiT conditioning...'
                 : 'Encoding text conditioning with CLAP...'
             );
             return p + 5;
@@ -87,6 +101,8 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
             setProgressStage(
               sfxEngine === 'audioldm2'
                 ? `Decoding 16kHz Foley waveform via VAE (${duration}s)...`
+                : sfxEngine === 'stable_audio_3'
+                ? `Decoding 44.1kHz flagship stereo waveform via DiT Autoencoder (${duration}s)...`
                 : `Decoding 44.1kHz stereo waveform via Autoencoder (${duration}s)...`
             );
             return p + 2;
@@ -143,7 +159,12 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
     }
 
     if (!isCurrentEngineReady) {
-      const engineTitle = sfxEngine === 'audioldm2' ? 'AudioLDM 2 Studio' : 'Stable Audio Open';
+      const engineTitle =
+        sfxEngine === 'audioldm2'
+          ? 'AudioLDM 2 Studio'
+          : sfxEngine === 'stable_audio_3'
+          ? 'Stable Audio 3 Medium'
+          : 'Stable Audio Open';
       setErrorMessage(`${engineTitle} is not installed. Download it via Model Manager.`);
       return;
     }
@@ -201,9 +222,9 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-              Dual AI Engine
+              Tri-Engine Audio Studio
             </span>
-            <span className="text-xs text-slate-500 font-medium">AudioLDM 2 (Multi-Event Foley) &amp; Stable Audio Open (44.1kHz Stereo)</span>
+            <span className="text-xs text-slate-500 font-medium">AudioLDM 2, Stable Audio Open &amp; Stable Audio 3 Medium</span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Radio className="w-6 h-6 text-purple-600" />
@@ -216,7 +237,13 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
           {isCurrentEngineReady ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>{sfxEngine === 'audioldm2' ? 'AudioLDM 2 Ready' : 'Stable Audio Ready'}</span>
+              <span>
+                {sfxEngine === 'audioldm2'
+                  ? 'AudioLDM 2 Ready'
+                  : sfxEngine === 'stable_audio_3'
+                  ? 'Stable Audio 3 Ready'
+                  : 'Stable Audio Ready'}
+              </span>
             </div>
           ) : (
             <button
@@ -230,8 +257,8 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
         </div>
       </div>
 
-      {/* Dual Engine Selector */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Tri-Engine Selector */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Engine 1: AudioLDM 2 */}
         <div
           onClick={() => handleSelectEngine('audioldm2')}
@@ -244,7 +271,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                AudioLDM 2 Studio
+                AudioLDM 2
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
                 Multi-Event Foley
@@ -264,14 +291,14 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               </button>
             )}
           </div>
-          <h3 className="text-sm font-bold text-slate-900">Complex Action &amp; Composite Prompt Adherence</h3>
+          <h3 className="text-sm font-bold text-slate-900">Complex Action &amp; Foley Adherence</h3>
           <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-            Dual CLAP + T5 conditioning. Engineered for prompts with multiple simultaneous actions (e.g. <i>"reversing car screeching tires"</i> plays the reversing engine <b>AND</b> the screeching tires without dropping events).
+            Dual CLAP + T5 conditioning. Engineered for prompts with multiple actions (e.g. <i>"reversing car screeching tires"</i>). Pristine float32 execution with zero static.
           </p>
           <div className="mt-3 flex items-center gap-4 text-[11px] font-mono text-slate-500">
             <span>• 16kHz Audio</span>
             <span>• Up to 30s</span>
-            <span>• ~3s Fast Diffusion</span>
+            <span>• Fast Diffusion</span>
           </div>
         </div>
 
@@ -287,7 +314,7 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                Stable Audio Open 1.0
+                Stable Audio Open
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
                 44.1kHz Hi-Fi
@@ -307,14 +334,57 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               </button>
             )}
           </div>
-          <h3 className="text-sm font-bold text-slate-900">44.1kHz Stereo Ambient Beds &amp; Continuous Foley</h3>
+          <h3 className="text-sm font-bold text-slate-900">44.1kHz Stereo Ambient Beds</h3>
           <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-            Full bandwidth stereo diffusion by Stability AI. Ideal for long sustained continuous textures (thunderstorm, ocean waves, room tone, space drone) up to 47 seconds.
+            Full bandwidth stereo diffusion by Stability AI. Ideal for long sustained continuous textures (thunderstorm, ocean waves, room tone, space drone) up to 47s.
           </p>
           <div className="mt-3 flex items-center gap-4 text-[11px] font-mono text-slate-500">
             <span>• 44.1kHz Stereo</span>
             <span>• Up to 47s</span>
             <span>• Stability AI</span>
+          </div>
+        </div>
+
+        {/* Engine 3: Stable Audio 3 Medium */}
+        <div
+          onClick={() => handleSelectEngine('stable_audio_3')}
+          className={`cursor-pointer rounded-2xl border-2 p-5 transition-all duration-200 select-none ${
+            sfxEngine === 'stable_audio_3'
+              ? 'border-fuchsia-600 bg-fuchsia-50/70 shadow-md shadow-fuchsia-100'
+              : 'border-slate-200 bg-white hover:border-fuchsia-300 hover:shadow-xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200">
+                Stable Audio 3 Medium
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-600 bg-fuchsia-50 px-2 py-0.5 rounded">
+                Flagship DiT
+              </span>
+            </div>
+            {isStableAudio3Ready ? (
+              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Ready
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenModelManager(); }}
+                className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 hover:bg-amber-100"
+              >
+                Missing (Download)
+              </button>
+            )}
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">Flagship 2B Studio Sound Design</h3>
+          <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            Stability AI flagship Diffusion Transformer (DiT). Supreme audio fidelity, rich dynamic transients, cinematic impacts, and high-fidelity foley at 44.1kHz.
+          </p>
+          <div className="mt-3 flex items-center gap-4 text-[11px] font-mono text-slate-500">
+            <span>• 44.1kHz Hi-Fi</span>
+            <span>• 2B DiT Architecture</span>
+            <span>• Gated HF</span>
           </div>
         </div>
       </div>
