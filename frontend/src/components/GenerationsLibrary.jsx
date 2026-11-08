@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Download, Trash2, Music, Mic, Clock, RefreshCw, FolderOpen, ArrowUpRight, Sparkles, Music2, Disc } from 'lucide-react';
+import { Play, Download, Trash2, Music, Mic, Clock, RefreshCw, FolderOpen, ArrowUpRight, Sparkles, Music2, Disc, User } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
 
 export default function GenerationsLibrary({ onLoadIntoStudio }) {
@@ -181,6 +181,14 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
                   <h4 className="text-sm font-bold text-slate-800 truncate" title={item.filename}>
                     {item.title}
                   </h4>
+                  {isSongCover && item.voice_title && (
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 text-pink-700 border border-pink-200">
+                        <User className="w-2.5 h-2.5" />
+                        {item.voice_title} Cover
+                      </span>
+                    </div>
+                  )}
                   <p className="text-[11px] font-mono text-slate-500 truncate">
                     {item.filename}
                   </p>

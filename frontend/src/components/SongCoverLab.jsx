@@ -28,6 +28,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   const [inputMode, setInputMode] = useState('file');
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileAudioPath, setFileAudioPath] = useState('');
+  const [songTitle, setSongTitle] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [fetchedUrlData, setFetchedUrlData] = useState(null);
@@ -35,10 +36,15 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   // Target Voice Selection: 'audio' (clone from audio file) | 'model' (trained RVC .pth)
   const [voiceTargetMode, setVoiceTargetMode] = useState('audio');
   
-  // Custom Voice Audio Upload / Selection
+  // Custom Voice Audio: 'preset' (upload/presets) | 'youtube' (YouTube URL)
+  const [voiceSubMode, setVoiceSubMode] = useState('preset');
+  const [voiceTitle, setVoiceTitle] = useState('Donald Trump');
   const [selectedVoiceFile, setSelectedVoiceFile] = useState(null);
   const [voiceAudioPath, setVoiceAudioPath] = useState('');
   const [selectedPresetVoice, setSelectedPresetVoice] = useState('trump');
+  const [voiceUrlInput, setVoiceUrlInput] = useState('');
+  const [isFetchingVoiceUrl, setIsFetchingVoiceUrl] = useState(false);
+  const [fetchedVoiceUrlData, setFetchedVoiceUrlData] = useState(null);
 
   // RVC Models (.pth)
   const [rvcModels, setRvcModels] = useState([]);
@@ -117,6 +123,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
     if (!file) return;
 
     setSelectedFile(file);
+    setSongTitle(file.name.replace(/\.[^/.]+$/, ''));
     setErrorMessage('');
 
     const formData = new FormData();
@@ -146,6 +153,8 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
 
     setSelectedVoiceFile(file);
     setSelectedPresetVoice(''); // Deselect preset
+    setFetchedVoiceUrlData(null);
+    setVoiceTitle(file.name.replace(/\.[^/.]+$/, ''));
     setErrorMessage('');
 
     const formData = new FormData();
@@ -172,11 +181,14 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   const handleSelectPresetVoice = (voiceId) => {
     setSelectedPresetVoice(voiceId);
     setSelectedVoiceFile(null);
+    setFetchedVoiceUrlData(null);
+    const preset = presetVoices.find(p => p.id === voiceId);
+    setVoiceTitle(preset ? preset.name : voiceId);
     // Point to backend preset voice wav
     setVoiceAudioPath(`backend/voices/${voiceId}.wav`);
   };
 
-  // Handle URL fetch
+  // Handle URL fetch for song
   const handleFetchUrl = async () => {
     if (!urlInput.trim()) {
       setErrorMessage('Please enter a valid YouTube or Spotify link.');
@@ -194,6 +206,9 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         const data = await res.json();
         setFetchedUrlData(data);
         setFileAudioPath(data.audio_path);
+        if (data.title) {
+          setSongTitle(data.title);
+        }
       } else {
         const err = await res.json();
         setErrorMessage(err.detail || 'Could not download audio from the specified URL.');
@@ -202,6 +217,38 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
       setErrorMessage(`Network error fetching URL: ${err.message}`);
     } finally {
       setIsFetchingUrl(false);
+    }
+  };
+
+  // Handle URL fetch for reference voice sample (YouTube voice cloning)
+  const handleFetchVoiceUrl = async () => {
+    if (!voiceUrlInput.trim()) {
+      setErrorMessage('Please enter a valid YouTube URL for the voice sample.');
+      return;
+    }
+    setIsFetchingVoiceUrl(true);
+    setErrorMessage('');
+    try {
+      const res = await fetch('/api/song-cover/fetch-voice-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: voiceUrlInput.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFetchedVoiceUrlData(data);
+        setVoiceAudioPath(data.audio_path);
+        setVoiceTitle(data.title || 'YouTube Singer');
+        setSelectedPresetVoice('');
+        setSelectedVoiceFile(null);
+      } else {
+        const err = await res.json();
+        setErrorMessage(err.detail || 'Could not download voice sample from URL.');
+      }
+    } catch (err) {
+      setErrorMessage(`Network error fetching voice URL: ${err.message}`);
+    } finally {
+      setIsFetchingVoiceUrl(false);
     }
   };
 
@@ -297,6 +344,9 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
       effectiveVoicePath = `backend/voices/${selectedPresetVoice}.wav`;
     }
 
+    const currentSongTitle = songTitle || (fetchedUrlData?.title || (selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'Song Audio'));
+    const currentVoiceTitle = voiceTitle || (voiceTargetMode === 'model' ? selectedModel.replace(/\.[^/.]+$/, '') : (selectedPresetVoice || 'AI Singer'));
+
     try {
       const res = await fetch('/api/song-cover/process', {
         method: 'POST',
@@ -304,6 +354,8 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         body: JSON.stringify({
           source_type: fileAudioPath && !fileAudioPath.startsWith('http') ? 'file' : inputMode,
           audio_source: fileAudioPath || urlInput,
+          song_title: currentSongTitle,
+          voice_title: currentVoiceTitle,
           voice_mode: voiceTargetMode,
           model_name: voiceTargetMode === 'model' ? selectedModel : (selectedModel || 'trump.pth'),
           voice_audio_path: effectiveVoicePath,
@@ -526,9 +578,18 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   </button>
                 </div>
                 {fetchedUrlData && (
-                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Audio fetched: {fetchedUrlData.filename}
-                  </p>
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2 truncate">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div className="truncate">
+                        <p className="font-bold truncate">{fetchedUrlData.title || fetchedUrlData.filename}</p>
+                        <p className="text-[10px] text-emerald-600 font-mono">Song audio acquired &bull; Ready for BS-RoFormer</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                      YouTube Track
+                    </span>
+                  </div>
                 )}
               </div>
             )}
@@ -576,51 +637,130 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-indigo-600" /> Target Singer Audio Sample
                   </label>
-                  <span className="text-[11px] text-slate-400">Speech or vocal sample (10s - 60s)</span>
-                </div>
-
-                {/* File Upload for Voice Sample */}
-                <label className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-white hover:bg-indigo-50/20">
-                  <Upload className="w-6 h-6 text-indigo-600 mb-1" />
-                  <span className="text-xs font-semibold text-slate-800">
-                    {selectedVoiceFile ? selectedVoiceFile.name : 'Upload voice sample to clone this singer'}
-                  </span>
-                  <span className="text-[10px] text-slate-400">WAV, MP3, FLAC, M4A</span>
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={handleVoiceFileChange}
-                    className="hidden"
-                  />
-                </label>
-
-                {voiceAudioPath && (
-                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Voice sample active: {selectedVoiceFile?.name || voiceAudioPath}
-                  </p>
-                )}
-
-                {/* Quick Presets Grid */}
-                <div className="pt-2 border-t border-slate-200/80">
-                  <span className="text-[11px] font-bold text-slate-600 block mb-2">Or choose a preset singer:</span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {presetVoices.map((v) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => handleSelectPresetVoice(v.id)}
-                        className={`p-2 rounded-xl text-left border transition-all ${
-                          selectedPresetVoice === v.id
-                            ? 'bg-indigo-50 border-indigo-400 text-indigo-900 shadow-2xs font-bold'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                        }`}
-                      >
-                        <p className="text-xs truncate">{v.name}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{v.desc}</p>
-                      </button>
-                    ))}
+                  
+                  {/* Voice Source Sub-Toggle: Upload / Preset vs YouTube URL */}
+                  <div className="flex bg-slate-200/70 p-0.5 rounded-lg text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setVoiceSubMode('preset')}
+                      className={`px-2 py-0.5 rounded-md transition-all ${
+                        voiceSubMode === 'preset'
+                          ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      File / Presets
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVoiceSubMode('youtube')}
+                      className={`px-2 py-0.5 rounded-md transition-all flex items-center gap-1 ${
+                        voiceSubMode === 'youtube'
+                          ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Link2 className="w-3 h-3 text-red-500" />
+                      YouTube Voice
+                    </button>
                   </div>
                 </div>
+
+                {voiceSubMode === 'youtube' ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Link2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="url"
+                          placeholder="Paste YouTube URL of target singer/speaker to clone..."
+                          value={voiceUrlInput}
+                          onChange={(e) => setVoiceUrlInput(e.target.value)}
+                          disabled={isFetchingVoiceUrl}
+                          className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleFetchVoiceUrl}
+                        disabled={isFetchingVoiceUrl || !voiceUrlInput.trim()}
+                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-2xs"
+                      >
+                        {isFetchingVoiceUrl ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Extracting Voice...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Clone Voice</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {fetchedVoiceUrlData && (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2 truncate">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div className="truncate">
+                            <p className="font-bold truncate">{fetchedVoiceUrlData.title}</p>
+                            <p className="text-[10px] text-emerald-600 font-mono">Reference voice timbre extracted</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                          Active Target Voice
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* File Upload for Voice Sample */}
+                    <label className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-white hover:bg-indigo-50/20">
+                      <Upload className="w-6 h-6 text-indigo-600 mb-1" />
+                      <span className="text-xs font-semibold text-slate-800">
+                        {selectedVoiceFile ? selectedVoiceFile.name : 'Upload voice sample to clone this singer'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">WAV, MP3, FLAC, M4A</span>
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleVoiceFileChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {voiceAudioPath && !fetchedVoiceUrlData && (
+                      <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Voice sample active: {selectedVoiceFile?.name || voiceAudioPath}
+                      </p>
+                    )}
+
+                    {/* Quick Presets Grid */}
+                    <div className="pt-2 border-t border-slate-200/80">
+                      <span className="text-[11px] font-bold text-slate-600 block mb-2">Or choose a preset singer:</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {presetVoices.map((v) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => handleSelectPresetVoice(v.id)}
+                            className={`p-2 rounded-xl text-left border transition-all ${
+                              selectedPresetVoice === v.id
+                                ? 'bg-indigo-50 border-indigo-400 text-indigo-900 shadow-2xs font-bold'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <p className="text-xs truncate">{v.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{v.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               /* Sub-Panel B: Select Pre-trained RVC Model (.pth) */

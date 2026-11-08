@@ -37,13 +37,16 @@ Unlike cloud-dependent platforms with monthly subscriptions, privacy concerns, a
    - **AudioLDM 2 Studio:** Dual CLAP + T5 narrative sound effect synthesis designed for multi-event soundscapes.
    - **Intelligent Negative Prompt Sanitization:** Automatically detects vocal and musical intent (e.g., laughter, screams, crying, instruments) and cleans negative prompt conflicts dynamically.
 3. **[Song Cover Lab]**: Complete end-to-end AI Song Cover production pipeline:
-   - **Audio Input:** Drag-and-drop song files (MP3/WAV/FLAC) or fetch directly from YouTube/Spotify links.
-   - **BS-RoFormer Vocal Isolation:** SOTA 12.97 SDR separation on CUDA to cleanly isolate singing vocals and instrumental stems.
-   - **RVC v2 + RMVPE Neural Voice Conversion:** Transform vocals using any RVC v2 model or uploaded voice audio, with pitch-tracking RMVPE and pitch shifting (-12 to +12 semitones).
+   - **Audio Ingestion:** Drag-and-drop song files (MP3/WAV/FLAC) or fetch directly from YouTube/Spotify links.
+   - **Target Singer Flexibility:** Use pre-trained RVC models (`.pth`), upload an audio clip, or **extract voice samples directly from any YouTube URL** to clone singers on the fly.
+   - **BS-RoFormer Vocal Isolation:** SOTA 12.97 SDR separation on CUDA to cleanly isolate singing vocals and instrumental stems with zero bleed.
+   - **Studio De-Reverb Expander:** Built-in downward expander attenuates room reflections and slapback echo by 15–22 dB while keeping singing phonemes 100% intact.
+   - **Silence-Aware Phrase Boundary Slicing:** Dynamically searches energy minima (±1.5s window) to ensure words are never cut across chunk boundaries.
+   - **RVC v2 + RMVPE Neural Voice Conversion:** Transform vocals using any RVC v2 model or voice reference, with pitch-tracking RMVPE and pitch shifting (-12 to +12 semitones).
    - **Bit-Exact Pure-PyTorch Fairseq HuBERT:** Native 100% bit-exact acoustic encoder integration with unvoiced consonant protection.
    - **Dynamic Stem Mixing:** Independent volume sliders for vocals (0% - 150%) and instrumental (0% - 150%) with soft-knee peak protection.
    - **Dual Studio Quality Export:** Broadcast-ready **320 kbps High-Fidelity MP3** and **24-bit Lossless Studio Master WAV**.
-4. **[Generations Archive]**: Integrated audio library cataloging all synthesized clips with waveform players, prompt metadata, and batch export tools.
+4. **[Generations Archive]**: Integrated audio library cataloging all synthesized clips with waveform players, prompt metadata, and batch export tools. Automatically catalogs song covers with track titles and cover artist badges (`Down Under — Donald Trump Cover`).
 5. **[Model Manager]**: 1-click inspection, on-demand downloading, VRAM unloading, and checkpoint purging for all local models.
 
 ---

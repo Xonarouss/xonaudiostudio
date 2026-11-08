@@ -706,14 +706,35 @@ def get_all_generations() -> List[Dict[str, Any]]:
         for file in song_covers_dir.glob("*.wav"):
             try:
                 stat = file.stat()
+                short_id = file.stem.split("_")[-1]
+                meta_file = song_covers_dir / f"cover_mix_{short_id}.json"
+                song_title = None
+                voice_title = None
+                if meta_file.exists():
+                    try:
+                        meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                        song_title = meta.get("song_title")
+                        voice_title = meta.get("voice_title")
+                    except Exception:
+                        pass
+
                 if file.name.startswith("cover_mix_"):
-                    title = f"AI Song Cover — Full Mix ({file.stem[-8:]})"
+                    if song_title and voice_title:
+                        title = f"{song_title} — {voice_title} Cover (Full Mix)"
+                    else:
+                        title = f"AI Song Cover — Full Mix ({short_id})"
                 elif file.name.startswith("cover_vocals_"):
-                    title = f"Song Cover — Vocals Only ({file.stem[-8:]})"
+                    if song_title and voice_title:
+                        title = f"{song_title} — {voice_title} (Vocals Only)"
+                    else:
+                        title = f"Song Cover — Vocals Only ({short_id})"
                 elif file.name.startswith("cover_inst_"):
-                    title = f"Song Cover — Instrumental ({file.stem[-8:]})"
+                    if song_title:
+                        title = f"{song_title} — Instrumental Backing"
+                    else:
+                        title = f"Song Cover — Instrumental ({short_id})"
                 else:
-                    title = f"Song Cover ({file.stem[-8:]})"
+                    title = f"Song Cover ({short_id})"
 
                 mp3_candidate = file.with_suffix(".mp3")
                 mp3_url = f"/outputs/song_covers/mixes/{mp3_candidate.name}" if mp3_candidate.exists() else None
@@ -723,6 +744,8 @@ def get_all_generations() -> List[Dict[str, Any]]:
                     "filename": file.name,
                     "type": "song_cover",
                     "title": title,
+                    "song_title": song_title,
+                    "voice_title": voice_title,
                     "url": f"/outputs/song_covers/mixes/{file.name}",
                     "mp3_url": mp3_url,
                     "size_mb": round(stat.st_size / (1024 * 1024), 2),
@@ -738,20 +761,43 @@ def get_all_generations() -> List[Dict[str, Any]]:
             if not wav_candidate.exists():
                 try:
                     stat = file.stat()
+                    short_id = file.stem.split("_")[-1]
+                    meta_file = song_covers_dir / f"cover_mix_{short_id}.json"
+                    song_title = None
+                    voice_title = None
+                    if meta_file.exists():
+                        try:
+                            meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                            song_title = meta.get("song_title")
+                            voice_title = meta.get("voice_title")
+                        except Exception:
+                            pass
+
                     if file.name.startswith("cover_mix_"):
-                        title = f"AI Song Cover — Full Mix ({file.stem[-8:]})"
+                        if song_title and voice_title:
+                            title = f"{song_title} — {voice_title} Cover (Full Mix)"
+                        else:
+                            title = f"AI Song Cover — Full Mix ({short_id})"
                     elif file.name.startswith("cover_vocals_"):
-                        title = f"Song Cover — Vocals Only ({file.stem[-8:]})"
+                        if song_title and voice_title:
+                            title = f"{song_title} — {voice_title} (Vocals Only)"
+                        else:
+                            title = f"Song Cover — Vocals Only ({short_id})"
                     elif file.name.startswith("cover_inst_"):
-                        title = f"Song Cover — Instrumental ({file.stem[-8:]})"
+                        if song_title:
+                            title = f"{song_title} — Instrumental Backing"
+                        else:
+                            title = f"Song Cover — Instrumental ({short_id})"
                     else:
-                        title = f"Song Cover ({file.stem[-8:]})"
+                        title = f"Song Cover ({short_id})"
 
                     generations.append({
                         "id": file.stem,
                         "filename": file.name,
                         "type": "song_cover",
                         "title": title,
+                        "song_title": song_title,
+                        "voice_title": voice_title,
                         "url": f"/outputs/song_covers/mixes/{file.name}",
                         "mp3_url": f"/outputs/song_covers/mixes/{file.name}",
                         "size_mb": round(stat.st_size / (1024 * 1024), 2),

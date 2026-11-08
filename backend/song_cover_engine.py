@@ -82,9 +82,18 @@ class SongCoverEngine:
             sr = 40000
             try:
                 cpt = torch.load(pth, map_location="cpu", weights_only=False)
-                version = cpt.get("version", "v2")
-                if "config" in cpt and len(cpt["config"]) > 0:
-                    sr = cpt["config"][-1]
+                if isinstance(cpt, dict):
+                    version = cpt.get("version", "v2")
+                    if "config" in cpt and isinstance(cpt["config"], (list, tuple)) and len(cpt["config"]) > 0:
+                        sr = cpt["config"][-1]
+                    elif "sr" in cpt:
+                        sr_str = str(cpt["sr"]).lower()
+                        if "48" in sr_str:
+                            sr = 48000
+                        elif "32" in sr_str:
+                            sr = 32000
+                        else:
+                            sr = 40000
                 del cpt
             except Exception:
                 pass
@@ -103,15 +112,15 @@ class SongCoverEngine:
 
         return sorted(models, key=lambda m: m["name"])
 
-    def fetch_url_audio(self, url: str) -> Path:
+    def fetch_url_audio(self, url: str, prefix: str = "song_") -> Tuple[Path, str]:
         """
         Downloads YouTube or other supported web audio using yt-dlp.
-        Returns the path to the downloaded pristine audio file.
+        Returns a tuple of (downloaded_audio_path, video_title).
         """
         import yt_dlp
 
         unique_id = uuid.uuid4().hex[:10]
-        out_template = str(INPUTS_DIR / f"input_{unique_id}.%(ext)s")
+        out_template = str(INPUTS_DIR / f"{prefix}{unique_id}.%(ext)s")
 
         ydl_opts = {
             "format": "bestaudio/best",
@@ -130,18 +139,28 @@ class SongCoverEngine:
         if "spotify.com" in url:
             ydl_opts["default_search"] = "ytsearch"
 
-        logger.info(f"Downloading audio from {url}...")
+        logger.info(f"Downloading audio from {url} (prefix={prefix})...")
+        title = "Unknown Audio"
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            try:
+                info = ydl.extract_info(url, download=True)
+                if info:
+                    if "entries" in info and len(info["entries"]) > 0:
+                        title = info["entries"][0].get("title", title)
+                    else:
+                        title = info.get("title", title)
+            except Exception as e:
+                logger.warning(f"yt-dlp extract_info error: {e}, falling back to direct download...")
+                ydl.download([url])
 
-        expected_wav = INPUTS_DIR / f"input_{unique_id}.wav"
+        expected_wav = INPUTS_DIR / f"{prefix}{unique_id}.wav"
         if expected_wav.exists():
-            return expected_wav
+            return expected_wav, title
 
         # In case extension differed
-        candidates = list(INPUTS_DIR.glob(f"input_{unique_id}.*"))
+        candidates = list(INPUTS_DIR.glob(f"{prefix}{unique_id}.*"))
         if candidates:
-            return candidates[0]
+            return candidates[0], title
 
         raise RuntimeError(f"Audio download failed for URL: {url}")
 
@@ -407,30 +426,76 @@ class SongCoverEngine:
         logger.info(f"[RVC] Loading voice checkpoint: {pth_path}...")
         cpt = torch.load(pth_path, map_location="cpu", weights_only=False)
 
-        # Ensure valid config exists in checkpoint
-        if "config" not in cpt or not cpt["config"]:
-            cpt["config"] = [1025, 32, 192, 192, 768, 2, 6, 3, 0, '1', [3, 7, 11], [[1, 3, 5], [1, 3, 5], [1, 3, 5]], [12, 10, 2, 2], 512, [24, 20, 4, 4], 109, 256, 40000]
+        # 1. Normalize checkpoint dictionary structure
+        if not isinstance(cpt, dict):
+            cpt = {"weight": cpt}
+        elif "weight" not in cpt:
+            if any(k.startswith(("enc_p", "dec", "flow")) for k in cpt.keys()):
+                cpt = {"weight": cpt}
+            else:
+                cpt["weight"] = {}
 
-        tgt_sr = cpt["config"][-1]
+        # 2. Detect RVC version (v1 vs v2)
+        version = cpt.get("version", None)
+        if not version:
+            weights = cpt.get("weight", {})
+            if any("enc_p.text_prep.weight" in k for k in weights):
+                version = "v2"
+            else:
+                for k, v in weights.items():
+                    if "enc_p" in k and hasattr(v, "shape") and len(v.shape) >= 2:
+                        if 768 in v.shape:
+                            version = "v2"
+                            break
+                        elif 256 in v.shape:
+                            version = "v1"
+                            break
+                if not version:
+                    version = "v2"
+
+        # 3. Detect target sample rate
+        tgt_sr = None
+        if "config" in cpt and isinstance(cpt["config"], (list, tuple)) and len(cpt["config"]) > 0:
+            tgt_sr = int(cpt["config"][-1])
+        elif "sr" in cpt:
+            sr_str = str(cpt["sr"]).lower()
+            if "48" in sr_str:
+                tgt_sr = 48000
+            elif "32" in sr_str:
+                tgt_sr = 32000
+            else:
+                tgt_sr = 40000
+        else:
+            tgt_sr = 40000
+
+        # 4. Synthesize robust config array if missing or invalid
+        if "config" not in cpt or not cpt["config"] or not isinstance(cpt["config"], list):
+            hidden_dim = 768 if version == "v2" else 256
+            cpt["config"] = [
+                1025, 32, 192, 192, hidden_dim, 2, 6, 3, 0, '1',
+                [3, 7, 11],
+                [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
+                [12, 10, 2, 2], 512, [24, 20, 4, 4], 109, 256, tgt_sr
+            ]
+
+        tgt_sr = int(cpt["config"][-1])
         if "weight" in cpt and "emb_g.weight" in cpt["weight"]:
             cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
         else:
             cpt["config"][-3] = 1
+
         if_f0 = cpt.get("f0", 1)
-        version = cpt.get("version", "v2")
 
         if version == "v1":
             if if_f0 == 1:
                 net_g = SynthesizerTrnMs256NSFsid(*cpt["config"], is_half=self.is_half)
             else:
                 net_g = SynthesizerTrnMs256NSFsid_nono(*cpt["config"])
-        elif version == "v2":
+        else:
             if if_f0 == 1:
                 net_g = SynthesizerTrnMs768NSFsid(*cpt["config"], is_half=self.is_half)
             else:
                 net_g = SynthesizerTrnMs768NSFsid_nono(*cpt["config"])
-        else:
-            raise ValueError(f"Unknown RVC version in checkpoint: {version}")
 
         del net_g.enc_q
         net_g.load_state_dict(cpt["weight"], strict=False)
@@ -675,12 +740,16 @@ class SongCoverEngine:
         instrumental_path: Path,
         vocal_vol: float = 1.0,
         inst_vol: float = 1.0,
+        song_title: Optional[str] = None,
+        voice_title: Optional[str] = None,
+        pitch_shift: int = 0,
         progress_callback: Optional[Callable[[str, float], None]] = None
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
         Mixes converted vocals and instrumental tracks according to volume sliders.
         Applies high-grade Kaiser sinc resampling and transparent soft-knee peak protection.
         Exports BOTH pristine 24-bit Studio Master WAV and broadcast-standard 320 kbps MP3.
+        Saves metadata JSON for library tracking.
         """
         import subprocess
         import torchaudio
@@ -765,8 +834,27 @@ class SongCoverEngine:
             except Exception as mp3_err:
                 logger.warning(f"[Mastering] Could not create 320k MP3 for {in_w.name}: {mp3_err}")
 
+        # 3. Save metadata JSON alongside mixes for Generations Library indexing
+        clean_song_title = song_title or "AI Song Cover"
+        clean_voice_title = voice_title or "AI Voice"
+        meta = {
+            "id": unique_id,
+            "song_title": clean_song_title,
+            "voice_title": clean_voice_title,
+            "pitch_shift": pitch_shift,
+            "sample_rate": inst_sr,
+            "created_at": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        meta_path = MIXES_DIR / f"cover_mix_{unique_id}.json"
+        try:
+            with open(meta_path, "w", encoding="utf-8") as f:
+                json.dump(meta, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Could not save cover metadata JSON: {e}")
+
         logger.info(
             f"Mix export complete (24-bit WAV & 320k MP3):\n"
+            f"  Track: {clean_song_title} ({clean_voice_title} Cover)\n"
             f"  Mix: {mix_path} (RMS={np.sqrt(np.mean(mixed**2)):.4f})\n"
             f"  Vocals: {voc_path} (RMS={np.sqrt(np.mean(voc_scaled**2)):.4f})\n"
             f"  Inst: {inst_path} (RMS={np.sqrt(np.mean(inst_scaled**2)):.4f})"
@@ -782,12 +870,16 @@ class SongCoverEngine:
             "mix_path": str(mix_path),
             "vocals_path": str(voc_path),
             "instrumental_path": str(inst_path),
+            "song_title": clean_song_title,
+            "voice_title": clean_voice_title,
         }
 
     def process_song_cover(
         self,
         source_type: str,
         file_path_or_url: str,
+        song_title: Optional[str] = None,
+        voice_title: Optional[str] = None,
         model_name: Optional[str] = None,
         voice_mode: str = "model",
         voice_audio_path: Optional[str] = None,
@@ -808,14 +900,28 @@ class SongCoverEngine:
 
         # Intelligent input resolution: check if already an existing local audio file on disk
         cand_path = Path(file_path_or_url)
+        resolved_song_title = song_title
         if cand_path.exists() and cand_path.is_file():
             input_audio_path = cand_path
+            if not resolved_song_title:
+                resolved_song_title = cand_path.stem.replace('_', ' ').replace('-', ' ').title()
         elif file_path_or_url.startswith(("http://", "https://", "www.")) or (source_type == "url" and not cand_path.exists()):
-            input_audio_path = self.fetch_url_audio(file_path_or_url)
+            input_audio_path, fetched_title = self.fetch_url_audio(file_path_or_url, prefix="song_")
+            if not resolved_song_title:
+                resolved_song_title = fetched_title
         else:
             if not cand_path.exists():
                 raise FileNotFoundError(f"Input song audio not found: {file_path_or_url}")
             input_audio_path = cand_path
+            if not resolved_song_title:
+                resolved_song_title = cand_path.stem.replace('_', ' ').replace('-', ' ').title()
+
+        resolved_voice_title = voice_title
+        if not resolved_voice_title:
+            if voice_mode == "model":
+                resolved_voice_title = Path(model_name).stem.replace('_', ' ').title() if model_name else "RVC Voice"
+            else:
+                resolved_voice_title = Path(voice_audio_path).stem.replace('_', ' ').title() if voice_audio_path else "Cloned Voice"
 
         # Step 2: Separate Vocals (BS-RoFormer)
         if progress_callback:
@@ -842,6 +948,9 @@ class SongCoverEngine:
             instrumental_path=inst_path,
             vocal_vol=vocal_vol,
             inst_vol=inst_vol,
+            song_title=resolved_song_title,
+            voice_title=resolved_voice_title,
+            pitch_shift=pitch_shift,
             progress_callback=progress_callback
         )
 
@@ -852,6 +961,8 @@ class SongCoverEngine:
         return {
             "status": "success",
             "elapsed_seconds": elapsed,
+            "song_title": resolved_song_title,
+            "voice_title": resolved_voice_title,
             "mix_url": mix_results["mix_url"],
             "mix_mp3_url": mix_results.get("mix_mp3_url", mix_results["mix_url"]),
             "vocals_url": mix_results["vocals_url"],

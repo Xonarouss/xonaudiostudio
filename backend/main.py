@@ -804,6 +804,8 @@ def generate_sfx(req: SFXGenerateRequest):
 class SongCoverProcessRequest(BaseModel):
     source_type: str = "file"               # "file" or "url"
     audio_source: str                       # URL or uploaded song file path
+    song_title: Optional[str] = None        # Original song or video title
+    voice_title: Optional[str] = None       # Target voice or singer title
     voice_mode: Optional[str] = "audio"     # "audio" (voice clone from audio) or "model" (RVC .pth)
     model_name: Optional[str] = None        # RVC .pth filename
     voice_audio_path: Optional[str] = None  # Reference voice audio path (for voice cloning)
@@ -919,14 +921,33 @@ def fetch_song_url(req: SongCoverUrlRequest):
         if not url:
             raise HTTPException(status_code=400, detail="Please enter a valid URL.")
 
-        downloaded_path = song_cover_engine.fetch_url_audio(url)
+        downloaded_path, title = song_cover_engine.fetch_url_audio(url, prefix="song_")
         return {
             "status": "success",
             "audio_path": str(downloaded_path),
-            "filename": downloaded_path.name
+            "filename": downloaded_path.name,
+            "title": title
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch audio from URL: {e}")
+
+@app.post("/api/song-cover/fetch-voice-url")
+def fetch_voice_url(req: SongCoverUrlRequest):
+    """Fetches reference voice sample audio from YouTube via yt-dlp for direct voice cloning."""
+    try:
+        url = req.url.strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="Please enter a valid YouTube URL for the voice sample.")
+
+        downloaded_path, title = song_cover_engine.fetch_url_audio(url, prefix="voice_ref_")
+        return {
+            "status": "success",
+            "audio_path": str(downloaded_path),
+            "filename": downloaded_path.name,
+            "title": title
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch voice audio from URL: {e}")
 
 @app.post("/api/song-cover/process")
 def process_song_cover(req: SongCoverProcessRequest):
@@ -950,6 +971,8 @@ def process_song_cover(req: SongCoverProcessRequest):
         result = song_cover_engine.process_song_cover(
             source_type=req.source_type,
             file_path_or_url=req.audio_source,
+            song_title=req.song_title,
+            voice_title=req.voice_title,
             model_name=req.model_name,
             voice_mode=req.voice_mode or "audio",
             voice_audio_path=req.voice_audio_path,
