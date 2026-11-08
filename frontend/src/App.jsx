@@ -1,5 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot, Music2 } from 'lucide-react';
+import React, { useState, useEffect, Component } from 'react';
+import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot, Music2, AlertCircle } from 'lucide-react';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 bg-white rounded-2xl border border-rose-200 text-slate-800 shadow-md text-center max-w-xl mx-auto my-12 space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">Er is een weergavefout opgetreden</h3>
+          <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl font-mono text-left overflow-auto max-h-40">
+            {this.state.error?.message || String(this.state.error)}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+          >
+            Opnieuw Proberen
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import VoiceLab from './components/VoiceLab';
 import SoundStudio from './components/SoundStudio';
 import SongCoverLab from './components/SongCoverLab';
@@ -199,41 +234,43 @@ export default function App() {
 
       {/* Main Studio Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        {activeTab === 'voicelab' && (
-          <VoiceLab
-            modelsStatus={modelsStatus}
-            onOpenModelManager={() => setActiveTab('models')}
-          />
-        )}
+        <ErrorBoundary key={activeTab}>
+          {activeTab === 'voicelab' && (
+            <VoiceLab
+              modelsStatus={modelsStatus}
+              onOpenModelManager={() => setActiveTab('models')}
+            />
+          )}
 
-        {activeTab === 'soundstudio' && (
-          <SoundStudio
-            modelsStatus={modelsStatus}
-            onOpenModelManager={() => setActiveTab('models')}
-          />
-        )}
+          {activeTab === 'soundstudio' && (
+            <SoundStudio
+              modelsStatus={modelsStatus}
+              onOpenModelManager={() => setActiveTab('models')}
+            />
+          )}
 
-        {activeTab === 'songcoverlab' && (
-          <SongCoverLab
-            modelsStatus={modelsStatus}
-            onOpenModelManager={() => setActiveTab('models')}
-          />
-        )}
+          {activeTab === 'songcoverlab' && (
+            <SongCoverLab
+              modelsStatus={modelsStatus}
+              onOpenModelManager={() => setActiveTab('models')}
+            />
+          )}
 
-        {activeTab === 'library' && (
-          <GenerationsLibrary
-            onLoadIntoStudio={handleLoadGenerationIntoStudio}
-          />
-        )}
+          {activeTab === 'library' && (
+            <GenerationsLibrary
+              onLoadIntoStudio={handleLoadGenerationIntoStudio}
+            />
+          )}
 
-        {activeTab === 'models' && (
-          <ModelManager
-            modelsStatus={modelsStatus}
-            systemInfo={systemInfo}
-            onRefresh={fetchStatus}
-            isLoading={isLoadingStatus}
-          />
-        )}
+          {activeTab === 'models' && (
+            <ModelManager
+              modelsStatus={modelsStatus}
+              systemInfo={systemInfo}
+              onRefresh={fetchStatus}
+              isLoading={isLoadingStatus}
+            />
+          )}
+        </ErrorBoundary>
       </main>
 
       {/* Floating Right Dock: AI Assistant & Hardware Telemetry Widget (Cleanly stacked & matching width) */}

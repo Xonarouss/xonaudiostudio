@@ -159,7 +159,11 @@ def _apply_patches():
         # 9. Suppress torch._dynamo flex_attention warnings on Windows PyTorch nightly without triton
         try:
             import torch._dynamo
+            import logging
             torch._dynamo.config.suppress_errors = True
+            torch._dynamo.config.verbose = False
+            logging.getLogger("torch._dynamo").setLevel(logging.ERROR)
+            logging.getLogger("torch._dynamo.convert_frame").setLevel(logging.ERROR)
         except Exception:
             pass
 

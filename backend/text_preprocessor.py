@@ -43,19 +43,19 @@ def clean_speech_text(text: str) -> str:
 
     processed = text
 
-    # 1. Convert laughter tags to natural expressive laugh interjections
+    # 1. Convert laughter tags to natural expressive laugh interjections across [], (), {}, and **
     # Modern neural TTS models (Fish Speech, XTTS-v2) produce authentic acoustic laughter
-    # when given rhythmic, multi-syllable laughter phrasing rather than a flat single 'Ha'
-    processed = re.sub(r"\[(laugh|laughs|laughter|chuckle|giggle|haha)\]", " haha, hahaha! ", processed, flags=re.IGNORECASE)
-    processed = re.sub(r"\((laugh|laughs|laughter|chuckle|giggle|haha)\)", " haha, hahaha! ", processed, flags=re.IGNORECASE)
+    # when given rhythmic, multi-syllable laughter phrasing with breath marks
+    laugh_pattern = r"(?:\[|\(|\*|\{)\s*(laugh|laughs|laughter|laughing|chuckle|chuckles|giggle|giggles|haha|hahaha)\s*(?:\]|\)|\*|\})"
+    processed = re.sub(laugh_pattern, " Hahaha, ahaha, hahaha! ", processed, flags=re.IGNORECASE)
 
     # 2. Convert sigh & pause to natural speech pauses
-    processed = re.sub(r"\[(sigh|sighs|sighing|pause)\]", "... ", processed, flags=re.IGNORECASE)
-    processed = re.sub(r"\((sigh|sighs|sighing|pause)\)", "... ", processed, flags=re.IGNORECASE)
+    sigh_pattern = r"(?:\[|\(|\*|\{)\s*(sigh|sighs|sighing|pause)\s*(?:\]|\)|\*|\})"
+    processed = re.sub(sigh_pattern, "... ", processed, flags=re.IGNORECASE)
 
-    # 3. Convert scream to exclamation mark
-    processed = re.sub(r"\[(scream|screams|screaming)\]", "! ", processed, flags=re.IGNORECASE)
-    processed = re.sub(r"\((scream|screams|screaming)\)", "! ", processed, flags=re.IGNORECASE)
+    # 3. Convert scream and crying tags to natural expressive exclamation
+    scream_pattern = r"(?:\[|\(|\*|\{)\s*(scream|screams|screaming|cry|cries|crying)\s*(?:\]|\)|\*|\})"
+    processed = re.sub(scream_pattern, "! ", processed, flags=re.IGNORECASE)
 
     # 4. Remove ALL remaining bracketed tags and stage directions completely (including contents)
     processed = re.sub(r"\[[^\]]*\]", "", processed)

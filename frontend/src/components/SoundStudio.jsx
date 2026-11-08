@@ -18,7 +18,7 @@ const PRESET_PROMPTS = [
 export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const [sfxEngine, setSfxEngine] = useState('audioldm2'); // 'audioldm2' | 'stable_audio' | 'stable_audio_3'
   const [prompt, setPrompt] = useState('Car engine reversing fast followed by sudden loud screeching tires skidding on asphalt');
-  const [negativePrompt, setNegativePrompt] = useState('low quality, distortion, harsh, noisy, clipping, music, melody');
+  const [negativePrompt, setNegativePrompt] = useState('low quality, distortion, harsh, noisy, clipping');
   const [duration, setDuration] = useState(6);
   const [steps, setSteps] = useState(35);
   const [cfgScale, setCfgScale] = useState(4.0);
@@ -56,8 +56,8 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       setCfgScale(4.0);
     } else if (engine === 'stable_audio_3') {
       if (duration > 45) setDuration(10);
-      setSteps(12);
-      setCfgScale(2.5);
+      setSteps(10);
+      setCfgScale(1.2);
     } else {
       setSteps(45);
       setCfgScale(6.0);

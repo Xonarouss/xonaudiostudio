@@ -20,7 +20,8 @@ import {
   Settings2,
   Radio,
   FileUp,
-  X
+  X,
+  Mic
 } from 'lucide-react';
 
 export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
@@ -954,3 +955,4 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
     </div>
   );
 }
+

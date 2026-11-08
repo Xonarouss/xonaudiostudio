@@ -23,6 +23,48 @@ SA3_REPO_DIR = BASE_DIR / "models" / "stable-audio-3-repo"
 OUTPUTS_DIR = BASE_DIR / "outputs" / "sfx"
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
+def sanitize_negative_prompt(prompt: str, negative_prompt: Optional[str] = None, engine: str = "default") -> str:
+    """
+    Intelligently cleans and resolves conflicts in negative prompts across all models.
+    Prevents negative prompts from canceling out qualities explicitly requested in prompt.
+    """
+    p_lower = (prompt or "").lower()
+    neg_raw = (negative_prompt or "").strip()
+    if not neg_raw:
+        neg_raw = "low quality, distortion, noise, harsh, clipping"
+    
+    parts = [part.strip() for part in neg_raw.split(",") if part.strip()]
+    
+    vocal_keywords = [
+        "scream", "screaming", "shout", "shouting", "cry", "crying", "laugh", "laughter",
+        "whisper", "voice", "gasp", "cheer", "groan", "grunt", "yell", "howl", "moan",
+        "vocal", "talk", "talking", "sing", "speech", "woman", "man", "human", "crowd",
+        "person", "shootout", "call", "yelling"
+    ]
+    is_vocal = any(k in p_lower for k in vocal_keywords)
+    
+    music_keywords = [
+        "music", "song", "melody", "beat", "track", "synth", "piano", "guitar",
+        "orchestr", "drum", "instrument", "bass", "rhythm", "chords", "tune"
+    ]
+    is_music = any(k in p_lower for k in music_keywords)
+    
+    cleaned_parts = []
+    for part in parts:
+        part_lower = part.lower()
+        # If user explicitly asked for vocal sounds, never cancel out voice/speech!
+        if is_vocal and any(w in part_lower for w in ["speech", "voice", "human voice", "vocal", "talk", "singing"]):
+            continue
+        # If user asked for music/melody, never cancel out music/melody/instruments!
+        if is_music and any(w in part_lower for w in ["music", "melody", "song", "instrument"]):
+            continue
+        cleaned_parts.append(part)
+        
+    if not cleaned_parts:
+        cleaned_parts = ["low quality", "distortion", "noisy", "clipping"]
+        
+    return ", ".join(cleaned_parts)
+
 class SFXEngine:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -112,12 +154,14 @@ class SFXEngine:
         filename = f"sfx_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename
 
-        print(f"[SFXEngine] Generating sound effect: '{prompt}' ({duration}s, {steps} steps)...")
+        clean_neg = sanitize_negative_prompt(prompt, negative_prompt, engine="stable_audio")
+        print(f"[SFXEngine] Generating sound effect: '{prompt}' ({duration}s, {steps} steps, CFG={cfg_scale})...")
+        print(f"[SFXEngine] Negative prompt: '{clean_neg}'")
 
         try:
             output = self.pipe(
                 prompt=prompt,
-                negative_prompt=negative_prompt,
+                negative_prompt=clean_neg,
                 audio_end_in_s=duration,
                 num_inference_steps=steps,
                 guidance_scale=cfg_scale,
@@ -228,11 +272,13 @@ class SFXEngine:
         filename = f"sfx_audioldm2_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename
 
-        print(f"[SFXEngine] Generating AudioLDM 2 SFX: '{prompt}' ({duration}s, {steps} steps)...")
+        clean_neg = sanitize_negative_prompt(prompt, negative_prompt, engine="audioldm2")
+        print(f"[SFXEngine] Generating AudioLDM 2 SFX: '{prompt}' ({duration}s, {steps} steps, CFG={guidance_scale})...")
+        print(f"[SFXEngine] Negative prompt: '{clean_neg}'")
         try:
             output = self.audioldm_pipe(
                 prompt=prompt,
-                negative_prompt=negative_prompt,
+                negative_prompt=clean_neg,
                 audio_length_in_s=duration,
                 num_inference_steps=steps,
                 guidance_scale=guidance_scale,
@@ -326,46 +372,39 @@ class SFXEngine:
             self.load_stable_audio_3()
 
         duration = max(1.0, min(47.0, float(duration)))
-        # SA3 Flow-Matching DiT: 8-16 steps produces pristine acoustic quality rapidly
-        effective_steps = max(4, min(30, int(steps))) if steps else 12
+        # SA3 Flow-Matching DiT: 8-12 steps produces pristine acoustic quality rapidly
+        effective_steps = max(4, min(30, int(steps))) if steps else 10
 
-        # SA3 Flow-Matching DiT is calibrated for CFG 1.5 - 3.5. Values > 4.0 cause severe latent saturation & crackle.
-        effective_cfg = max(1.0, min(3.5, float(cfg_scale))) if cfg_scale is not None else 2.5
+        # SA3 Medium post-trained checkpoint is calibrated for CFG 1.0 - 1.8.
+        # Higher CFG causes severe latent saturation, harsh crackle and tonal distortion.
+        effective_cfg = max(1.0, min(2.0, float(cfg_scale))) if cfg_scale is not None else 1.2
 
-        # Intelligent Negative Prompting:
-        # Detect if prompt is asking for vocal SFX (screams, shouts, laughter, cries, whispers, etc.)
+        # SFX vs Music detection
         prompt_lower = prompt.lower()
-        vocal_keywords = ["scream", "screaming", "shout", "cry", "crying", "laugh", "whisper", "voice", "gasp", "cheer", "groan", "grunt", "yell", "howl", "moan", "vocal"]
-        is_vocal = any(k in prompt_lower for k in vocal_keywords)
-
-        music_keywords = ["music", "song", "melody", "beat", "track", "synth", "piano", "guitar", "orchestr", "drum", "instrument"]
+        music_keywords = ["music", "song", "melody", "beat", "track", "synth", "piano", "guitar", "orchestr", "drum", "instrument", "bass", "rhythm"]
         is_music = any(k in prompt_lower for k in music_keywords)
 
-        neg = (negative_prompt or "").strip()
-        if not neg:
-            neg = "low quality, harsh, distorted, clipping, buzzing, noisy"
+        # AudioSparx TrackType tag primes the model for Foley / sound effects instead of music
+        if not is_music and not prompt_lower.startswith("tracktype:"):
+            effective_prompt = f"TrackType: SFX. {prompt}"
+        else:
+            effective_prompt = prompt
 
-        # If user wants vocal SFX, make sure we NEVER suppress speech or human voice
-        if is_vocal:
-            neg = neg.replace("speech", "").replace("human voice", "").replace("voice", "")
+        clean_neg = sanitize_negative_prompt(prompt, negative_prompt, engine="stable_audio_3")
 
-        # If user wants pure SFX (not music), ensure music/instruments are negatively suppressed
-        if not is_music and "music" not in neg.lower():
-            neg = f"{neg}, music, melody, song, musical instruments"
-
-        # Clean up any duplicate commas or extra spaces
-        neg = ", ".join(part.strip() for part in neg.split(",") if part.strip())
+        # When CFG is exactly 1.0 (unconditioned), skip negative conditioning for 2x faster, crackle-free generation
+        pass_neg = clean_neg if effective_cfg > 1.05 else None
 
         filename = f"sfx_sa3_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename
 
-        print(f"[SFXEngine] Generating Stable Audio 3 Medium SFX: '{prompt}' ({duration}s, {effective_steps} steps, CFG={effective_cfg})...")
-        print(f"[SFXEngine] Negative prompt: '{neg}'")
+        print(f"[SFXEngine] Generating Stable Audio 3 Medium SFX: '{effective_prompt}' ({duration}s, {effective_steps} steps, CFG={effective_cfg})...")
+        print(f"[SFXEngine] Negative prompt: '{pass_neg}'")
         try:
             with torch.inference_mode():
                 output_tensor = self.sa3_model.generate(
-                    prompt=prompt,
-                    negative_prompt=neg,
+                    prompt=effective_prompt,
+                    negative_prompt=pass_neg,
                     duration=duration,
                     steps=effective_steps,
                     cfg_scale=effective_cfg,
