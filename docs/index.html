@@ -61,8 +61,13 @@
     }
   </script>
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Lucide Icons (Fast CDN + Fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"><\/script>');
+    }
+  </script>
 
   <style>
     body {
@@ -144,7 +149,7 @@
           <span>Buy a Beer</span>
         </a>
         <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-xl transition-all">
-          <i data-lucide="github" class="w-4 h-4"></i>
+          <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           <span>GitHub</span>
         </a>
         <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-95">
@@ -175,7 +180,8 @@
           🍺 Buy Me a Beer (Support Development)
         </a>
         <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="w-full text-center py-2 px-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center gap-2">
-          <i data-lucide="github" class="w-4 h-4"></i> Star on GitHub
+          <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>Star on GitHub</span>
         </a>
       </div>
     </div>
@@ -228,7 +234,7 @@
       <div class="mt-8 inline-flex items-center gap-2 sm:gap-3 bg-white border border-slate-200/90 rounded-2xl px-4 sm:px-5 py-3 shadow-card max-w-xl mx-auto w-full sm:w-auto overflow-hidden">
         <span class="text-xs font-mono font-medium text-slate-400 select-none">$</span>
         <code class="text-xs sm:text-sm font-mono text-slate-800 tracking-tight font-medium overflow-x-auto select-all text-left">git clone https://github.com/Xonarouss/xonaudiostudio.git</code>
-        <button onclick="navigator.clipboard.writeText('git clone https://github.com/Xonarouss/xonaudiostudio.git && cd xonaudiostudio && Start_AudioStudio.bat'); this.innerHTML='<span class=\'text-emerald-600 font-bold text-xs\'>Copied!</span>'; setTimeout(()=>this.innerHTML='<i data-lucide=\'copy\' class=\'w-4 h-4\'></i>', 2000); lucide.createIcons();" class="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 transition-colors shrink-0" title="Copy Command">
+        <button onclick="navigator.clipboard.writeText('git clone https://github.com/Xonarouss/xonaudiostudio.git && cd xonaudiostudio && Start_AudioStudio.bat'); this.innerHTML='<span class=\'text-emerald-600 font-bold text-xs\'>Copied!</span>'; setTimeout(()=>{ this.innerHTML='<i data-lucide=\'copy\' class=\'w-4 h-4\'></i>'; lucide.createIcons(); }, 2000);" class="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 transition-colors shrink-0" title="Copy Command">
           <i data-lucide="copy" class="w-4 h-4"></i>
         </button>
       </div>
@@ -364,10 +370,10 @@
             </div>
 
             <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
-              <i data-lucide="disc" class="w-4 h-4 text-pink-600"></i> Down Under (Donald Trump Cover)
+              <i data-lucide="disc" class="w-4 h-4 text-pink-600"></i> Original Neural Song Cover (Demo)
             </h3>
             <p class="text-xs text-slate-600 mb-5 leading-relaxed bg-pink-50/60 p-3 rounded-xl border border-pink-100 italic">
-              "Down Under acapella isolated cleanly from Men At Work via BS-RoFormer (12.97 SDR), voice shifted to Donald Trump via RVC v2 RMVPE, de-reverb expander applied, and mixed with instrumental backing."
+              "Original acoustic vocal &amp; melodic instrumental cover synthesized in Song Cover Lab. Demonstrates BS-RoFormer stem isolation, RVC v2 RMVPE neural pitch conversion, transparent de-reverb expander, and 320k broadcast mastering (100% royalty-free AI demo)."
             </p>
 
             <!-- Waveform Visualizer Canvas -->
@@ -412,15 +418,17 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Model 1: F5-TTS -->
-        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-slate-200 bg-white">
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-cyan-200/80 bg-white shadow-xs">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 border border-cyan-200 rounded-lg text-xs font-mono font-bold">
-                F5-TTS v1
+              <span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 border border-cyan-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="mic" class="w-3.5 h-3.5 text-cyan-700"></i> F5-TTS v1
               </span>
               <span class="text-xs font-semibold text-cyan-700 font-mono">~2.3 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">F5-TTS Flow-Matching</h3>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="mic" class="w-5 h-5 text-cyan-600"></i> F5-TTS Flow-Matching
+            </h3>
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Zero-Shot Voice Cloning</p>
             <p class="text-xs text-slate-600 leading-relaxed">
               State-of-the-art non-autoregressive flow-matching architecture. Synthesizes natural, human speech with flawless rhythm and inflection from just 5-10 seconds of reference audio. Supports English and Chinese Mandarin natively with instant zero-shot adaptation.
@@ -437,13 +445,14 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-orange-200 bg-white shadow-sm ring-1 ring-orange-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-orange-100 text-orange-800 border border-orange-200 rounded-lg text-xs font-mono font-bold">
-                XTTS-v2
+              <span class="px-2.5 py-1 bg-orange-100 text-orange-800 border border-orange-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="mic-2" class="w-3.5 h-3.5 text-orange-700"></i> XTTS-v2
               </span>
               <span class="text-xs font-semibold text-orange-700 font-mono">~2.0 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-              XTTS-v2 Multilingual
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="mic-2" class="w-5 h-5 text-orange-600"></i>
+              <span>XTTS-v2 Multilingual</span>
               <span class="text-sm">🇳🇱</span>
             </h3>
             <p class="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-3">17 Languages Supported</p>
@@ -463,13 +472,14 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-teal-200 bg-white shadow-sm ring-1 ring-teal-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold">
-                Fish Speech 1.5
+              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-teal-700"></i> Fish Speech 1.5
               </span>
               <span class="text-xs font-semibold text-teal-700 font-mono">~0.7 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-              Fish Speech 1.5 Ultra
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="zap" class="w-5 h-5 text-teal-600"></i>
+              <span>Fish Speech 1.5 Ultra</span>
               <span class="text-sm">🇳🇱</span>
             </h3>
             <p class="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Dual-AR + VQ-GAN Neural Codec</p>
@@ -489,13 +499,14 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-pink-200 bg-white shadow-sm ring-1 ring-pink-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-pink-100 text-pink-800 border border-pink-200 rounded-lg text-xs font-mono font-bold">
-                BS-RoFormer
+              <span class="px-2.5 py-1 bg-pink-100 text-pink-800 border border-pink-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="scissors" class="w-3.5 h-3.5 text-pink-700"></i> BS-RoFormer
               </span>
               <span class="text-xs font-semibold text-pink-700 font-mono">~0.64 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-              BS-RoFormer Vocal Separator
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="scissors" class="w-5 h-5 text-pink-600"></i>
+              <span>BS-RoFormer Vocal Separator</span>
             </h3>
             <p class="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">SOTA 12.97 SDR Stem Separation</p>
             <p class="text-xs text-slate-600 leading-relaxed">
@@ -513,13 +524,14 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-rose-200 bg-white shadow-sm ring-1 ring-rose-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-mono font-bold">
-                RVC v2 + RMVPE
+              <span class="px-2.5 py-1 bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="music-2" class="w-3.5 h-3.5 text-rose-700"></i> RVC v2 + RMVPE
               </span>
               <span class="text-xs font-semibold text-rose-700 font-mono">Neural Pitch</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-              RVC v2 Neural Voice Conversion
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="music-2" class="w-5 h-5 text-rose-600"></i>
+              <span>RVC v2 Neural Voice Conversion</span>
             </h3>
             <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Singing Voice Cloning &amp; RMVPE F0</p>
             <p class="text-xs text-slate-600 leading-relaxed">
@@ -537,13 +549,14 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-teal-200 bg-white shadow-sm ring-1 ring-teal-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold">
-                Stable Audio 3
+              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-teal-700"></i> Stable Audio 3
               </span>
               <span class="text-xs font-semibold text-teal-700 font-mono">~3.2 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-              Stable Audio 3 Medium DiT
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-teal-600"></i>
+              <span>Stable Audio 3 Medium DiT</span>
             </h3>
             <p class="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Flow-Matching Diffusion Transformer</p>
             <p class="text-xs text-slate-600 leading-relaxed">
@@ -561,12 +574,15 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-indigo-200 bg-white shadow-sm ring-1 ring-indigo-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-mono font-bold">
-                AudioLDM 2 Studio
+              <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-700"></i> AudioLDM 2 Studio
               </span>
               <span class="text-xs font-semibold text-indigo-700 font-mono">~1.8 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">AudioLDM 2 Studio</h3>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
+              <span>AudioLDM 2 Studio</span>
+            </h3>
             <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-3">Multi-Event Action Adherence</p>
             <p class="text-xs text-slate-600 leading-relaxed">
               Dual CLAP + T5 conditioning designed specifically for complex narrative sound effects and Foley. Solves missed sounds in composite prompts (e.g. <em>reversing car screeching tires</em> synthesizes the car reversing <strong>AND</strong> the screeching tires without dropping events).
@@ -583,12 +599,15 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-purple-200 bg-white shadow-sm">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-mono font-bold">
-                Stable Audio Open
+              <span class="px-2.5 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="headphones" class="w-3.5 h-3.5 text-purple-700"></i> Stable Audio Open
               </span>
               <span class="text-xs font-semibold text-purple-700 font-mono">~4.8 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">Stable Audio Open 1.0</h3>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="headphones" class="w-5 h-5 text-purple-600"></i>
+              <span>Stable Audio Open 1.0</span>
+            </h3>
             <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-3">Stereo Foley &amp; SFX Diffusion</p>
             <p class="text-xs text-slate-600 leading-relaxed">
               Stability AI's generative audio diffusion model for pristine 44.1kHz full-stereo sound design. Synthesizes Hollywood trailer impacts, organic atmospheric ambiances, rainstorms, futuristic weapons, and instruments up to 47 continuous seconds.
@@ -605,12 +624,15 @@
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-emerald-200 bg-white shadow-sm">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-mono font-bold">
-                Llama 3
+              <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="wand-2" class="w-3.5 h-3.5 text-emerald-700"></i> Llama 3
               </span>
               <span class="text-xs font-semibold text-emerald-700 font-mono">~2.8 GB</span>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">Meta Llama 3 Studio AI</h3>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="wand-2" class="w-5 h-5 text-emerald-600"></i>
+              <span>Meta Llama 3 Studio AI</span>
+            </h3>
             <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-3">Magic Wand Prompt Director</p>
             <p class="text-xs text-slate-600 leading-relaxed">
               Meta Llama 3 operating as your local audio director. Transforms short, plain descriptions into rich cinematic acoustic directions with the Magic Wand (🪄), scripts voice acting cues with proper punctuation, and chats via the built-in Studio Assistant.
@@ -885,8 +907,8 @@
         </div>
 
         <!-- Feature 5 -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 border border-emerald-100 shadow-xs">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-purple-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-6 border border-purple-100 shadow-xs">
             <i data-lucide="wand-2" class="w-6 h-6"></i>
           </div>
           <h3 class="text-lg font-bold text-slate-900 mb-2">Llama 3 AI Co-Pilot &amp; Wand</h3>
@@ -894,25 +916,78 @@
             Local Meta Llama 3 operating as your creative audio director. Click the Magic Wand (🪄) to expand short ideas into rich cinematic acoustic directions, or chat with the built-in Studio Assistant.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 1-Click Magic Wand Prompt Refiner (🪄)</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Contextual model check detection</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Floating chat co-pilot for studio advice</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> 1-Click Magic Wand Prompt Refiner (🪄)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Contextual model check detection</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Floating chat co-pilot for studio advice</li>
           </ul>
         </div>
 
         <!-- Feature 6 -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-cyan-200/60">
           <div class="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center mb-6 border border-cyan-100 shadow-xs">
             <i data-lucide="activity" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Telemetry &amp; Model Manager</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Real-Time NVML Telemetry</h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Sub-second NVML hardware monitor tracking GPU %, temperature, GDDR7 VRAM, Watts, and CPU %. Plus, the Model Manager allows 1-click on-demand downloading and disk space purging.
+            Sub-second NVML hardware monitor tracking GPU %, temperature, GDDR7 VRAM, Watts, and CPU %. Live in-viewport floating HUD keeping you fully informed during heavy neural synthesis.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
             <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Native NVML NVIDIA driver queries (2.5s)</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> 1-Click Clean Storage &amp; VRAM purge</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Auto-verification &amp; downloads in Start.bat</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Real-time VRAM, Watts, GPU temp &amp; CPU %</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Dockable matching width with zero overhead</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Third Row of Features -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mt-6 sm:mt-8">
+        
+        <!-- Feature 7 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-amber-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6 border border-amber-100 shadow-xs">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Generations Archive &amp; Stems</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Every audio file you produce is safely cataloged in your local library. Play clips directly from the archive, inspect source prompts, download WAV/MP3 files, or access isolated stems.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> Auto-indexed history with timestamps &amp; origin</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> Direct WAV/MP3 player &amp; stem inspector</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> 100% confidential and local SQLite registry</li>
+          </ul>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-rose-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-6 border border-rose-100 shadow-xs">
+            <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Storage Reclaim &amp; Model Manager</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            AI weights can occupy massive SSD capacity. XonAudio Studio lets you inspect exact on-disk model sizes in gigabytes and wipe them in 1 click whenever you need to free up storage space.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> 1-Click Clean Storage button for instant savings</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> Auto-checks HuggingFace commit SHAs</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> On-demand lazy downloading on BAT launch</li>
+          </ul>
+        </div>
+
+        <!-- Feature 9 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-emerald-200/60 shadow-xs">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 border border-emerald-100 shadow-xs">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">100% Sovereign Offline Privacy</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Zero cloud telemetry, zero remote API endpoints, and zero data leakage. All 9 neural foundation models run completely offline on your NVIDIA GPU with true creative sovereignty.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Zero monthly API subscriptions or token meters</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Fully air-gapped capable on Windows 10/11</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Pure PyTorch CUDA acceleration</li>
           </ul>
         </div>
 
@@ -1194,7 +1269,7 @@
           </div>
 
           <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all">
-            <i data-lucide="github" class="w-4 h-4"></i>
+            <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             <span>Explore Codebase on GitHub</span>
           </a>
         </div>
@@ -1248,8 +1323,9 @@
 
       <!-- Social / Links -->
       <div class="flex flex-wrap items-center justify-center gap-5 font-semibold">
-        <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="hover:text-slate-900 transition-colors flex items-center gap-1">
-          <i data-lucide="github" class="w-4 h-4"></i> GitHub
+        <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="hover:text-slate-900 transition-colors flex items-center gap-1.5">
+          <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
         </a>
         <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="hover:text-slate-900 transition-colors">Releases</a>
         <a href="https://buymeacoffee.com/xonarous" target="_blank" class="hover:text-amber-600 transition-colors">Buy Me a Beer</a>
@@ -1261,8 +1337,19 @@
 
   <!-- SCRIPT FOR REAL AUDIO DEMOS & LIVE HARDWARE TICKS -->
   <script>
-    // Initialize Lucide Icons
-    lucide.createIcons();
+    // ==========================================
+    // LUCIDE ICON INITIALIZER (MULTI-PASS)
+    // ==========================================
+    function initIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
+    initIcons();
+    document.addEventListener('DOMContentLoaded', initIcons);
+    window.addEventListener('load', initIcons);
+    setTimeout(initIcons, 300);
+    setTimeout(initIcons, 1000);
 
     function toggleMobileMenu() {
       const menu = document.getElementById('mobileMenu');
@@ -1283,6 +1370,9 @@
       2: new Audio('assets/foley_sample.wav'),
       3: new Audio('assets/song_cover_sample.mp3')
     };
+    for (const key in audioMap) {
+      audioMap[key].preload = 'auto';
+    }
 
     function drawWaveform(canvasId, isPlaying) {
       const canvas = document.getElementById(canvasId);
@@ -1345,8 +1435,10 @@
         cancelAnimationFrame(animFrame);
         animFrame = null;
       }
-      document.getElementById('playText1').textContent = 'Play Voice Sample';
-      document.getElementById('playText2').textContent = 'Play Foley Sample';
+      const pt1 = document.getElementById('playText1');
+      if (pt1) pt1.textContent = 'Play Voice Sample';
+      const pt2 = document.getElementById('playText2');
+      if (pt2) pt2.textContent = 'Play Foley Sample';
       const pt3 = document.getElementById('playText3');
       if (pt3) pt3.textContent = 'Play Song Cover';
 
@@ -1366,7 +1458,7 @@
         b3.classList.add('bg-gradient-to-r', 'from-pink-600', 'to-rose-600', 'hover:from-pink-700', 'hover:to-rose-700');
       }
 
-      lucide.createIcons();
+      initIcons();
       drawWaveform('waveformCanvas1', false);
       drawWaveform('waveformCanvas2', false);
       drawWaveform('waveformCanvas3', false);
@@ -1385,14 +1477,22 @@
       currentAudio = targetAudio;
 
       if (id === 1) {
-        document.getElementById('playText1').textContent = 'Stop Audio';
-        document.getElementById('playBtn1').classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-        document.getElementById('playBtn1').classList.add('bg-rose-600', 'hover:bg-rose-700');
+        const pt1 = document.getElementById('playText1');
+        if (pt1) pt1.textContent = 'Stop Audio';
+        const b1 = document.getElementById('playBtn1');
+        if (b1) {
+          b1.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          b1.classList.add('bg-rose-600', 'hover:bg-rose-700');
+        }
         drawWaveform('waveformCanvas1', true);
       } else if (id === 2) {
-        document.getElementById('playText2').textContent = 'Stop Audio';
-        document.getElementById('playBtn2').classList.remove('bg-teal-600', 'hover:bg-teal-700');
-        document.getElementById('playBtn2').classList.add('bg-rose-600', 'hover:bg-rose-700');
+        const pt2 = document.getElementById('playText2');
+        if (pt2) pt2.textContent = 'Stop Audio';
+        const b2 = document.getElementById('playBtn2');
+        if (b2) {
+          b2.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+          b2.classList.add('bg-rose-600', 'hover:bg-rose-700');
+        }
         drawWaveform('waveformCanvas2', true);
       } else if (id === 3) {
         const pt3 = document.getElementById('playText3');
@@ -1404,29 +1504,26 @@
         }
         drawWaveform('waveformCanvas3', true);
       }
-      lucide.createIcons();
+      initIcons();
 
-      targetAudio.play().then(() => {
-        targetAudio.onended = () => {
-          stopAllAudio();
-        };
-      }).catch((err) => {
-        console.warn("Audio file play fallback: ", err);
-        if (id === 1 && window.speechSynthesis) {
-          const utter = new SpeechSynthesisUtterance("Welcome to XonAudio Studio. Experience high-fidelity voice cloning running locally on your RTX GPU.");
-          utter.onend = () => stopAllAudio();
-          window.speechSynthesis.speak(utter);
-        } else {
-          stopAllAudio();
-        }
-      });
-    }
-          utter.onend = () => stopAllAudio();
-          window.speechSynthesis.speak(utter);
-        } else {
-          stopAllAudio();
-        }
-      });
+      targetAudio.currentTime = 0;
+      const playPromise = targetAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          targetAudio.onended = () => {
+            stopAllAudio();
+          };
+        }).catch((err) => {
+          console.warn("Audio file play fallback: ", err);
+          if (id === 1 && window.speechSynthesis) {
+            const utter = new SpeechSynthesisUtterance("Welcome to XonAudio Studio. Experience high-fidelity voice cloning running locally on your RTX GPU.");
+            utter.onend = () => stopAllAudio();
+            window.speechSynthesis.speak(utter);
+          } else {
+            stopAllAudio();
+          }
+        });
+      }
     }
 
     // ==========================================

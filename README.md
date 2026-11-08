@@ -46,7 +46,7 @@ Unlike cloud-dependent platforms with monthly subscriptions, privacy concerns, a
    - **Bit-Exact Pure-PyTorch Fairseq HuBERT:** Native 100% bit-exact acoustic encoder integration with unvoiced consonant protection.
    - **Dynamic Stem Mixing:** Independent volume sliders for vocals (0% - 150%) and instrumental (0% - 150%) with soft-knee peak protection.
    - **Dual Studio Quality Export:** Broadcast-ready **320 kbps High-Fidelity MP3** and **24-bit Lossless Studio Master WAV**.
-4. **[Generations Archive]**: Integrated audio library cataloging all synthesized clips with waveform players, prompt metadata, and batch export tools. Automatically catalogs song covers with track titles and cover artist badges (`Down Under — Donald Trump Cover`).
+4. **[Generations Archive]**: Integrated audio library cataloging all synthesized clips with waveform players, prompt metadata, and batch export tools. Automatically catalogs song covers with track titles and cover artist badges (`Midnight Echoes — Studio AI Cover`).
 5. **[Model Manager]**: 1-click inspection, on-demand downloading, VRAM unloading, and checkpoint purging for all local models.
 
 ---
@@ -56,7 +56,7 @@ Unlike cloud-dependent platforms with monthly subscriptions, privacy concerns, a
 - **🔒 100% Local & Private:** Zero cloud telemetry, zero remote audio uploads. Your voice recordings, scripts, and generated audio files stay strictly on your local PC.
 - **⚡ Blackwell sm_120 Native Acceleration:** Powered by PyTorch CUDA 12.8 with native support for RTX 5080, 5090, 4080, and 4090 GPUs, plus automatic safe CPU fallback.
 - **🎵 Song Cover Lab Pipeline:** 4-stage pipeline `[1/4 Audio Acquisition] ➔ [2/4 BS-RoFormer Vocal Separation] ➔ [3/4 RVC v2 Voice Conversion] ➔ [4/4 Hi-Fi Mixing & Mastering]`.
-- **🎤 Instant Voice Cloning for Covers:** Use pre-trained `.pth` models (e.g. Donald Trump) or clone any singer on the fly by uploading a reference voice audio sample.
+- **🎤 Instant Voice Cloning for Covers:** Use pre-trained `.pth` models or clone any singing artist from audio on the fly by uploading a reference voice audio sample.
 - **🗣️ 3-Engine Voice Lab:** F5-TTS, XTTS-v2, and Fish Speech 1.5 with full native **Dutch (🇳🇱)** support.
 - **🇳🇱 Enhanced Dutch Preset Voices:** Studio-quality 24kHz PCM native Dutch presets (`daan_nl`, `femke_nl`, `bram_nl`, `lotte_nl`) and expressive laughter synthesis (`[laugh]`, `*laughs*`).
 - **🎛️ Triple SFX Diffusion Suite:** Stable Audio Open 1.0, Stable Audio 3 Medium DiT, and AudioLDM 2 with negative prompt sanitization.
