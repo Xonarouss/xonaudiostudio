@@ -554,12 +554,16 @@ class SongCoverEngine:
         if progress_callback:
             progress_callback("Acquiring and preparing song audio...", 0.10)
 
-        if source_type == "url":
+        # Intelligent input resolution: check if already an existing local audio file on disk
+        cand_path = Path(file_path_or_url)
+        if cand_path.exists() and cand_path.is_file():
+            input_audio_path = cand_path
+        elif file_path_or_url.startswith(("http://", "https://", "www.")) or (source_type == "url" and not cand_path.exists()):
             input_audio_path = self.fetch_url_audio(file_path_or_url)
         else:
-            input_audio_path = Path(file_path_or_url)
-            if not input_audio_path.exists():
-                raise FileNotFoundError(f"Uploaded input audio file not found: {file_path_or_url}")
+            if not cand_path.exists():
+                raise FileNotFoundError(f"Input song audio not found: {file_path_or_url}")
+            input_audio_path = cand_path
 
         # Step 2: Separate Vocals (BS-RoFormer)
         if progress_callback:

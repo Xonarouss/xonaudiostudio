@@ -301,8 +301,8 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source_type: inputMode,
-          audio_source: fileAudioPath,
+          source_type: fileAudioPath && !fileAudioPath.startsWith('http') ? 'file' : inputMode,
+          audio_source: fileAudioPath || urlInput,
           voice_mode: voiceTargetMode,
           model_name: voiceTargetMode === 'model' ? selectedModel : (selectedModel || 'trump.pth'),
           voice_audio_path: effectiveVoicePath,
@@ -323,8 +323,15 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         setActiveStage(4);
         setStageProgressText('AI Song Cover generated successfully!');
       } else {
-        const err = await res.json();
-        setErrorMessage(err.detail || 'An error occurred during song cover processing.');
+        let errMsg = 'An error occurred during song cover processing.';
+        try {
+          const err = await res.json();
+          errMsg = err.detail || errMsg;
+        } catch {
+          const raw = await res.text().catch(() => '');
+          errMsg = raw || errMsg;
+        }
+        setErrorMessage(errMsg);
         setActiveStage(0);
       }
     } catch (err) {

@@ -2,7 +2,10 @@ import os
 import sys
 import shutil
 import tempfile
+import logging
 from pathlib import Path
+
+logger = logging.getLogger("XonAudioStudio")
 
 # Ensure backend directory is in sys.path regardless of execution working directory
 BACKEND_DIR = Path(__file__).resolve().parent
