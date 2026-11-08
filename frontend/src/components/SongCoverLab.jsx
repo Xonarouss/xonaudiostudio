@@ -14,18 +14,17 @@ import {
   Sparkles,
   Volume2,
   FileAudio,
-  Layers,
-  ArrowRight,
   Headphones,
-  Settings2,
   Radio,
   FileUp,
   X,
-  Mic
+  Mic,
+  User,
+  AudioWaveform
 } from 'lucide-react';
 
 export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
-  // Input mode: 'file' | 'url'
+  // Input song mode: 'file' | 'url'
   const [inputMode, setInputMode] = useState('file');
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileAudioPath, setFileAudioPath] = useState('');
@@ -33,13 +32,23 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [fetchedUrlData, setFetchedUrlData] = useState(null);
 
-  // Voice & Tuning
+  // Target Voice Selection: 'audio' (clone from audio file) | 'model' (trained RVC .pth)
+  const [voiceTargetMode, setVoiceTargetMode] = useState('audio');
+  
+  // Custom Voice Audio Upload / Selection
+  const [selectedVoiceFile, setSelectedVoiceFile] = useState(null);
+  const [voiceAudioPath, setVoiceAudioPath] = useState('');
+  const [selectedPresetVoice, setSelectedPresetVoice] = useState('trump');
+
+  // RVC Models (.pth)
   const [rvcModels, setRvcModels] = useState([]);
   const [selectedModel, setSelectedModel] = useState('');
+  
+  // Tuning Sliders
   const [pitchShift, setPitchShift] = useState(0);
   const [indexRate, setIndexRate] = useState(0.75);
 
-  // Volume sliders (0% - 150%)
+  // Dynamic Volume Sliders (0% - 150%)
   const [vocalVolume, setVocalVolume] = useState(100);
   const [instVolume, setInstVolume] = useState(100);
 
@@ -68,6 +77,18 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   const bsRoformerInstalled = !!modelsStatus?.bs_roformer?.installed;
   const rmvpeInstalled = !!modelsStatus?.rmvpe?.installed;
 
+  // Preset voices available for instant selection
+  const presetVoices = [
+    { id: 'trump', name: 'Donald Trump', desc: 'US President · Iconic Vocal Timbre' },
+    { id: 'aria', name: 'Aria', desc: 'Female · Warm & Melodic Studio Voice' },
+    { id: 'nova', name: 'Nova', desc: 'Female · Expressive & Dynamic Vocals' },
+    { id: 'echo', name: 'Echo', desc: 'Male · Deep & Resonant Vocals' },
+    { id: 'sage', name: 'Sage', desc: 'Male · Smooth Acoustic Narrative Voice' },
+    { id: 'atlas', name: 'Atlas', desc: 'Male · Clean & Clear Vocal Cadence' },
+    { id: 'daan', name: 'Daan', desc: 'Male · Modern Dutch Vocal' },
+    { id: 'femke', name: 'Femke', desc: 'Female · Gentle & Warm Dutch Vocal' },
+  ];
+
   // Fetch installed RVC models
   const fetchRvcModels = async () => {
     try {
@@ -89,7 +110,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
     fetchRvcModels();
   }, []);
 
-  // Handle file drop / select
+  // Handle song audio upload
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -97,7 +118,6 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
     setSelectedFile(file);
     setErrorMessage('');
 
-    // Auto-upload audio to server
     const formData = new FormData();
     formData.append('audio_file', file);
 
@@ -111,17 +131,54 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         setFileAudioPath(data.audio_path);
       } else {
         const err = await res.json();
-        setErrorMessage(err.detail || 'Fout bij uploaden van audio.');
+        setErrorMessage(err.detail || 'Failed to upload song audio.');
       }
     } catch (err) {
-      setErrorMessage(`Uploadfout: ${err.message}`);
+      setErrorMessage(`Upload error: ${err.message}`);
     }
+  };
+
+  // Handle voice reference audio upload (for voice cloning mode)
+  const handleVoiceFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedVoiceFile(file);
+    setSelectedPresetVoice(''); // Deselect preset
+    setErrorMessage('');
+
+    const formData = new FormData();
+    formData.append('voice_file', file);
+
+    try {
+      const res = await fetch('/api/song-cover/upload-voice-audio', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVoiceAudioPath(data.audio_path);
+      } else {
+        const err = await res.json();
+        setErrorMessage(err.detail || 'Failed to upload target voice audio.');
+      }
+    } catch (err) {
+      setErrorMessage(`Voice upload error: ${err.message}`);
+    }
+  };
+
+  // Select a preset voice audio sample
+  const handleSelectPresetVoice = (voiceId) => {
+    setSelectedPresetVoice(voiceId);
+    setSelectedVoiceFile(null);
+    // Point to backend preset voice wav
+    setVoiceAudioPath(`backend/voices/${voiceId}.wav`);
   };
 
   // Handle URL fetch
   const handleFetchUrl = async () => {
     if (!urlInput.trim()) {
-      setErrorMessage('Vul een geldige YouTube of Spotify link in.');
+      setErrorMessage('Please enter a valid YouTube or Spotify link.');
       return;
     }
     setIsFetchingUrl(true);
@@ -138,10 +195,10 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         setFileAudioPath(data.audio_path);
       } else {
         const err = await res.json();
-        setErrorMessage(err.detail || 'Kon audio niet downloaden vanaf de opgegeven URL.');
+        setErrorMessage(err.detail || 'Could not download audio from the specified URL.');
       }
     } catch (err) {
-      setErrorMessage(`Netwerkfout bij ophalen URL: ${err.message}`);
+      setErrorMessage(`Network error fetching URL: ${err.message}`);
     } finally {
       setIsFetchingUrl(false);
     }
@@ -151,7 +208,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   const handleUploadRvcModel = async (e) => {
     e.preventDefault();
     if (!modelPthFile) {
-      setUploadError('Selecteer minimaal een .pth stemmodel bestand.');
+      setUploadError('Please select at least a .pth voice model file.');
       return;
     }
 
@@ -178,56 +235,66 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         setModelIndexFile(null);
       } else {
         const err = await res.json();
-        setUploadError(err.detail || 'Fout bij uploaden van model.');
+        setUploadError(err.detail || 'Failed to upload voice model.');
       }
     } catch (err) {
-      setUploadError(`Upload mislukt: ${err.message}`);
+      setUploadError(`Upload failed: ${err.message}`);
     } finally {
       setIsUploadingModel(false);
     }
   };
 
-  // Trigger full pipeline
+  // Trigger full AI Song Cover pipeline
   const handleGenerateCover = async () => {
     setErrorMessage('');
 
     // Pre-flight checks
     if (!fileAudioPath) {
-      setErrorMessage('Kies eerst een audiobestand of importeer een YouTube/Spotify link.');
+      setErrorMessage('Please select a song audio file or import a YouTube/Spotify link first.');
       return;
     }
-    if (!selectedModel) {
-      setErrorMessage('Selecteer of upload een RVC-stemmodel (.pth).');
+    if (voiceTargetMode === 'audio' && !voiceAudioPath && !selectedPresetVoice) {
+      setErrorMessage('Please upload a voice sample or select a preset voice for the singer.');
+      return;
+    }
+    if (voiceTargetMode === 'model' && !selectedModel) {
+      setErrorMessage('Please select an RVC voice model (.pth).');
       return;
     }
     if (!bsRoformerInstalled) {
-      setErrorMessage('BS-RoFormer is nog niet geïnstalleerd. Open de Model Manager om hem te downloaden.');
+      setErrorMessage('BS-RoFormer is not installed. Open the Model Manager to download it.');
       return;
     }
     if (!rmvpeInstalled) {
-      setErrorMessage('RMVPE pitch model is nog niet geïnstalleerd. Open de Model Manager om hem te downloaden.');
+      setErrorMessage('RMVPE pitch model is not installed. Open the Model Manager to download it.');
       return;
     }
 
     setIsProcessing(true);
     setActiveStage(1);
-    setStageProgressText('Audio ophalen & klaarmaken...');
+    setStageProgressText('Acquiring and preparing song audio...');
 
-    // Progress simulation stages
+    // Progress estimation timers
     const timer1 = setTimeout(() => {
       setActiveStage(2);
-      setStageProgressText('Vocals & Instrumental scheiden met BS-RoFormer...');
-    }, 1800);
+      setStageProgressText('Separating vocals and instrumental stems with BS-RoFormer...');
+    }, 2000);
 
     const timer2 = setTimeout(() => {
       setActiveStage(3);
-      setStageProgressText('Zangstem transformeren via RVC v2 (RMVPE F0 pitch tuning)...');
-    }, 7500);
+      setStageProgressText('Transforming vocal performance (RVC v2 RMVPE pitch alignment)...');
+    }, 8500);
 
     const timer3 = setTimeout(() => {
       setActiveStage(4);
-      setStageProgressText('Vocals en instrumental mixen met volumebalans...');
-    }, 15000);
+      setStageProgressText('Mixing stems with dynamic volume balance and soft limiter...');
+    }, 18000);
+
+    // Resolve voice audio path if using preset
+    let effectiveVoicePath = voiceAudioPath;
+    if (voiceTargetMode === 'audio' && !effectiveVoicePath && selectedPresetVoice) {
+      effectiveVoicePath = `backend/voices/${selectedPresetVoice}.wav`;
+    }
 
     try {
       const res = await fetch('/api/song-cover/process', {
@@ -236,7 +303,9 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         body: JSON.stringify({
           source_type: inputMode,
           audio_source: fileAudioPath,
-          model_name: selectedModel,
+          voice_mode: voiceTargetMode,
+          model_name: voiceTargetMode === 'model' ? selectedModel : (selectedModel || 'trump.pth'),
+          voice_audio_path: effectiveVoicePath,
           pitch_shift: pitchShift,
           index_rate: indexRate,
           vocal_vol: vocalVolume / 100,
@@ -252,17 +321,17 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         const data = await res.json();
         setGenerationResult(data);
         setActiveStage(4);
-        setStageProgressText('AI Song Cover succesvol voltooid!');
+        setStageProgressText('AI Song Cover generated successfully!');
       } else {
         const err = await res.json();
-        setErrorMessage(err.detail || 'Fout tijdens het verwerken van de song cover.');
+        setErrorMessage(err.detail || 'An error occurred during song cover processing.');
         setActiveStage(0);
       }
     } catch (err) {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
-      setErrorMessage(`Fout tijdens generatie: ${err.message}`);
+      setErrorMessage(`Generation error: ${err.message}`);
       setActiveStage(0);
     } finally {
       setIsProcessing(false);
@@ -327,8 +396,8 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-indigo-200/80 mt-1.5 max-w-2xl">
-              Transformeer elk nummer naar een realistische AI-cover. Automatische stemisolatie met Band-Split RoFormer,
-              pitch-perfect RVC v2 conversie met RMVPE en dynamisch afmixen.
+              Transform any track into a photorealistic AI vocal cover. State-of-the-art stem isolation with Band-Split RoFormer,
+              pitch-perfect RVC v2 neural voice conversion with RMVPE, and dynamic stem mixing.
             </p>
           </div>
 
@@ -336,21 +405,21 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
             <span className="text-xs px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${bsRoformerInstalled && rmvpeInstalled ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
               <span className="text-[11px] font-medium text-slate-200">
-                {bsRoformerInstalled && rmvpeInstalled ? 'RoFormer & RMVPE Gereed' : 'Models Configureren'}
+                {bsRoformerInstalled && rmvpeInstalled ? 'RoFormer & RMVPE Ready' : 'Configure Models'}
               </span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Error alert if prerequisite models missing */}
+      {/* Warning alert if prerequisite models missing */}
       {(!bsRoformerInstalled || !rmvpeInstalled) && (
         <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs flex-1">
-            <p className="font-bold">Vereiste AI-modellen nog niet gedownload</p>
+            <p className="font-bold">Required AI models not yet downloaded</p>
             <p className="text-amber-800 mt-0.5">
-              Voor Song Cover Lab zijn <b>BS-RoFormer</b> (Vocal Separator) en <b>RMVPE</b> (Pitch Extractor) nodig.
+              Song Cover Lab requires <b>BS-RoFormer</b> (Vocal Separator) and <b>RMVPE</b> (Neural Pitch Extractor).
             </p>
           </div>
           <button
@@ -362,16 +431,16 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
         </div>
       )}
 
-      {/* Main Grid: 2 Columns */}
+      {/* Main Studio Grid: 2 Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Input Selector & Voice Tuning (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Card 1: Input Selector */}
+          {/* Card 1: Input Song Audio */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FileAudio className="w-4 h-4 text-indigo-600" />
-                <h3 className="text-sm font-bold text-slate-900">1. Audio Bron Kiezen</h3>
+                <h3 className="text-sm font-bold text-slate-900">1. Select Song Audio</h3>
               </div>
               {/* Toggle Mode */}
               <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
@@ -384,7 +453,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Audio Bestand
+                  Audio File
                 </button>
                 <button
                   type="button"
@@ -395,7 +464,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Link Importeren
+                  Import Link
                 </button>
               </div>
             </div>
@@ -405,9 +474,9 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 <label className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-indigo-50/30">
                   <Upload className="w-8 h-8 text-indigo-600 mb-2" />
                   <span className="text-xs font-bold text-slate-800">
-                    {selectedFile ? selectedFile.name : 'Sleep hier een audiobestand heen of klik om te kiezen'}
+                    {selectedFile ? selectedFile.name : 'Drop song file here or click to browse'}
                   </span>
-                  <span className="text-[11px] text-slate-500 mt-1">Ondersteunt MP3, WAV, FLAC, M4A tot 100MB</span>
+                  <span className="text-[11px] text-slate-500 mt-1">Supports MP3, WAV, FLAC, M4A up to 100MB</span>
                   <input
                     type="file"
                     accept="audio/*"
@@ -417,7 +486,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 </label>
                 {fileAudioPath && (
                   <p className="text-[11px] text-emerald-600 font-semibold mt-2 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Bestand geüpload en klaar voor verwerking
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Song audio uploaded and ready for processing
                   </p>
                 )}
               </div>
@@ -428,7 +497,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                     <Link2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Plak YouTube of Spotify track URL..."
+                      placeholder="Paste YouTube or Spotify track URL..."
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                       className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -441,76 +510,160 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   >
                     {isFetchingUrl ? (
                       <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Ophalen...
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Fetching...
                       </>
                     ) : (
-                      'Ophalen'
+                      'Fetch'
                     )}
                   </button>
                 </div>
                 {fetchedUrlData && (
                   <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Audio opgehaald: {fetchedUrlData.filename}
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Audio fetched: {fetchedUrlData.filename}
                   </p>
                 )}
               </div>
             )}
           </div>
 
-          {/* Card 2: Stem & Tuning Paneel */}
+          {/* Card 2: Target Singer & Voice Tuning Panel */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Disc className="w-4 h-4 text-indigo-600" />
-                <h3 className="text-sm font-bold text-slate-900">2. Stem &amp; Tuning Instellingen</h3>
+                <h3 className="text-sm font-bold text-slate-900">2. Target Singer &amp; Voice Settings</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowUploadModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center gap-1.5"
-              >
-                <FileUp className="w-3.5 h-3.5 text-indigo-600" />
-                Stem Uploaden (.pth)
-              </button>
+
+              {/* Toggle Voice Input Method */}
+              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setVoiceTargetMode('audio')}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    voiceTargetMode === 'audio'
+                      ? 'bg-white text-indigo-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Clone from Audio
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVoiceTargetMode('model')}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    voiceTargetMode === 'model'
+                      ? 'bg-white text-indigo-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  RVC Model (.pth)
+                </button>
+              </div>
             </div>
 
-            {/* RVC Model Dropdown */}
-            <div>
-              <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                RVC v2 Stemmodel Selecteren
-              </label>
-              {rvcModels.length > 0 ? (
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                >
-                  {rvcModels.map((m) => (
-                    <option key={m.filename} value={m.filename}>
-                      {m.name} ({m.version.toUpperCase()} · {m.sample_rate / 1000}kHz{m.has_index ? ' · +Index' : ''})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-500 flex items-center justify-between">
-                  <span>Nog geen stemmodellen in /models/rvc.</span>
+            {/* Sub-Panel A: Clone from Audio Sample */}
+            {voiceTargetMode === 'audio' ? (
+              <div className="space-y-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/90">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-indigo-600" /> Target Singer Audio Sample
+                  </label>
+                  <span className="text-[11px] text-slate-400">Speech or vocal sample (10s - 60s)</span>
+                </div>
+
+                {/* File Upload for Voice Sample */}
+                <label className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-white hover:bg-indigo-50/20">
+                  <Upload className="w-6 h-6 text-indigo-600 mb-1" />
+                  <span className="text-xs font-semibold text-slate-800">
+                    {selectedVoiceFile ? selectedVoiceFile.name : 'Upload voice sample to clone this singer'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">WAV, MP3, FLAC, M4A</span>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleVoiceFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {voiceAudioPath && (
+                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Voice sample active: {selectedVoiceFile?.name || voiceAudioPath}
+                  </p>
+                )}
+
+                {/* Quick Presets Grid */}
+                <div className="pt-2 border-t border-slate-200/80">
+                  <span className="text-[11px] font-bold text-slate-600 block mb-2">Or choose a preset singer:</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {presetVoices.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => handleSelectPresetVoice(v.id)}
+                        className={`p-2 rounded-xl text-left border transition-all ${
+                          selectedPresetVoice === v.id
+                            ? 'bg-indigo-50 border-indigo-400 text-indigo-900 shadow-2xs font-bold'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                        }`}
+                      >
+                        <p className="text-xs truncate">{v.name}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{v.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Sub-Panel B: Select Pre-trained RVC Model (.pth) */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700">
+                    Select RVC v2 Voice Model (.pth)
+                  </label>
                   <button
+                    type="button"
                     onClick={() => setShowUploadModal(true)}
-                    className="text-xs font-bold text-indigo-600 hover:underline"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center gap-1.5"
                   >
-                    + Upload .pth model
+                    <FileUp className="w-3.5 h-3.5 text-indigo-600" />
+                    + Upload .pth Model
                   </button>
                 </div>
-              )}
-            </div>
+
+                {rvcModels.length > 0 ? (
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    {rvcModels.map((m) => (
+                      <option key={m.filename} value={m.filename}>
+                        {m.name} ({m.version.toUpperCase()} · {m.sample_rate / 1000}kHz{m.has_index ? ' · +Index' : ''})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+                    <span>No .pth voice models found in /models/rvc.</span>
+                    <button
+                      onClick={() => setShowUploadModal(true)}
+                      className="text-xs font-bold text-indigo-600 hover:underline"
+                    >
+                      + Upload .pth model
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pitch Shift Slider & Presets */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700">
-                  Pitch Shift (Halve Tonen): <span className="font-mono text-indigo-600">{pitchShift > 0 ? `+${pitchShift}` : pitchShift}</span>
+                  Pitch Shift (Semitones): <span className="font-mono text-indigo-600">{pitchShift > 0 ? `+${pitchShift}` : pitchShift}</span>
                 </label>
-                <span className="text-[11px] text-slate-400">-12 tot +12</span>
+                <span className="text-[11px] text-slate-400">-12 to +12</span>
               </div>
               <input
                 type="range"
@@ -532,7 +685,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  Vrouw → Man [-12]
+                  Female → Male [-12]
                 </button>
                 <button
                   type="button"
@@ -543,7 +696,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  Neutraal [0]
+                  Neutral [0]
                 </button>
                 <button
                   type="button"
@@ -554,7 +707,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  Man → Vrouw [+12]
+                  Male → Female [+12]
                 </button>
               </div>
             </div>
@@ -563,9 +716,9 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700">
-                  Index Sterkte (Feature Retrieval): <span className="font-mono text-indigo-600">{indexRate.toFixed(2)}</span>
+                  Feature Retrieval Strength (Index Rate): <span className="font-mono text-indigo-600">{indexRate.toFixed(2)}</span>
                 </label>
-                <span className="text-[11px] text-slate-400">0.00 tot 1.00</span>
+                <span className="text-[11px] text-slate-400">0.00 to 1.00</span>
               </div>
               <input
                 type="range"
@@ -577,7 +730,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 className="w-full accent-indigo-600 cursor-pointer"
               />
               <p className="text-[10px] text-slate-400">
-                Bepaalt hoeveel kenmerken van het bronmodel behouden blijven t.o.v. de originele zanger. Standaard 0.75.
+                Controls how much of the target speaker's vocal timbre is retrieved via FAISS. Default 0.75.
               </p>
             </div>
           </div>
@@ -594,7 +747,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
               <div className="space-y-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Mic className="w-3.5 h-3.5 text-pink-600" /> Zang Volume
+                    <Mic className="w-3.5 h-3.5 text-pink-600" /> Vocal Volume
                   </label>
                   <span className="font-mono text-xs font-bold text-indigo-600">{vocalVolume}%</span>
                 </div>
@@ -633,24 +786,24 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
 
         {/* Right Column: Generation, Progress & Audio Player (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Action Card: Genereer AI Cover */}
+          {/* Action Card: Generate AI Cover */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" /> 4. AI Cover Produceren
+              <Sparkles className="w-4 h-4 text-indigo-600" /> 4. Produce AI Cover
             </h3>
 
             <button
               onClick={handleGenerateCover}
-              disabled={isProcessing || !fileAudioPath || !selectedModel}
+              disabled={isProcessing || !fileAudioPath}
               className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
               {isProcessing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Verwerken...
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Processing Cover...
                 </>
               ) : (
                 <>
-                  <Music2 className="w-4 h-4" /> Genereer AI Cover
+                  <Music2 className="w-4 h-4" /> Generate AI Cover
                 </>
               )}
             </button>
@@ -666,7 +819,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
             {/* 4-Stage Progress Indicator */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                Productiestatus
+                Production Status
               </span>
 
               <div className="grid grid-cols-1 gap-2 text-xs">
@@ -685,7 +838,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   ) : (
                     <span className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px]">1</span>
                   )}
-                  <span>1/4 Audio Ophalen (Upload / URL)</span>
+                  <span>1/4 Audio Acquisition (Upload / URL)</span>
                 </div>
 
                 {/* Step 2 */}
@@ -703,7 +856,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   ) : (
                     <span className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px]">2</span>
                   )}
-                  <span>2/4 Vocals Scheiden (BS-RoFormer)</span>
+                  <span>2/4 Vocal Separation (BS-RoFormer)</span>
                 </div>
 
                 {/* Step 3 */}
@@ -721,7 +874,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   ) : (
                     <span className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px]">3</span>
                   )}
-                  <span>3/4 Stem Converteren (RVC v2 RMVPE)</span>
+                  <span>3/4 Voice Conversion (RVC v2 RMVPE)</span>
                 </div>
 
                 {/* Step 4 */}
@@ -739,7 +892,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   ) : (
                     <span className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px]">4</span>
                   )}
-                  <span>4/4 Afmixen (Volume Multipliers)</span>
+                  <span>4/4 Mixing &amp; Mastering</span>
                 </div>
               </div>
 
@@ -756,7 +909,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
             <div className="bg-white rounded-2xl border border-indigo-100 p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Headphones className="w-4 h-4 text-pink-600" /> Resultaat Speler
+                  <Headphones className="w-4 h-4 text-pink-600" /> Result Player
                 </h4>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                   {generationResult.elapsed_seconds}s
@@ -777,7 +930,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Volledige Mix
+                  Full Mix
                 </button>
                 <button
                   type="button"
@@ -791,7 +944,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Vocals Alleen
+                  Vocals Only
                 </button>
                 <button
                   type="button"
@@ -851,7 +1004,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   download="cover_full_mix.wav"
                   className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
-                  <Download className="w-3.5 h-3.5" /> Download Volledige Mix
+                  <Download className="w-3.5 h-3.5" /> Download Full Mix
                 </a>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -860,14 +1013,14 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                     download="cover_vocals_only.wav"
                     className="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-slate-200"
                   >
-                    <Download className="w-3.5 h-3.5 text-pink-600" /> Vocals Alleen
+                    <Download className="w-3.5 h-3.5 text-pink-600" /> Vocals Only
                   </a>
                   <a
                     href={generationResult.instrumental_url}
                     download="cover_instrumental_only.wav"
                     className="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-slate-200"
                   >
-                    <Download className="w-3.5 h-3.5 text-indigo-600" /> Instrumental Alleen
+                    <Download className="w-3.5 h-3.5 text-indigo-600" /> Instrumental Only
                   </a>
                 </div>
               </div>
@@ -882,7 +1035,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
           <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileUp className="w-5 h-5 text-indigo-600" /> RVC Stemmodel Toevoegen
+                <FileUp className="w-5 h-5 text-indigo-600" /> Add RVC Voice Model
               </h3>
               <button
                 onClick={() => setShowUploadModal(false)}
@@ -896,7 +1049,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
               {/* .pth file input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700">
-                  Stemmodel Bestand (*.pth) <span className="text-rose-500">*</span>
+                  Voice Model Checkpoint (*.pth) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="file"
@@ -910,7 +1063,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
               {/* .index file input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700">
-                  Feature Retrieval Index (*.index) <span className="text-slate-400 font-normal">(Optioneel)</span>
+                  Feature Retrieval Index (*.index) <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <input
                   type="file"
@@ -932,7 +1085,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   onClick={() => setShowUploadModal(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700"
                 >
-                  Annuleren
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -941,10 +1094,10 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 >
                   {isUploadingModel ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Uploaden...
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Uploading...
                     </>
                   ) : (
-                    'Opslaan in /models/rvc'
+                    'Save to /models/rvc'
                   )}
                 </button>
               </div>
@@ -955,4 +1108,3 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
     </div>
   );
 }
-

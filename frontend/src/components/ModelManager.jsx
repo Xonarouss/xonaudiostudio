@@ -1159,28 +1159,28 @@ export default function ModelManager({
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-xs text-slate-500 font-bold">
-                  Geen custom stemmen
+                  No custom voices
                 </span>
               )}
             </div>
 
             <h3 className="text-lg font-bold text-slate-900">RVC Voice Models (/models/rvc)</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Jouw geïmporteerde RVC v2 stemmodellen (.pth) en bijbehorende FAISS feature index bestanden (.index). Gebruikt in het Song Cover Lab voor het klonen van zangstemmen.
+              Your imported RVC v2 voice models (.pth) and matching FAISS feature retrieval index files (.index). Used in Song Cover Lab for AI singing voice conversion.
             </p>
 
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
               <div className="flex justify-between">
-                <span>Locatie:</span>
+                <span>Location:</span>
                 <span className="text-slate-800 font-semibold truncate max-w-[200px]">/models/rvc/*.pth</span>
               </div>
               <div className="flex justify-between">
-                <span>Index Ondersteuning:</span>
-                <span className="text-slate-800">FAISS Index Retrieval</span>
+                <span>Index Support:</span>
+                <span className="text-slate-800">FAISS Feature Retrieval</span>
               </div>
               <div className="flex justify-between">
                 <span>VRAM Footprint:</span>
-                <span className="text-pink-700 font-bold">~1.0 GB VRAM per stem</span>
+                <span className="text-pink-700 font-bold">~1.0 GB VRAM during inference</span>
               </div>
             </div>
           </div>
@@ -1194,7 +1194,7 @@ export default function ModelManager({
                 className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
               >
                 <Trash2 className="w-4 h-4 text-rose-600" />
-                <span>Custom Stemmen Wissen</span>
+                <span>Clear Custom Voices</span>
               </button>
             )}
             <button
@@ -1202,7 +1202,7 @@ export default function ModelManager({
               className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Map Scannen</span>
+              <span>Rescan Directory</span>
             </button>
           </div>
         </div>

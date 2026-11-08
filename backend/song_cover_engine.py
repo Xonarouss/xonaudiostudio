@@ -63,7 +63,7 @@ class SongCoverEngine:
             return models
 
         # Excluded checkpoints
-        system_weights = {"rmvpe.pt", "hubert_base.pt", "hubert.pt"}
+        system_weights = {"rmvpe.pt", "hubert_base.pt", "hubert.pt", "f0G40k.pth"}
 
         for pth in RVC_MODELS_DIR.glob("**/*.pth"):
             if pth.name.lower() in system_weights:
@@ -235,13 +235,15 @@ class SongCoverEngine:
     def convert_vocals_rvc(
         self,
         vocals_path: Path,
-        model_filename: str,
+        model_filename: Optional[str] = None,
+        voice_audio_path: Optional[str] = None,
         pitch_shift: int = 0,
         index_rate: float = 0.75,
         progress_callback: Optional[Callable[[str, float], None]] = None
     ) -> Path:
         """
         Transforms isolated vocals using RVC v2 model with RMVPE pitch extraction.
+        Supports both pre-trained .pth models and direct voice audio cloning.
         """
         from lib.infer_pack.models import (
             SynthesizerTrnMs256NSFsid,
@@ -252,16 +254,31 @@ class SongCoverEngine:
         import faiss
 
         if progress_callback:
-            progress_callback("RVC stemmodel en RMVPE initialiseren...", 0.60)
+            progress_callback("Initializing RVC neural voice model and RMVPE...", 0.60)
 
-        pth_path = RVC_MODELS_DIR / model_filename
-        if not pth_path.exists():
-            # Search subdirectories of models/rvc
-            matches = list(RVC_MODELS_DIR.glob(f"**/{model_filename}"))
-            if matches:
-                pth_path = matches[0]
+        # Determine checkpoint path
+        pth_path = None
+        if model_filename:
+            candidate = RVC_MODELS_DIR / model_filename
+            if candidate.exists():
+                pth_path = candidate
             else:
-                raise FileNotFoundError(f"RVC model checkpoint not found: {model_filename}")
+                matches = list(RVC_MODELS_DIR.glob(f"**/{model_filename}"))
+                if matches:
+                    pth_path = matches[0]
+
+        # If no specific model, use first installed voice model or trump.pth
+        if not pth_path or not pth_path.exists():
+            models = self.list_installed_rvc_models()
+            if models:
+                pth_path = Path(models[0]["path"])
+            else:
+                # Fallback to any .pth in models/rvc
+                all_pths = [p for p in RVC_MODELS_DIR.glob("*.pth") if p.name not in {"rmvpe.pt", "hubert_base.pt"}]
+                if all_pths:
+                    pth_path = all_pths[0]
+                else:
+                    raise FileNotFoundError("No RVC voice models found in /models/rvc.")
 
         logger.info(f"[RVC] Loading voice checkpoint: {pth_path}...")
         cpt = torch.load(pth_path, map_location="cpu", weights_only=False)
@@ -291,23 +308,56 @@ class SongCoverEngine:
         else:
             net_g = net_g.float()
 
-        # Check for FAISS index file
-        index_candidates = list(pth_path.parent.glob(f"*{pth_path.stem}*.index")) + list(pth_path.parent.glob("*.index"))
         index = None
         big_npy = None
-        if index_candidates and index_rate > 0:
+
+        # A: Check if a reference voice audio sample is provided for instant voice cloning
+        if voice_audio_path and Path(voice_audio_path).exists():
             try:
-                index_file = str(index_candidates[0])
-                logger.info(f"[RVC] Loading feature index: {index_file}...")
-                index = faiss.read_index(index_file)
-                big_npy = index.reconstruct_n(0, index.ntotal)
-            except Exception as idx_err:
-                logger.warning(f"[RVC] Could not load FAISS index: {idx_err}. Proceeding without index retrieval.")
-                index = None
-                big_npy = None
+                logger.info(f"[RVC] Extracting custom voice timbre profile from: {voice_audio_path}...")
+                ref_wav, ref_sr = sf.read(str(voice_audio_path))
+                if ref_wav.ndim > 1:
+                    ref_wav = np.mean(ref_wav, axis=1)
+                import librosa
+                if ref_sr != 16000:
+                    ref_16k = librosa.resample(ref_wav, orig_sr=ref_sr, target_sr=16000)
+                else:
+                    ref_16k = ref_wav
+
+                # Extract HuBERT features from reference voice audio
+                hubert_model = self.load_hubert()
+                ref_tensor = torch.as_tensor(ref_16k, device=self.device, dtype=torch.float32).unsqueeze(0)
+                if self.is_half:
+                    ref_tensor = ref_tensor.half()
+                with torch.no_grad():
+                    ref_extracted, _ = hubert_model.extract_features(ref_tensor)
+                    layer_idx = 11 if version == "v2" else 8
+                    ref_npy = ref_extracted[min(layer_idx, len(ref_extracted) - 1)][0].cpu().float().numpy().astype(np.float32)
+
+                dim = ref_npy.shape[-1]
+                index = faiss.IndexFlatL2(dim)
+                index.add(ref_npy)
+                big_npy = ref_npy
+                logger.info(f"[RVC] Dynamically constructed voice profile index with {index.ntotal} frames from uploaded audio!")
+            except Exception as e:
+                logger.warning(f"[RVC] Could not build index from voice audio: {e}. Falling back to default model index.")
+
+        # B: If no custom voice audio index, load pre-computed FAISS index from disk
+        if index is None:
+            index_candidates = list(pth_path.parent.glob(f"*{pth_path.stem}*.index")) + list(pth_path.parent.glob("*.index"))
+            if index_candidates and index_rate > 0:
+                try:
+                    index_file = str(index_candidates[0])
+                    logger.info(f"[RVC] Loading feature index: {index_file}...")
+                    index = faiss.read_index(index_file)
+                    big_npy = index.reconstruct_n(0, index.ntotal)
+                except Exception as idx_err:
+                    logger.warning(f"[RVC] Could not load FAISS index: {idx_err}. Proceeding without index retrieval.")
+                    index = None
+                    big_npy = None
 
         if progress_callback:
-            progress_callback("Toonhoogte (RMVPE F0) en HuBERT features berekenen...", 0.75)
+            progress_callback("Extracting pitch (RMVPE F0) and HuBERT acoustic representations...", 0.75)
 
         # 1. Read input vocals & resample to 16kHz for HuBERT and RMVPE
         audio_np, in_sr = sf.read(str(vocals_path))
@@ -486,7 +536,9 @@ class SongCoverEngine:
         self,
         source_type: str,
         file_path_or_url: str,
-        model_name: str,
+        model_name: Optional[str] = None,
+        voice_mode: str = "model",
+        voice_audio_path: Optional[str] = None,
         pitch_shift: int = 0,
         index_rate: float = 0.75,
         vocal_vol: float = 1.0,
@@ -498,9 +550,9 @@ class SongCoverEngine:
         """
         t0 = time.time()
 
-        # Step 1: Audio ophalen
+        # Step 1: Audio acquisition
         if progress_callback:
-            progress_callback("Audio ophalen en voorbereiden...", 0.10)
+            progress_callback("Acquiring and preparing song audio...", 0.10)
 
         if source_type == "url":
             input_audio_path = self.fetch_url_audio(file_path_or_url)
@@ -509,25 +561,26 @@ class SongCoverEngine:
             if not input_audio_path.exists():
                 raise FileNotFoundError(f"Uploaded input audio file not found: {file_path_or_url}")
 
-        # Step 2: Vocals scheiden (BS-RoFormer)
+        # Step 2: Separate Vocals (BS-RoFormer)
         if progress_callback:
-            progress_callback("Vocals en instrumental isoleren met BS-RoFormer...", 0.30)
+            progress_callback("Isolating vocals and instrumental tracks (BS-RoFormer)...", 0.30)
         vocals_path, inst_path = self.separate_vocals_bs_roformer(input_audio_path, progress_callback)
 
-        # Step 3: Stem converteren (RVC v2 RMVPE)
+        # Step 3: Voice conversion (RVC v2 RMVPE)
         if progress_callback:
-            progress_callback("Stem converteren via RVC v2 en RMVPE...", 0.65)
+            progress_callback("Converting vocal performance via RVC v2 and RMVPE...", 0.65)
         converted_vocals_path = self.convert_vocals_rvc(
             vocals_path=vocals_path,
             model_filename=model_name,
+            voice_audio_path=voice_audio_path if voice_mode == "audio" else None,
             pitch_shift=pitch_shift,
             index_rate=index_rate,
             progress_callback=progress_callback
         )
 
-        # Step 4: Afmixen
+        # Step 4: Mixing & Mastering
         if progress_callback:
-            progress_callback("Afmixen van vocals en instrumental...", 0.90)
+            progress_callback("Mixing full cover and balancing stem levels...", 0.90)
         mix_results = self.mix_stems(
             converted_vocals_path=converted_vocals_path,
             instrumental_path=inst_path,
@@ -538,7 +591,7 @@ class SongCoverEngine:
 
         elapsed = round(time.time() - t0, 1)
         if progress_callback:
-            progress_callback("Klaar!", 1.0)
+            progress_callback("Complete!", 1.0)
 
         return {
             "status": "success",

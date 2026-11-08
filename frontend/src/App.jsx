@@ -19,7 +19,7 @@ class ErrorBoundary extends Component {
           <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Er is een weergavefout opgetreden</h3>
+          <h3 className="text-lg font-bold text-slate-900">An unexpected display error occurred</h3>
           <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl font-mono text-left overflow-auto max-h-40">
             {this.state.error?.message || String(this.state.error)}
           </p>
@@ -27,7 +27,7 @@ class ErrorBoundary extends Component {
             onClick={() => this.setState({ hasError: false, error: null })}
             className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
           >
-            Opnieuw Proberen
+            Retry Component
           </button>
         </div>
       );
