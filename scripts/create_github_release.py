@@ -12,45 +12,52 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPO = "Xonarouss/xonaudiostudio"
-TAG = "v1.2.0"
-ZIP_PATH = BASE_DIR / "XonAudio-Studio-v1.2.0-Portable.zip"
-UPLOAD_NAME = "XonAudio-Studio-v1.2.0-Portable.zip"
+TAG = "v1.3.0"
+ZIP_PATH = BASE_DIR / "XonAudio-Studio-v1.3.0-Portable.zip"
+UPLOAD_NAME = "XonAudio-Studio-v1.3.0-Portable.zip"
 
 RELEASE_NOTES = """\
-# 🎙️ XonAudio Studio v1.2.0
+# 🎙️ XonAudio Studio v1.3.0
+### Next-Gen Local AI Audio Workstation • AI Song Cover Lab • 3 Voice Engines • 3 SFX Engines
+**Built with passion by [Xonarous Inc](https://xonarous.nl)**
 
-### 🚀 Major Highlights
+[![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-blue.svg?style=for-the-badge&logo=windows)](https://xonarous.nl)
+[![CUDA](https://img.shields.io/badge/CUDA-12.8%2B%20%7C%20PyTorch%202.12-green.svg?style=for-the-badge&logo=nvidia)](https://xonarous.nl)
+[![Architecture](https://img.shields.io/badge/Architecture-Blackwell%20sm__120%20%7C%20Ada%20%7C%20Ampere-purple.svg?style=for-the-badge)](https://xonarous.nl)
+[![Dutch](https://img.shields.io/badge/🇳🇱%20Dutch%20TTS-Supported%20(XTTS%20+%20Fish)-orange.svg?style=for-the-badge)](https://xonarous.nl)
 
-#### 1. Three Neural Voice Engines (Voice Lab Switcher)
-- **F5-TTS v1 Base** — Flow-matching non-autoregressive diffusion with fast ODE solver (English & Chinese Mandarin zero-shot voice cloning).
-- **Coqui XTTS-v2** — SOTA multilingual voice cloning across 17 languages with native **Dutch (Nederlands 🇳🇱)**, German, French, Spanish, Italian, Portuguese, and more.
-- **Fish Speech 1.5 Ultra** — The newest dual autoregressive (DAR) + VQ-GAN neural audio codec architecture. 100% fully local, ultra-natural cadence, zero cloud/API dependencies, with native **Dutch (🇳🇱)** support.
+---
 
-#### 2. 🇳🇱 Native Dutch Language Support
-- Full high-fidelity Dutch speech synthesis and voice cloning via XTTS-v2 and Fish Speech 1.5.
+### 🚀 Major Highlights in v1.3.0
 
-#### 3. Automatic Dependency & FFmpeg Installer
-- `Start_AudioStudio.bat` and `Install_Environment.bat` now automatically check and install all required audio processing packages (`torchsde`, `einops`, `encodec`, `pydub`, `phonemizer`, `imageio-ffmpeg`).
-- Automatically bundles and links static `ffmpeg.exe` binaries directly into `venv\Scripts\ffmpeg.exe` so pydub and torchaudio have zero configuration overhead.
+#### 1. 🎵 AI Song Cover Lab
+- **Audio Ingestion:** Drag-and-drop song files (MP3/WAV/FLAC) or paste direct YouTube / Spotify URLs.
+- **BS-RoFormer Vocal Isolation:** SOTA 12.97 SDR separation on CUDA via PyTorch Lightning to cleanly isolate singing vocals and backing instruments with zero bleed.
+- **RVC v2 Neural Voice Conversion:** Deep neural voice conversion with RMVPE 100 FPS pitch extraction and pitch shifting (-12 to +12 semitones).
+- **Bit-Exact pure-PyTorch HuBERT:** 100% bit-exact acoustic phonetic representation mapping with unvoiced consonant protection.
+- **Dynamic Hi-Fi Stem Mixing:** Independent volume sliders (0–150%) with dynamic RMS envelope matching.
+- **Studio Dual Export:** Broadcast-ready **320 kbps MP3** (FFmpeg libmp3lame) and **24-bit Lossless Studio Master WAV**.
 
-#### 4. Magic Wand & Llama Prompt Enhancer Fix
-- Fixed `enhance_prompt()` to automatically load Llama 3 on demand when installed.
-- Expanded `max_new_tokens` to 200 for rich cinematic acoustic descriptions.
+#### 2. 🗃️ Generations Library Song Cover Archive
+- All generated song cover full mixes, isolated vocals, and backing instrumentals are now automatically cataloged in the Generations Library.
+- Dedicated **[Song Covers]** filter tab with waveform playback, MP3/WAV export, and deletion management.
 
-#### 5. Aria Voice & Preset Audio Refinements
-- Replaced Aria voice sample with a natural female English narration voice.
-- Set auto-ASR transcription for zero pronunciation artifacts.
+#### 3. 🎛️ Triple SFX Diffusion Suite
+- **Stable Audio 3 Medium DiT:** Stability AI's Diffusion Transformer with 10-step high-speed synthesis.
+- **Stable Audio Open 1.0:** 44.1kHz stereo Foley and musical motifs.
+- **AudioLDM 2 Studio:** Dual CLAP + T5 narrative sound effect synthesis designed for multi-event soundscapes.
+- **Smart Negative Prompt Sanitization:** Automatically detects vocal/musical intent to prevent cancellation conflicts.
 
-#### 6. Website Update
-- Dedicated **5 Neural AI Architectures** showcase live on GitHub Pages with model specs, VRAM footprints, and Dutch language badges.
+#### 4. 🗣️ 3-Engine Voice Lab with 🇳🇱 Dutch Support
+- F5-TTS v1 Base, Coqui XTTS-v2, and Fish Speech 1.5 Ultra with studio Dutch presets (`daan_nl`, `femke_nl`, `bram_nl`, `lotte_nl`) and expressive laughter cues.
 
 ---
 
 ### 💻 How to Run
-1. Download **`XonAudio-Studio-v1.2.0-Portable.zip`**
-2. Extract the archive
-3. Double-click **`Start_AudioStudio.bat`** (auto-installs all requirements on first run)
-4. Studio UI opens automatically at `http://localhost:5173`
+1. Download **`XonAudio-Studio-v1.3.0-Portable.zip`** below.
+2. Extract the archive anywhere on your Windows PC.
+3. Double-click **`Start_AudioStudio.bat`** (auto-verifies and downloads required models on first run).
+4. Studio UI opens automatically at `http://localhost:5173`.
 
 **Built by Xonarous Inc** • [https://xonarous.nl](https://xonarous.nl)
 """
@@ -74,6 +81,7 @@ def api_request(url, token, method="GET", data=None, content_type="application/j
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--token", default=os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", ""))
+    parser.add_argument("--delete-old", action="store_true", default=True, help="Delete older releases on GitHub")
     args = parser.parse_args()
 
     if not args.token:
@@ -82,18 +90,43 @@ def main():
         sys.exit(1)
 
     if not ZIP_PATH.exists():
-        print(f"ERROR: Release ZIP not found at {ZIP_PATH}")
-        print("Run: python scripts/build_release_zip.py")
-        sys.exit(1)
+        print(f"Release ZIP not found at {ZIP_PATH}. Building package...")
+        import subprocess
+        subprocess.run([sys.executable, str(BASE_DIR / "scripts" / "build_release_zip.py")], check=True)
 
     token = args.token
     api_base = "https://api.github.com"
+
+    # Delete older releases if requested
+    if args.delete_old:
+        print("[0/3] Checking and deleting older releases...")
+        try:
+            releases = api_request(f"{api_base}/repos/{REPO}/releases", token)
+            for r in releases:
+                if r.get("tag_name") != TAG:
+                    r_id = r["id"]
+                    r_tag = r.get("tag_name", "unknown")
+                    print(f"    Deleting previous release {r_tag} (ID: {r_id})...")
+                    try:
+                        api_request(f"{api_base}/repos/{REPO}/releases/{r_id}", token, method="DELETE")
+                        print(f"    ✓ Deleted release {r_tag}")
+                    except Exception as del_err:
+                        print(f"    ✗ Could not delete release {r_tag}: {del_err}")
+                    
+                    # Delete tag ref as well
+                    try:
+                        api_request(f"{api_base}/repos/{REPO}/git/refs/tags/{r_tag}", token, method="DELETE")
+                        print(f"    ✓ Deleted tag ref {r_tag}")
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"    Warning checking previous releases: {e}")
 
     # 1. Create the release
     print(f"[1/3] Creating GitHub release {TAG}...")
     release_data = {
         "tag_name": TAG,
-        "name": f"XonAudio Studio {TAG} — Emotion Control, Voice Library & AI Fixes",
+        "name": f"XonAudio Studio {TAG} — AI Song Cover Lab, BS-RoFormer, RVC v2 & Hi-Fi Dual Export",
         "body": RELEASE_NOTES,
         "draft": False,
         "prerelease": False,
@@ -119,7 +152,7 @@ def main():
     with open(ZIP_PATH, "rb") as f:
         zip_data = f.read()
     upload_resp = api_request(
-        f"{upload_url}?name={UPLOAD_NAME}&label=XonAudio+Studio+v1.1.0+Portable+(Windows)",
+        f"{upload_url}?name={UPLOAD_NAME}&label=XonAudio+Studio+{TAG}+Portable+(Windows)",
         token, "POST", zip_data, "application/zip"
     )
     print(f"    Asset uploaded: {upload_resp.get('browser_download_url', 'OK')}")

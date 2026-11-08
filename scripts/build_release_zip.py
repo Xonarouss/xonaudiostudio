@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DIST_ZIP = ROOT_DIR / "XonAudio-Studio-v1.2.0-Portable.zip"
+DIST_ZIP = ROOT_DIR / "XonAudio-Studio-v1.3.0-Portable.zip"
 
 def build_frontend():
     print("[1/3] Building frontend production bundle...")
@@ -41,8 +41,11 @@ def create_zip():
         "models/xtts-v2/.gitkeep",
         "models/fish-speech-1.5/.gitkeep",
         "models/audioldm2/.gitkeep",
+        "models/rvc/.gitkeep",
+        "models/bs_roformer/.gitkeep",
         "outputs/tts/.gitkeep",
         "outputs/sfx/.gitkeep",
+        "outputs/song_covers/.gitkeep",
     ]
 
     # Exclusions

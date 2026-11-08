@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Download, Trash2, Music, Mic, Clock, RefreshCw, FolderOpen, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Play, Download, Trash2, Music, Mic, Clock, RefreshCw, FolderOpen, ArrowUpRight, Sparkles, Music2, Disc } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
 
 export default function GenerationsLibrary({ onLoadIntoStudio }) {
   const [generations, setGenerations] = useState([]);
   const [selectedAudio, setSelectedAudio] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'tts' | 'sfx'
+  const [filter, setFilter] = useState('all'); // 'all' | 'tts' | 'sfx' | 'song_cover'
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchGenerations = async () => {
@@ -72,7 +72,7 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
 
         {/* Filter buttons & Refresh */}
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs flex-wrap gap-1">
             <button
               onClick={() => setFilter('all')}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
@@ -80,6 +80,14 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
               }`}
             >
               All ({generations.length})
+            </button>
+            <button
+              onClick={() => setFilter('song_cover')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                filter === 'song_cover' ? 'bg-white text-pink-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-pink-600'
+              }`}
+            >
+              Song Covers ({generations.filter(g => g.type === 'song_cover').length})
             </button>
             <button
               onClick={() => setFilter('tts')}
@@ -95,7 +103,7 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
                 filter === 'sfx' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Foley ({generations.filter(g => g.type === 'sfx').length})
+              SFX ({generations.filter(g => g.type === 'sfx').length})
             </button>
           </div>
 
@@ -116,7 +124,13 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
           <AudioPlayer
             audioUrl={selectedAudio.url}
             title={selectedAudio.title}
-            subtitle={`${selectedAudio.type === 'tts' ? 'F5-TTS Voice' : 'Stable Audio Foley'} • ${selectedAudio.created_at} • ${selectedAudio.size_mb} MB`}
+            subtitle={`${
+              selectedAudio.type === 'song_cover'
+                ? 'AI Song Cover Lab (BS-RoFormer + RVC v2)'
+                : selectedAudio.type === 'tts'
+                ? 'Voice Lab Speech'
+                : 'SFX Studio Foley'
+            } • ${selectedAudio.created_at} • ${selectedAudio.size_mb} MB`}
           />
         </div>
       )}
@@ -126,6 +140,7 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((item) => {
             const isSelected = selectedAudio?.id === item.id;
+            const isSongCover = item.type === 'song_cover';
             const isTTS = item.type === 'tts';
 
             return (
@@ -134,7 +149,9 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
                 onClick={() => setSelectedAudio(item)}
                 className={`p-4 rounded-2xl border cursor-pointer transition-all hover:shadow-md flex flex-col justify-between space-y-3 bg-white ${
                   isSelected
-                    ? 'border-cyan-500 ring-2 ring-cyan-500/20 shadow-sm'
+                    ? isSongCover
+                      ? 'border-pink-500 ring-2 ring-pink-500/20 shadow-sm'
+                      : 'border-cyan-500 ring-2 ring-cyan-500/20 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
@@ -142,13 +159,21 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
                   <div className="flex items-center justify-between">
                     <span
                       className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 ${
-                        isTTS
+                        isSongCover
+                          ? 'bg-pink-50 text-pink-700 border border-pink-200'
+                          : isTTS
                           ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
                           : 'bg-purple-50 text-purple-700 border border-purple-200'
                       }`}
                     >
-                      {isTTS ? <Mic className="w-3 h-3" /> : <Music className="w-3 h-3" />}
-                      {isTTS ? 'F5-TTS Voice' : 'Stable Audio'}
+                      {isSongCover ? (
+                        <Music2 className="w-3 h-3 text-pink-600" />
+                      ) : isTTS ? (
+                        <Mic className="w-3 h-3" />
+                      ) : (
+                        <Music className="w-3 h-3" />
+                      )}
+                      {isSongCover ? 'Song Cover' : isTTS ? 'Voice Lab' : 'SFX Studio'}
                     </span>
                     <span className="text-[11px] font-mono text-slate-400">{item.created_at}</span>
                   </div>

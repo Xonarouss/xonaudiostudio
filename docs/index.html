@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XonAudio Studio — Professional Local AI Audio Workstation (3 Voice Engines · Dutch Support · 100% Local)</title>
-  <meta name="description" content="Next-Gen Local AI Audio Workstation. 3 State-of-the-art TTS engines (F5-TTS, XTTS-v2 with 17 languages incl. Dutch, Fish Speech 1.5 Ultra), 44.1kHz stereo Foley with Stable Audio Open, and Llama 3 Studio AI. 100% on-device on NVIDIA RTX GPUs. Zero cloud, zero API.">
-  <meta name="keywords" content="AI Audio, F5-TTS, XTTS-v2, Fish Speech 1.5, Dutch TTS, Nederlandse AI stem, Stable Audio Open, Voice Cloning, Text to Speech, Sound Effects, RTX 5080, Blackwell sm_120, Local AI, Open Source">
+  <title>XonAudio Studio — Professional Local AI Audio Workstation (Song Cover Lab · 3 Voice Engines · Dutch Support · 3 SFX Engines · 100% Local)</title>
+  <meta name="description" content="Next-Gen Local AI Audio Workstation. AI Song Cover Lab (BS-RoFormer + RVC v2 RMVPE), 3 SOTA TTS engines (F5-TTS, XTTS-v2 with 17 languages incl. Dutch, Fish Speech 1.5 Ultra), 3 SFX engines (Stable Audio 3 Medium DiT, Stable Audio Open, AudioLDM 2), and 320k MP3 + 24-bit WAV studio export. 100% local on NVIDIA GPUs.">
+  <meta name="keywords" content="AI Audio, Song Cover AI, RVC v2, BS-RoFormer, Stem Separation, RMVPE, F5-TTS, XTTS-v2, Fish Speech 1.5, Dutch TTS, Nederlandse AI stem, Stable Audio 3, Stable Audio Open, AudioLDM 2, Voice Cloning, RTX 5080, Blackwell sm_120, Local AI, Open Source">
   <meta name="author" content="Xonarous Inc">
   <link rel="icon" type="image/x-icon" href="assets/icon.ico">
   <link rel="apple-touch-icon" href="assets/logo.png">
@@ -13,7 +13,7 @@
   <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="XonAudio Studio — Next-Gen Local AI Audio Workstation">
-  <meta property="og:description" content="100% Private, Zero-Shot Voice Cloning & Foley Sound Synthesis powered by RTX Blackwell sm_120. Built by Xonarous Inc.">
+  <meta property="og:description" content="100% Private Voice Cloning, AI Song Covers & Foley Sound Synthesis powered by RTX Blackwell sm_120. Built by Xonarous Inc.">
   <meta property="og:image" content="assets/logo.png">
   <meta property="og:url" content="https://xonarouss.github.io/xonaudiostudio/">
 
@@ -94,8 +94,8 @@
 
   <!-- TOP ANNOUNCEMENT BANNER -->
   <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white text-xs font-semibold py-2 px-4 text-center tracking-wide flex items-center justify-center gap-2 shadow-sm">
-    <span class="inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] uppercase font-bold tracking-wider">v1.2 Release</span>
-    <span class="truncate">XonAudio Studio v1.2 • 3 Voice Engines (F5-TTS, XTTS-v2, Fish Speech 1.5) • 2 SFX Engines (AudioLDM 2 + Stable Audio) • 🇳🇱 Dutch Support • 100% Fully Local</span>
+    <span class="inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] uppercase font-bold tracking-wider">v1.3 Release</span>
+    <span class="truncate">XonAudio Studio v1.3 • AI Song Cover Lab (BS-RoFormer + RVC v2 RMVPE) • 3 SFX Engines (SA3 Medium DiT, SA Open, AudioLDM 2) • 3 Voice Engines (Dutch Support) • 320k MP3 + 24-bit WAV Studio Export • 100% Local</span>
     <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="underline hover:text-emerald-100 font-bold ml-1 hidden sm:inline-flex items-center gap-1">Download Free <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
   </div>
 
@@ -122,7 +122,10 @@
       <!-- Desktop Navigation Links (Clean & Compact) -->
       <nav class="hidden lg:flex items-center gap-7 text-xs sm:text-sm font-semibold text-slate-600">
         <a href="#models" class="text-emerald-700 font-bold hover:text-emerald-600 transition-colors flex items-center gap-1">
-          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 6 AI Models
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 9 AI Models
+        </a>
+        <a href="#song-cover-lab" class="hover:text-pink-600 transition-colors flex items-center gap-1 font-semibold text-slate-700">
+          <i data-lucide="music-2" class="w-3.5 h-3.5 text-pink-500"></i> Song Cover Lab
         </a>
         <a href="#features" class="hover:text-emerald-600 transition-colors">Features</a>
         <a href="#showcase" class="hover:text-emerald-600 transition-colors">Live Demos</a>
@@ -156,6 +159,8 @@
     <!-- Mobile Dropdown Menu -->
     <div id="mobileMenu" class="hidden lg:hidden border-t border-slate-200/80 bg-white/95 px-4 pt-3 pb-5 space-y-3 animate-fadeIn">
       <nav class="flex flex-col space-y-2 text-sm font-semibold text-slate-700">
+        <a href="#models" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">9 AI Models</a>
+        <a href="#song-cover-lab" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors text-pink-600 font-bold">Song Cover Lab</a>
         <a href="#features" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Features</a>
         <a href="#showcase" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Live Demos</a>
         <a href="#telemetry" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Hardware Diagnostics</a>
@@ -181,7 +186,7 @@
       <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-white border border-emerald-200/80 text-emerald-800 text-[11px] sm:text-xs font-bold shadow-xs mb-6 sm:mb-8 hover:border-emerald-300 transition-colors">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
         <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
-        <span>Open Source AI Audio Studio</span>
+        <span>Open Source AI Audio Studio v1.3</span>
         <span class="text-slate-300">|</span>
         <span class="text-slate-600 font-medium">RTX 5080 Blackwell sm_120</span>
       </div>
@@ -193,14 +198,18 @@
 
       <!-- Subtitle -->
       <p class="mt-4 sm:mt-6 text-base sm:text-xl text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed px-2">
-        Choose from <strong>3 state-of-the-art TTS engines</strong> (<strong>F5-TTS</strong>, <strong>XTTS-v2</strong> with 17 languages incl. 🇳🇱 Dutch, and <strong>Fish Speech 1.5 Ultra</strong>), generate pristine 44.1kHz Foley sound effects with <strong>Stable Audio Open</strong>, and refine prompts with <strong>Llama 3</strong>. 100% on-device on your NVIDIA GPU with zero cloud dependencies.
+        Full <strong>AI Song Cover Lab</strong> with <strong>BS-RoFormer</strong> stem separation and <strong>RVC v2 RMVPE</strong> voice conversion. <strong>3 state-of-the-art TTS engines</strong> (F5-TTS, XTTS-v2 with 🇳🇱 Dutch, Fish Speech 1.5 Ultra), <strong>3 SFX engines</strong> (Stable Audio 3 Medium DiT, Stable Audio Open, AudioLDM 2), and <strong>320k MP3 + 24-bit WAV</strong> broadcast mastering. 100% on-device on your NVIDIA GPU with zero cloud dependencies.
       </p>
 
       <!-- CTA Action Group -->
       <div class="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-2">
         <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 sm:py-4 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 rounded-2xl shadow-glow-emerald hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0">
           <i data-lucide="download-cloud" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span>Download Portable v1.2.0 (.zip)</span>
+          <span>Download Portable v1.3.0 (.zip)</span>
+        </a>
+        <a href="#song-cover-lab" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-pink-700 bg-pink-50 hover:bg-pink-100 border border-pink-200 rounded-2xl shadow-xs hover:shadow transition-all">
+          <i data-lucide="music-2" class="w-4 h-4 text-pink-600"></i>
+          <span>Explore Song Cover Lab</span>
         </a>
         <a href="#quickstart" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs hover:shadow transition-all">
           <i data-lucide="terminal" class="w-4 h-4 text-emerald-600"></i>
@@ -223,26 +232,26 @@
 
       <!-- Feature Pill Badges -->
       <div class="mt-10 sm:mt-12 flex flex-wrap justify-center items-center gap-2 sm:gap-3 text-xs font-bold text-slate-600">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-pink-200 shadow-2xs text-pink-700">
+          <i data-lucide="music-2" class="w-4 h-4 text-pink-600"></i> AI Song Cover Lab (BS-RoFormer + RVC v2)
+        </span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
           <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i> 3 SOTA Voice Engines
         </span>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-orange-200 shadow-2xs text-orange-700">
           <span class="text-xs">🇳🇱</span> Dutch Support (XTTS + Fish)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-teal-200 shadow-2xs text-teal-700">
+          <i data-lucide="sparkles" class="w-4 h-4 text-teal-600"></i> 3 SFX Engines (SA3 Medium DiT)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <i data-lucide="disc" class="w-4 h-4 text-indigo-600"></i> 320k MP3 &amp; 24-bit WAV Studio Dual Export
         </span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
           <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> 100% Offline &amp; Private (No API)
         </span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
           <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Blackwell sm_120 Ready
-        </span>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
-          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i> Llama 3 Magic Wand Refiner
-        </span>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
-          <i data-lucide="cpu" class="w-4 h-4 text-cyan-600"></i> Live Dynamic Telemetry
-        </span>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
-          <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i> 1-Click Clean Storage
         </span>
       </div>
 
@@ -343,21 +352,21 @@
     </div>
   </section>
 
-  <!-- 5 LOCAL AI MODELS SHOWCASE -->
+  <!-- 9 LOCAL AI MODELS SHOWCASE -->
   <section id="models" class="py-16 sm:py-20 bg-slate-50 border-b border-slate-200/80">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider mb-3">
-          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 6 Neural AI Architectures
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 9 Neural AI Architectures
         </div>
-        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Six World-Class Models. 100% Local. Zero API.</h2>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Nine World-Class Models. 100% Local. Zero API.</h2>
         <p class="mt-3 text-sm sm:text-base text-slate-500">
-          No cloud tokens, no monthly fees, and zero latency to remote servers. All 6 neural models execute directly in PyTorch CUDA on your local NVIDIA RTX GPU.
+          No cloud tokens, no monthly fees, and zero latency to remote servers. All 9 neural foundation models execute directly in PyTorch CUDA on your local NVIDIA RTX GPU.
         </p>
       </div>
 
-      <!-- Models Grid (6 Models) -->
+      <!-- Models Grid (9 Models) -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Model 1: F5-TTS -->
@@ -434,7 +443,79 @@
           </div>
         </div>
 
-        <!-- Model 4: AudioLDM 2 Studio (Multi-Event SFX) -->
+        <!-- Model 4: BS-RoFormer Vocal Separator -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-pink-200 bg-white shadow-sm ring-1 ring-pink-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-pink-100 text-pink-800 border border-pink-200 rounded-lg text-xs font-mono font-bold">
+                BS-RoFormer
+              </span>
+              <span class="text-xs font-semibold text-pink-700 font-mono">~0.64 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              BS-RoFormer Vocal Separator
+            </h3>
+            <p class="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">SOTA 12.97 SDR Stem Separation</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              State-of-the-art Band-Split RoFormer running on CUDA via PyTorch Lightning. Cleanly isolates vocals and instrumental accompaniment with world-record 12.97 SDR accuracy and zero bleed, powering our Song Cover Lab.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-pink-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-pink-100 text-pink-800 font-bold">12.97 SDR SOTA</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">44.1kHz Stereo</span>
+            <span class="px-2 py-0.5 rounded bg-pink-50 text-pink-700 font-mono">CUDA PyTorch</span>
+          </div>
+        </div>
+
+        <!-- Model 5: RVC v2 + RMVPE + HuBERT -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-rose-200 bg-white shadow-sm ring-1 ring-rose-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-mono font-bold">
+                RVC v2 + RMVPE
+              </span>
+              <span class="text-xs font-semibold text-rose-700 font-mono">Neural Pitch</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              RVC v2 Neural Voice Conversion
+            </h3>
+            <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Singing Voice Cloning &amp; RMVPE F0</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Deep neural singing voice conversion with RMVPE fundamental frequency extraction, FAISS index timbre retrieval, bit-exact pure-PyTorch Fairseq HuBERT encoding, and unvoiced consonant protection. Clone any singer on the fly or load any .pth checkpoint.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-rose-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">RMVPE 100 FPS</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">FAISS Index</span>
+            <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-mono">HuBERT Base</span>
+          </div>
+        </div>
+
+        <!-- Model 6: Stable Audio 3 Medium DiT -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-teal-200 bg-white shadow-sm ring-1 ring-teal-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold">
+                Stable Audio 3
+              </span>
+              <span class="text-xs font-semibold text-teal-700 font-mono">~3.2 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+              Stable Audio 3 Medium DiT
+            </h3>
+            <p class="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Flow-Matching Diffusion Transformer</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Stability AI's newest Diffusion Transformer (DiT). Generates studio-grade 44.1kHz stereo sound effects in just 10-12 flow-matching steps. Equipped with intelligent negative prompt sanitization to prevent vocal cancellation.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-teal-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-bold">Flow DiT</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">44.1kHz Stereo</span>
+            <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-mono">10-12 Steps</span>
+          </div>
+        </div>
+
+        <!-- Model 7: AudioLDM 2 Studio (Multi-Event SFX) -->
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-indigo-200 bg-white shadow-sm ring-1 ring-indigo-200/50">
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -456,7 +537,7 @@
           </div>
         </div>
 
-        <!-- Model 5: Stable Audio Open -->
+        <!-- Model 8: Stable Audio Open -->
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-purple-200 bg-white shadow-sm">
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -478,7 +559,7 @@
           </div>
         </div>
 
-        <!-- Model 6: Llama 3 Studio AI -->
+        <!-- Model 9: Llama 3 Studio AI -->
         <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-emerald-200 bg-white shadow-sm">
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -501,7 +582,7 @@
         </div>
 
         <!-- Storage & GPU Summary Box -->
-        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-950 text-white shadow-lg">
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-950 text-white shadow-lg lg:col-span-3">
           <div>
             <div class="flex items-center justify-between mb-4">
               <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-mono font-bold">
@@ -511,28 +592,139 @@
             </div>
             <h3 class="text-lg font-bold text-white mb-2">100% Sovereign Local AI</h3>
             <p class="text-xs text-slate-300 leading-relaxed mb-4">
-              All models are downloaded once and cached in your <code class="text-emerald-400 font-mono">/models</code> directory. Manage individual weights, clear GPU VRAM instantly, or wipe any model in 1 click via Model Manager.
+              All 9 models are downloaded once and cached in your <code class="text-emerald-400 font-mono">/models</code> directory. Manage individual weights, clear GPU VRAM instantly, or wipe any model in 1 click via Model Manager.
             </p>
-            <div class="space-y-2 text-xs font-mono text-slate-300 border-t border-slate-800 pt-3">
-              <div class="flex justify-between">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono text-slate-300 border-t border-slate-800 pt-3">
+              <div class="flex justify-between sm:flex-col">
                 <span class="text-slate-400">Audio Telemetry:</span>
                 <span class="text-emerald-400 font-bold">Sub-second NVML</span>
               </div>
-              <div class="flex justify-between">
+              <div class="flex justify-between sm:flex-col">
                 <span class="text-slate-400">Offline Ready:</span>
                 <span class="text-emerald-400 font-bold">Air-gapped capable</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">Dutch Voice Engine:</span>
-                <span class="text-orange-400 font-bold">XTTS-v2 &amp; Fish</span>
+              <div class="flex justify-between sm:flex-col">
+                <span class="text-slate-400">Song Cover Lab:</span>
+                <span class="text-pink-400 font-bold">BS-RoFormer + RVC v2</span>
               </div>
             </div>
           </div>
-          <a href="#quickstart" class="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 text-center transition-colors block">
-            Start Producing Audio Now &rarr;
+          <a href="#song-cover-lab" class="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 text-center transition-colors block">
+            Explore AI Song Cover Lab &rarr;
           </a>
         </div>
 
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SONG COVER LAB SPOTLIGHT SECTION -->
+  <section id="song-cover-lab" class="py-16 sm:py-24 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white relative overflow-hidden border-b border-slate-800">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(236,72,153,0.12),transparent_60%)] pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <div class="text-center max-w-3xl mx-auto mb-14 sm:mb-18">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs font-bold uppercase tracking-wider mb-4">
+          <i data-lucide="music-2" class="w-4 h-4 text-pink-400"></i> Next-Gen Song Cover Lab
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          Turn Any Song Into an <span class="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-300 text-transparent bg-clip-text">AI Cover</span>
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed">
+          Produce full AI singing covers in 4 automated stages. Isolate pristine acapellas with BS-RoFormer, replace the singer with RVC v2 and deep neural pitch tracking, and master your broadcast-ready mix in 320k MP3 and 24-bit WAV.
+        </p>
+      </div>
+
+      <!-- 4-Stage Pipeline Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        
+        <!-- Stage 1 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              01
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="download-cloud" class="w-4 h-4 text-pink-400"></i> Audio Ingestion
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Drag-and-drop local audio files (MP3, WAV, FLAC) or paste direct YouTube/Spotify song URLs with 1-click automatic download via yt-dlp.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            MP3 / WAV / FLAC / URL
+          </div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              02
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="scissors" class="w-4 h-4 text-pink-400"></i> BS-RoFormer Split
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Decomposes the song into clean isolated vocals and backing instrumental stems on CUDA using the state-of-the-art BS-RoFormer (12.97 SDR record).
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            12.97 SDR Zero Bleed
+          </div>
+        </div>
+
+        <!-- Stage 3 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              03
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="mic-2" class="w-4 h-4 text-pink-400"></i> RVC v2 + RMVPE
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Transforms vocals using any RVC v2 model or uploaded voice sample. Tracks melody with RMVPE pitch extraction and bit-exact pure-PyTorch HuBERT.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            Pitch Shift -12 to +12
+          </div>
+        </div>
+
+        <!-- Stage 4 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              04
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-pink-400"></i> Hi-Fi Mastering
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Blend vocal and instrumental volumes (0–150%) with dynamic RMS envelope matching, Kaiser sinc resampling, and 320k MP3 + 24-bit WAV dual export.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            320k MP3 &amp; 24-bit WAV
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Feature Callout Banner -->
+      <div class="bg-gradient-to-r from-pink-950/60 via-slate-900/80 to-indigo-950/60 border border-pink-500/30 rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div>
+          <span class="px-2.5 py-1 bg-pink-500/20 text-pink-300 rounded-lg text-xs font-bold uppercase tracking-wider font-mono">Instant Voice Cloning for Covers</span>
+          <h3 class="text-xl sm:text-2xl font-extrabold text-white mt-2">Upload Any Voice Audio to Clone Timbre On the Fly</h3>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            Don't have a pre-trained .pth model? Simply upload any 10-30s audio recording of yourself or any singer. XonAudio Studio automatically builds an instant FAISS timbre index and maps the voice onto your song.
+          </p>
+        </div>
+        <a href="#quickstart" class="shrink-0 px-6 py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-lg transition-all transform active:scale-95 flex items-center gap-2">
+          <i data-lucide="play" class="w-4 h-4"></i> Create AI Song Covers
+        </a>
       </div>
 
     </div>
@@ -562,44 +754,47 @@
             <span class="text-xs">🇳🇱</span>
           </h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Switch effortlessly between <strong>F5-TTS</strong>, <strong>XTTS-v2</strong>, and <strong>Fish Speech 1.5</strong>. Zero-shot clone timbre, cadence, and emotion from any 5–10s audio clip. Full native support for <strong>Dutch (Nederlands)</strong> and 16 other languages.
+            Switch effortlessly between <strong>F5-TTS</strong>, <strong>XTTS-v2</strong>, and <strong>Fish Speech 1.5</strong>. Zero-shot clone timbre, cadence, and emotion from 5–10s audio. Full native support for <strong>Dutch (Nederlands)</strong>, natural laughter cues (`[laugh]`), and 16 other languages.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
             <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 3 interchangeable local voice engines</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 🇳🇱 Dutch, English, Chinese, German &amp; 13 more</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 🇳🇱 Dutch presets (Daan, Femke, Bram, Lotte)</li>
             <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Speed scaling, emotion cues &amp; auto-trim</li>
           </ul>
         </div>
 
         <!-- Feature 2 -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-teal-200/60">
           <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-6 border border-teal-100 shadow-xs">
-            <i data-lucide="music" class="w-6 h-6"></i>
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Sound Studio (Stable Audio)</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">SFX Studio (3 Diffusion Engines)</h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Generate high-resolution stereo audio at full 44.1kHz. Perfect for film foley, gaming soundscapes, transitions, weapons, ambient weather, and musical motifs from 1 up to 47 continuous seconds.
+            Tri-engine sound effect suite: <strong>Stable Audio 3 Medium DiT</strong> (10-step Flow DiT), <strong>Stable Audio Open</strong> (44.1kHz stereo Foley), and <strong>AudioLDM 2</strong> (multi-event soundscapes). Includes intelligent negative prompt sanitization.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> 1 to 47 seconds variable duration slider</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> CFG Guidance scale &amp; step tuning</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> Reproducible random &amp; fixed seeds</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> Stable Audio 3 Medium + SA Open + AudioLDM 2</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> Dynamic negative prompt conflict resolver</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> 1 to 47 seconds variable stereo synthesis</li>
           </ul>
         </div>
 
         <!-- Feature 3 -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 border border-indigo-100 shadow-xs">
-            <i data-lucide="wand-2" class="w-6 h-6"></i>
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-pink-200/60 shadow-xs">
+          <div class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center mb-6 border border-pink-100 shadow-xs">
+            <i data-lucide="music-2" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Llama 3 AI Co-Pilot &amp; Wand</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            AI Song Cover Lab
+            <span class="text-xs px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full font-bold">New</span>
+          </h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Equipped with a built-in local Llama 3 engine. Click the Magic Wand (🪄) next to any text field to transform simple one-word ideas into rich, high-yield acoustic prompts. Plus, chat directly with an audio engineer bot.
+            Full end-to-end singing cover production. Isolates vocals with <strong>BS-RoFormer</strong> (12.97 SDR record), converts singing timbre via <strong>RVC v2 + RMVPE</strong>, and lets you clone any singer instantly by uploading a voice sample.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> 1-Click Magic Wand Prompt Refiner (🪄)</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> Model-check detection with friendly warnings</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> Floating chat co-pilot for studio advice</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-pink-500"></i> BS-RoFormer 12.97 SDR stem separation on CUDA</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-pink-500"></i> RMVPE 100 FPS pitch tracking &amp; pitch shift presets</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-pink-500"></i> YouTube / Spotify audio ingestion via yt-dlp</li>
           </ul>
         </div>
 
@@ -609,50 +804,50 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mt-6 sm:mt-8">
         
         <!-- Feature 4 -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center mb-6 border border-cyan-100 shadow-xs">
-            <i data-lucide="activity" class="w-6 h-6"></i>
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-indigo-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 border border-indigo-100 shadow-xs">
+            <i data-lucide="disc" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Real-Time Telemetry</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Hi-Fi Studio Dual Export</h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Always know what your hardware is doing. Features an ultra-accurate floating hardware monitor displaying GPU utilization, temperature (°C), VRAM usage, total system RAM, CPU %, and engine footprint.
+            Commercial broadcast mastering for every generation. Exports simultaneously to <strong>320 kbps MP3</strong> (FFmpeg libmp3lame) and <strong>24-bit Lossless Studio Master WAV</strong> with Kaiser sinc resampling and dynamic RMS envelope matching.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Native NVML NVIDIA driver queries</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Polled every 2.5s with zero overhead</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Unified matching width &amp; collapsible</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> 320 kbps MP3 (CBR High-Fidelity)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> 24-bit PCM WAV Lossless Studio Master</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> Kaiser sinc resampling &amp; RMS envelope transfer</li>
           </ul>
         </div>
 
         <!-- Feature 5 -->
         <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-6 border border-rose-100 shadow-xs">
-            <i data-lucide="hard-drive" class="w-6 h-6"></i>
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 border border-emerald-100 shadow-xs">
+            <i data-lucide="wand-2" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Storage Reclaim &amp; Updates</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Llama 3 AI Co-Pilot &amp; Wand</h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            AI weights can occupy massive SSD capacity. XonAudio Studio lets you inspect exact on-disk model sizes in gigabytes and wipe them in 1 click whenever you need to free up storage space.
+            Local Meta Llama 3 operating as your creative audio director. Click the Magic Wand (🪄) to expand short ideas into rich cinematic acoustic directions, or chat with the built-in Studio Assistant.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> 1-Click Clean Storage button</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> Auto-checks HF commit SHAs for updates</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> Auto-downloads all models on BAT launch</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 1-Click Magic Wand Prompt Refiner (🪄)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Contextual model check detection</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Floating chat co-pilot for studio advice</li>
           </ul>
         </div>
 
         <!-- Feature 6 -->
         <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6 border border-amber-100 shadow-xs">
-            <i data-lucide="archive" class="w-6 h-6"></i>
+          <div class="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center mb-6 border border-cyan-100 shadow-xs">
+            <i data-lucide="activity" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Generations Archive</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Telemetry &amp; Model Manager</h3>
           <p class="text-sm text-slate-500 leading-relaxed mb-4">
-            Every audio file you produce is safely cataloged in your local library. Play clips directly from the archive, inspect prompts, download WAV files, or delete old recordings with full confidentiality.
+            Sub-second NVML hardware monitor tracking GPU %, temperature, GDDR7 VRAM, Watts, and CPU %. Plus, the Model Manager allows 1-click on-demand downloading and disk space purging.
           </p>
           <ul class="text-xs font-semibold text-slate-600 space-y-2">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> Auto-indexed history with timestamps</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> Direct WAV export &amp; batch cleaning</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> No cloud sync, completely private</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Native NVML NVIDIA driver queries (2.5s)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> 1-Click Clean Storage &amp; VRAM purge</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Auto-verification &amp; downloads in Start.bat</li>
           </ul>
         </div>
 
@@ -896,7 +1091,7 @@
           <ol class="space-y-3.5 text-xs font-medium text-slate-600 my-6">
             <li class="flex items-start gap-2.5">
               <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">A</span>
-              <span>Download <code class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-800 font-mono">XonAudio-Studio-v1.0.0-Portable.zip</code> from GitHub Releases.</span>
+              <span>Download <code class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-800 font-mono">XonAudio-Studio-v1.3.0-Portable.zip</code> from GitHub Releases.</span>
             </li>
             <li class="flex items-start gap-2.5">
               <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">B</span>

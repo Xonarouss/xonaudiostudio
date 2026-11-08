@@ -66,9 +66,10 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   const [generationResult, setGenerationResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Audio player state
+  // Audio player & export format state
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTrack, setActiveTrack] = useState('mix'); // 'mix' | 'vocals' | 'inst'
+  const [downloadFormat, setDownloadFormat] = useState('mp3'); // 'mp3' | 'wav'
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);
@@ -348,10 +349,10 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
   // Audio player controls
   const currentAudioUrl = generationResult
     ? activeTrack === 'mix'
-      ? generationResult.mix_url
+      ? (downloadFormat === 'mp3' ? (generationResult.mix_mp3_url || generationResult.mix_url) : generationResult.mix_url)
       : activeTrack === 'vocals'
-      ? generationResult.vocals_url
-      : generationResult.instrumental_url
+      ? (downloadFormat === 'mp3' ? (generationResult.vocals_mp3_url || generationResult.vocals_url) : generationResult.vocals_url)
+      : (downloadFormat === 'mp3' ? (generationResult.instrumental_mp3_url || generationResult.instrumental_url) : generationResult.instrumental_url)
     : null;
 
   const togglePlay = () => {
@@ -682,7 +683,7 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 className="w-full accent-indigo-600 cursor-pointer"
               />
               {/* Presets */}
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 <button
                   type="button"
                   onClick={() => setPitchShift(-12)}
@@ -696,6 +697,17 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setPitchShift(-5)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                    pitchShift === -5
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Tenor → Baritone [-5]
+                </button>
+                <button
+                  type="button"
                   onClick={() => setPitchShift(0)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
                     pitchShift === 0
@@ -704,6 +716,17 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                   }`}
                 >
                   Neutral [0]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPitchShift(5)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                    pitchShift === 5
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Baritone → Tenor [+5]
                 </button>
                 <button
                   type="button"
@@ -1004,30 +1027,60 @@ export default function SongCoverLab({ modelsStatus, onOpenModelManager }) {
                 </div>
               </div>
 
-              {/* 3 Download Buttons */}
-              <div className="grid grid-cols-1 gap-2 pt-2 border-t border-slate-100">
+              {/* Audio Format Toggle & 3 Download Buttons */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    Export Quality:
+                  </span>
+                  <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setDownloadFormat('mp3')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] transition-all ${
+                        downloadFormat === 'mp3'
+                          ? 'bg-white text-indigo-700 font-bold shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      320k MP3 (Hi-Fi)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDownloadFormat('wav')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] transition-all ${
+                        downloadFormat === 'wav'
+                          ? 'bg-white text-indigo-700 font-bold shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      24-bit WAV (Studio)
+                    </button>
+                  </div>
+                </div>
+
                 <a
-                  href={generationResult.mix_url}
-                  download="cover_full_mix.wav"
-                  className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-xs"
+                  href={downloadFormat === 'mp3' ? (generationResult.mix_mp3_url || generationResult.mix_url) : generationResult.mix_url}
+                  download={downloadFormat === 'mp3' ? 'cover_full_mix.mp3' : 'cover_full_mix_24bit.wav'}
+                  className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
-                  <Download className="w-3.5 h-3.5" /> Download Full Mix
+                  <Download className="w-3.5 h-3.5" /> Download Full Mix ({downloadFormat === 'mp3' ? '320k MP3' : '24-bit WAV'})
                 </a>
 
                 <div className="grid grid-cols-2 gap-2">
                   <a
-                    href={generationResult.vocals_url}
-                    download="cover_vocals_only.wav"
+                    href={downloadFormat === 'mp3' ? (generationResult.vocals_mp3_url || generationResult.vocals_url) : generationResult.vocals_url}
+                    download={downloadFormat === 'mp3' ? 'cover_vocals_only.mp3' : 'cover_vocals_only_24bit.wav'}
                     className="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-slate-200"
                   >
-                    <Download className="w-3.5 h-3.5 text-pink-600" /> Vocals Only
+                    <Download className="w-3.5 h-3.5 text-pink-600" /> Vocals ({downloadFormat.toUpperCase()})
                   </a>
                   <a
-                    href={generationResult.instrumental_url}
-                    download="cover_instrumental_only.wav"
+                    href={downloadFormat === 'mp3' ? (generationResult.instrumental_mp3_url || generationResult.instrumental_url) : generationResult.instrumental_url}
+                    download={downloadFormat === 'mp3' ? 'cover_instrumental_only.mp3' : 'cover_instrumental_only_24bit.wav'}
                     className="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-slate-200"
                   >
-                    <Download className="w-3.5 h-3.5 text-indigo-600" /> Instrumental Only
+                    <Download className="w-3.5 h-3.5 text-indigo-600" /> Instrumental ({downloadFormat.toUpperCase()})
                   </a>
                 </div>
               </div>

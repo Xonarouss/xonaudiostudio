@@ -276,12 +276,21 @@ def delete_generation(file_id: str):
     """Deletes an audio file from outputs."""
     try:
         deleted = False
-        for folder in ["tts", "sfx"]:
-            target = OUTPUTS_DIR / folder / f"{file_id}.wav"
-            if target.exists():
-                target.unlink()
-                deleted = True
-                break
+        target_dirs = [
+            OUTPUTS_DIR / "tts",
+            OUTPUTS_DIR / "sfx",
+            OUTPUTS_DIR / "song_covers" / "mixes",
+            OUTPUTS_DIR / "song_covers" / "stems",
+        ]
+        for folder in target_dirs:
+            for ext in [".wav", ".mp3", ".flac"]:
+                target = folder / f"{file_id}{ext}"
+                if target.exists():
+                    try:
+                        target.unlink()
+                        deleted = True
+                    except Exception:
+                        pass
         if not deleted:
             raise HTTPException(status_code=404, detail="Audio file not found")
         return {"status": "success", "message": "Audio file removed from library"}

@@ -699,6 +699,68 @@ def get_all_generations() -> List[Dict[str, Any]]:
             except Exception:
                 pass
 
+    # Scan Song Cover outputs
+    song_covers_dir = OUTPUTS_DIR / "song_covers" / "mixes"
+    if song_covers_dir.exists():
+        # Scan WAV files first to represent primary studio masters
+        for file in song_covers_dir.glob("*.wav"):
+            try:
+                stat = file.stat()
+                if file.name.startswith("cover_mix_"):
+                    title = f"AI Song Cover — Full Mix ({file.stem[-8:]})"
+                elif file.name.startswith("cover_vocals_"):
+                    title = f"Song Cover — Vocals Only ({file.stem[-8:]})"
+                elif file.name.startswith("cover_inst_"):
+                    title = f"Song Cover — Instrumental ({file.stem[-8:]})"
+                else:
+                    title = f"Song Cover ({file.stem[-8:]})"
+
+                mp3_candidate = file.with_suffix(".mp3")
+                mp3_url = f"/outputs/song_covers/mixes/{mp3_candidate.name}" if mp3_candidate.exists() else None
+
+                generations.append({
+                    "id": file.stem,
+                    "filename": file.name,
+                    "type": "song_cover",
+                    "title": title,
+                    "url": f"/outputs/song_covers/mixes/{file.name}",
+                    "mp3_url": mp3_url,
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "created_at": datetime.fromtimestamp(stat.st_mtime).strftime("%b %d, %H:%M:%S"),
+                    "timestamp": stat.st_mtime
+                })
+            except Exception:
+                pass
+
+        # Also include standalone MP3s if no corresponding WAV exists
+        for file in song_covers_dir.glob("*.mp3"):
+            wav_candidate = file.with_suffix(".wav")
+            if not wav_candidate.exists():
+                try:
+                    stat = file.stat()
+                    if file.name.startswith("cover_mix_"):
+                        title = f"AI Song Cover — Full Mix ({file.stem[-8:]})"
+                    elif file.name.startswith("cover_vocals_"):
+                        title = f"Song Cover — Vocals Only ({file.stem[-8:]})"
+                    elif file.name.startswith("cover_inst_"):
+                        title = f"Song Cover — Instrumental ({file.stem[-8:]})"
+                    else:
+                        title = f"Song Cover ({file.stem[-8:]})"
+
+                    generations.append({
+                        "id": file.stem,
+                        "filename": file.name,
+                        "type": "song_cover",
+                        "title": title,
+                        "url": f"/outputs/song_covers/mixes/{file.name}",
+                        "mp3_url": f"/outputs/song_covers/mixes/{file.name}",
+                        "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                        "created_at": datetime.fromtimestamp(stat.st_mtime).strftime("%b %d, %H:%M:%S"),
+                        "timestamp": stat.st_mtime
+                    })
+                except Exception:
+                    pass
+
     # Sort newest first
     generations.sort(key=lambda x: x["timestamp"], reverse=True)
     return generations
