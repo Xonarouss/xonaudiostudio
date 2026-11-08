@@ -78,15 +78,22 @@ if errorlevel 1 (
 )
 
 :: 3.6 Check Song Cover Lab checkpoints (BS-RoFormer and RMVPE)
-if not exist "models\bs_roformer\*.ckpt" (
-    echo [*] [Song Cover Lab] On-demand downloading BS-RoFormer vocal separator (~640 MB)...
-    python -c "from backend.models_manager import download_model; download_model('bs_roformer')"
-)
-if not exist "models\rvc\rmvpe.pt" (
-    echo [*] [Song Cover Lab] On-demand downloading RMVPE pitch extractor (~150 MB)...
-    python -c "from backend.models_manager import download_model; download_model('rmvpe')"
-)
+if not exist "models\bs_roformer\model_bs_roformer_ep_317_sdr_12.9755.ckpt" goto DL_BS_ROFORMER
+goto CHECK_RMVPE
 
+:DL_BS_ROFORMER
+echo [*] [Song Cover Lab] On-demand downloading BS-RoFormer vocal separator...
+python -c "from backend.models_manager import download_model; download_model('bs_roformer')"
+
+:CHECK_RMVPE
+if not exist "models\rvc\rmvpe.pt" goto DL_RMVPE
+goto CHECK_FFMPEG
+
+:DL_RMVPE
+echo [*] [Song Cover Lab] On-demand downloading RMVPE pitch extractor...
+python -c "from backend.models_manager import download_model; download_model('rmvpe')"
+
+:CHECK_FFMPEG
 if not exist "venv\Scripts\ffmpeg.exe" (
     echo [*] Ensuring FFmpeg audio binaries are linked...
     python -c "import shutil, os, sys, imageio_ffmpeg; shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), os.path.join(os.path.dirname(sys.executable), 'ffmpeg.exe'))" >nul 2>&1
@@ -128,8 +135,7 @@ start "XonAudio Studio - Backend (FastAPI)" /d "%SCRIPT_DIR%" cmd /k "call venv\
 :: 9. Wait for Backend to be online (Eliminates ECONNREFUSED in Vite proxy)
 echo [*] Waiting for FastAPI backend to initialize...
 :WAIT_BACKEND
-timeout /t 1 /nobreak >nul
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8000/api/health' -UseBasicParsing -TimeoutSec 1; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+powershell -NoProfile -Command "Start-Sleep -Milliseconds 800; try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8000/api/health' -UseBasicParsing -TimeoutSec 1; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 goto WAIT_BACKEND
 echo [+] Backend is online and ready!
 
@@ -137,7 +143,7 @@ echo [+] Backend is online and ready!
 echo [*] Starting React Frontend on http://localhost:5173...
 start "XonAudio Studio - Frontend (Vite)" /d "%SCRIPT_DIR%\frontend" cmd /k "npm run dev"
 
-timeout /t 2 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep -Seconds 2" >nul 2>&1
 echo [*] Launching XonAudio Studio in your web browser...
 start http://localhost:5173
 
