@@ -18,7 +18,7 @@ const PRESET_PROMPTS = [
 export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
   const [sfxEngine, setSfxEngine] = useState('audioldm2'); // 'audioldm2' | 'stable_audio' | 'stable_audio_3'
   const [prompt, setPrompt] = useState('Car engine reversing fast followed by sudden loud screeching tires skidding on asphalt');
-  const [negativePrompt, setNegativePrompt] = useState('low quality, distortion, harsh, noisy, speech, human voice');
+  const [negativePrompt, setNegativePrompt] = useState('low quality, distortion, harsh, noisy, clipping, music, melody');
   const [duration, setDuration] = useState(6);
   const [steps, setSteps] = useState(35);
   const [cfgScale, setCfgScale] = useState(4.0);
@@ -55,11 +55,12 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
       setSteps(35);
       setCfgScale(4.0);
     } else if (engine === 'stable_audio_3') {
-      setSteps(50);
-      setCfgScale(7.0);
+      if (duration > 45) setDuration(10);
+      setSteps(12);
+      setCfgScale(2.5);
     } else {
-      setSteps(50);
-      setCfgScale(7.0);
+      setSteps(45);
+      setCfgScale(6.0);
     }
   };
 
@@ -512,9 +513,9 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               </div>
               <input
                 type="range"
-                min="15"
-                max="100"
-                step="5"
+                min={sfxEngine === 'stable_audio_3' ? "4" : "15"}
+                max={sfxEngine === 'stable_audio_3' ? "30" : "100"}
+                step={sfxEngine === 'stable_audio_3' ? "1" : "5"}
                 value={steps}
                 onChange={(e) => setSteps(parseInt(e.target.value))}
                 className={`w-full ${sfxEngine === 'audioldm2' ? 'accent-indigo-600' : 'accent-purple-600'}`}
@@ -530,8 +531,8 @@ export default function SoundStudio({ modelsStatus, onOpenModelManager }) {
               <input
                 type="range"
                 min="1.0"
-                max="15.0"
-                step="0.5"
+                max={sfxEngine === 'stable_audio_3' ? "5.0" : "15.0"}
+                step="0.1"
                 value={cfgScale}
                 onChange={(e) => setCfgScale(parseFloat(e.target.value))}
                 className={`w-full ${sfxEngine === 'audioldm2' ? 'accent-indigo-600' : 'accent-purple-600'}`}

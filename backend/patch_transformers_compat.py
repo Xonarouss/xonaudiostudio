@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 def _apply_patches():
     try:
+        import transformers
         from transformers.utils.import_utils import _LazyModule
 
         _orig_getattr = _LazyModule.__getattr__
@@ -117,7 +118,24 @@ def _apply_patches():
         FALLBACK_SYMBOLS["BeamSearchOutput"] = beam_out
         FALLBACK_SYMBOLS["BeamSampleOutput"] = beam_out
 
-        # 6. huggingface_hub StrictDataclassClassValidationError
+        # 6. transformers.utils constants removed in 5.x but expected by diffusers
+        import transformers.utils as tu
+        constants_to_inject = {
+            "FLAX_WEIGHTS_NAME": "flax_model.msgpack",
+            "FLAX_WEIGHTS_INDEX_NAME": "flax_model.msgpack.index.json",
+            "SAFE_WEIGHTS_NAME": "model.safetensors",
+            "SAFE_WEIGHTS_INDEX_NAME": "model.safetensors.index.json",
+            "WEIGHTS_NAME": "pytorch_model.bin",
+            "WEIGHTS_INDEX_NAME": "pytorch_model.bin.index.json",
+        }
+        for cname, cval in constants_to_inject.items():
+            if not hasattr(tu, cname):
+                setattr(tu, cname, cval)
+            if not hasattr(transformers, cname):
+                setattr(transformers, cname, cval)
+            FALLBACK_SYMBOLS[cname] = cval
+
+        # 7. huggingface_hub StrictDataclassClassValidationError
         try:
             import huggingface_hub.errors as hf_errors
             if not hasattr(hf_errors, "StrictDataclassClassValidationError"):

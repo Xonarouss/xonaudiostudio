@@ -8,6 +8,11 @@ import numpy as np
 import soundfile as sf
 import scipy.io.wavfile
 
+try:
+    import patch_transformers_compat  # noqa: F401
+except ImportError:
+    from backend import patch_transformers_compat  # noqa: F401
+
 import json
 import sys
 import torch
@@ -307,35 +312,63 @@ class SFXEngine:
     def generate_stable_audio_3(
         self,
         prompt: str,
-        negative_prompt: str = "low quality, harsh, distorted, speech",
+        negative_prompt: Optional[str] = None,
         duration: float = 10.0,
-        steps: int = 8,
-        cfg_scale: float = 7.0,
+        steps: int = 12,
+        cfg_scale: float = 2.5,
         seed: int = -1
     ) -> str:
         """
         Generates 44.1kHz stereo sound effect from prompt using Stable Audio 3 Medium.
-        Returns the relative URL path of the generated WAV file.
+        Uses Flow-Matching DiT with smart negative prompting and soft-knee peak protection.
         """
         if not self.is_stable_3_loaded or self.sa3_model is None:
             self.load_stable_audio_3()
 
         duration = max(1.0, min(47.0, float(duration)))
-        # SA3 Flow-Matching DiT: 8-12 steps produces pristine acoustic quality rapidly
-        effective_steps = max(4, min(30, int(steps))) if steps else 8
+        # SA3 Flow-Matching DiT: 8-16 steps produces pristine acoustic quality rapidly
+        effective_steps = max(4, min(30, int(steps))) if steps else 12
+
+        # SA3 Flow-Matching DiT is calibrated for CFG 1.5 - 3.5. Values > 4.0 cause severe latent saturation & crackle.
+        effective_cfg = max(1.0, min(3.5, float(cfg_scale))) if cfg_scale is not None else 2.5
+
+        # Intelligent Negative Prompting:
+        # Detect if prompt is asking for vocal SFX (screams, shouts, laughter, cries, whispers, etc.)
+        prompt_lower = prompt.lower()
+        vocal_keywords = ["scream", "screaming", "shout", "cry", "crying", "laugh", "whisper", "voice", "gasp", "cheer", "groan", "grunt", "yell", "howl", "moan", "vocal"]
+        is_vocal = any(k in prompt_lower for k in vocal_keywords)
+
+        music_keywords = ["music", "song", "melody", "beat", "track", "synth", "piano", "guitar", "orchestr", "drum", "instrument"]
+        is_music = any(k in prompt_lower for k in music_keywords)
+
+        neg = (negative_prompt or "").strip()
+        if not neg:
+            neg = "low quality, harsh, distorted, clipping, buzzing, noisy"
+
+        # If user wants vocal SFX, make sure we NEVER suppress speech or human voice
+        if is_vocal:
+            neg = neg.replace("speech", "").replace("human voice", "").replace("voice", "")
+
+        # If user wants pure SFX (not music), ensure music/instruments are negatively suppressed
+        if not is_music and "music" not in neg.lower():
+            neg = f"{neg}, music, melody, song, musical instruments"
+
+        # Clean up any duplicate commas or extra spaces
+        neg = ", ".join(part.strip() for part in neg.split(",") if part.strip())
 
         filename = f"sfx_sa3_{int(time.time())}_{uuid.uuid4().hex[:6]}.wav"
         output_path = OUTPUTS_DIR / filename
 
-        print(f"[SFXEngine] Generating Stable Audio 3 Medium SFX: '{prompt}' ({duration}s, {effective_steps} steps)...")
+        print(f"[SFXEngine] Generating Stable Audio 3 Medium SFX: '{prompt}' ({duration}s, {effective_steps} steps, CFG={effective_cfg})...")
+        print(f"[SFXEngine] Negative prompt: '{neg}'")
         try:
             with torch.inference_mode():
                 output_tensor = self.sa3_model.generate(
                     prompt=prompt,
-                    negative_prompt=negative_prompt,
+                    negative_prompt=neg,
                     duration=duration,
                     steps=effective_steps,
-                    cfg_scale=float(cfg_scale),
+                    cfg_scale=effective_cfg,
                     seed=int(seed) if seed is not None and seed >= 0 else -1,
                 )
 
@@ -344,9 +377,13 @@ class SFXEngine:
             audio_np = audio.T  # [samples, channels]
             sr = self.sa3_model.model_config.get("sample_rate", 44100)
 
+            # Anti-Clipping Soft Limiter:
+            # Prevent hard digital square-wave clipping from VAE decoder
+            audio_np = np.clip(audio_np, -1.0, 1.0)
             max_val = np.max(np.abs(audio_np))
-            if max_val > 0.99:
-                audio_np = audio_np / max_val * 0.99
+            if max_val > 0.001:
+                # Target peak: -0.7 dBFS (0.92) to leave headroom for lossy codecs and DAC reconstruction
+                audio_np = (audio_np / max_val) * min(0.92, max_val)
 
             sf.write(str(output_path), audio_np, sr)
             print(f"[SFXEngine] Stable Audio 3 SFX saved to {output_path}")

@@ -748,8 +748,8 @@ def generate_sfx(req: SFXGenerateRequest):
                 prompt=req.prompt,
                 negative_prompt=req.negative_prompt,
                 duration=req.duration or 10.0,
-                steps=req.steps or 8,
-                cfg_scale=req.cfg_scale or 7.0,
+                steps=req.steps or 12,
+                cfg_scale=req.cfg_scale if req.cfg_scale is not None else 2.5,
                 seed=req.seed if req.seed is not None else -1
             )
             return {
