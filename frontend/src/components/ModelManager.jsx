@@ -117,11 +117,15 @@ export default function ModelManager({
   const fish = modelsStatus?.fish_speech || {};
   const audioldm = modelsStatus?.audioldm2 || {};
   const whisper = modelsStatus?.whisper || {};
+  const bsRoformer = modelsStatus?.bs_roformer || {};
+  const rmvpe = modelsStatus?.rmvpe || {};
+  const rvcVoices = modelsStatus?.rvc_voices || {};
 
   const totalSize = (
     parseFloat(f5.size_gb || 0) + parseFloat(stable.size_gb || 0) + parseFloat(stable3.size_gb || 0) +
     parseFloat(llama.size_gb || 0) + parseFloat(xtts.size_gb || 0) + parseFloat(fish.size_gb || 0) +
-    parseFloat(audioldm.size_gb || 0) + parseFloat(whisper.size_gb || 0)
+    parseFloat(audioldm.size_gb || 0) + parseFloat(whisper.size_gb || 0) +
+    parseFloat(bsRoformer.size_gb || 0) + parseFloat(rmvpe.size_gb || 0) + parseFloat(rvcVoices.size_gb || 0)
   ).toFixed(2);
 
   const gpuName = systemInfo?.gpu_name || 'GPU';
@@ -973,6 +977,233 @@ export default function ModelManager({
                 )}
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Model 7: BS-RoFormer Vocal Separator */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  BS-RoFormer
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Song Cover Lab Stems</span>
+              </div>
+              {bsRoformer.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({bsRoformer.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~640 MB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">BS-RoFormer Vocal Separator</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              ViperX Band-Split RoFormer architecture. State-of-the-art SDR 12.97 model that separates full songs into clean isolated vocals and instrumental stems on CUDA.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold truncate max-w-[200px]">TRvlvr/ViperX RoFormer</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/bs_roformer</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-indigo-700 font-bold">~1.5 GB VRAM</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Quality Benchmark:</span>
+                <span className="text-indigo-700 font-bold">12.97 dB SDR (Studio Clean)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {bsRoformer.installed ? (
+              <button
+                onClick={() => handleDelete('bs_roformer')}
+                disabled={deletingModel === 'bs_roformer'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({bsRoformer.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('bs_roformer')}
+                disabled={downloadingModel === 'bs_roformer'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+              >
+                {downloadingModel === 'bs_roformer' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~640 MB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download BS-RoFormer (~640 MB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 8: RMVPE Pitch Extractor */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                  RMVPE
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Neural Pitch &amp; HuBERT</span>
+              </div>
+              {rmvpe.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Installed ({rmvpe.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-amber-700 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Not Installed (~330 MB)
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">RMVPE Pitch Extractor</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Robust Model for Vocal Pitch Estimation (Deep U-Net). Extracts fundamental frequency (F0) contours with extreme resistance to noise and polyphonic background.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Source:</span>
+                <span className="text-slate-800 font-semibold truncate max-w-[200px]">lj1995/VoiceConversionWebUI</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Local Directory:</span>
+                <span className="text-slate-800 truncate max-w-[200px]">/models/rvc/rmvpe.pt</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-purple-700 font-bold">~0.5 GB VRAM</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Features:</span>
+                <span className="text-purple-700 font-bold">RMVPE + HuBERT Base</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {rmvpe.installed ? (
+              <button
+                onClick={() => handleDelete('rmvpe')}
+                disabled={deletingModel === 'rmvpe'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete ({rmvpe.size_gb} GB)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDownload('rmvpe')}
+                disabled={downloadingModel === 'rmvpe'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-purple-600/20"
+              >
+                {downloadingModel === 'rmvpe' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Downloading (~330 MB)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download RMVPE (~330 MB)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Model 9: RVC Voice Models Map */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-pink-100 text-pink-800 border border-pink-200">
+                  RVC v2 Voices
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Custom Voice Library</span>
+              </div>
+              {rvcVoices.installed ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Active ({rvcVoices.size_gb} GB)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-slate-500 font-bold">
+                  Geen custom stemmen
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">RVC Voice Models (/models/rvc)</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Jouw geïmporteerde RVC v2 stemmodellen (.pth) en bijbehorende FAISS feature index bestanden (.index). Gebruikt in het Song Cover Lab voor het klonen van zangstemmen.
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
+              <div className="flex justify-between">
+                <span>Locatie:</span>
+                <span className="text-slate-800 font-semibold truncate max-w-[200px]">/models/rvc/*.pth</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Index Ondersteuning:</span>
+                <span className="text-slate-800">FAISS Index Retrieval</span>
+              </div>
+              <div className="flex justify-between">
+                <span>VRAM Footprint:</span>
+                <span className="text-pink-700 font-bold">~1.0 GB VRAM per stem</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            {rvcVoices.installed && (
+              <button
+                onClick={() => handleDelete('rvc_voices')}
+                disabled={deletingModel === 'rvc_voices'}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Custom Stemmen Wissen</span>
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Map Scannen</span>
+            </button>
           </div>
         </div>
       </div>

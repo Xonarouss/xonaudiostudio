@@ -58,6 +58,7 @@ from sfx_engine import sfx_engine
 from llama_engine import llama_engine
 from whisper_engine import whisper_engine
 from audio_cleaner import clean_audio
+from song_cover_engine import song_cover_engine
 from text_preprocessor import (
     preprocess_for_f5tts,
     preprocess_for_xtts,
@@ -785,6 +786,142 @@ def generate_sfx(req: SFXGenerateRequest):
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+# ----------------- SONG COVER LAB ENDPOINTS -----------------
+
+class SongCoverProcessRequest(BaseModel):
+    source_type: str = "file"  # "file" or "url"
+    audio_source: str          # URL or uploaded file path
+    model_name: str          # RVC .pth filename
+    pitch_shift: Optional[int] = 0
+    index_rate: Optional[float] = 0.75
+    vocal_vol: Optional[float] = 1.0
+    inst_vol: Optional[float] = 1.0
+
+class SongCoverUrlRequest(BaseModel):
+    url: str
+
+@app.get("/api/song-cover/models")
+def get_song_cover_models():
+    """Returns list of installed RVC voice models in models/rvc."""
+    try:
+        models = song_cover_engine.list_installed_rvc_models()
+        return {"status": "success", "models": models}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/song-cover/upload-model")
+async def upload_rvc_model(
+    model_file: UploadFile = File(...),
+    index_file: Optional[UploadFile] = File(None)
+):
+    """Uploads an RVC .pth voice model and optional .index feature retrieval file."""
+    try:
+        rvc_dir = Path(BASE_DIR / "models" / "rvc")
+        rvc_dir.mkdir(parents=True, exist_ok=True)
+
+        if not model_file.filename.lower().endswith(".pth"):
+            raise HTTPException(status_code=400, detail="Het stemmodel moet een .pth bestand zijn.")
+
+        model_dest = rvc_dir / model_file.filename
+        with open(model_dest, "wb") as f:
+            shutil.copyfileobj(model_file.file, f)
+
+        index_name = None
+        if index_file and index_file.filename:
+            index_dest = rvc_dir / index_file.filename
+            with open(index_dest, "wb") as f:
+                shutil.copyfileobj(index_file.file, f)
+            index_name = index_file.filename
+
+        return {
+            "status": "success",
+            "message": f"Stemmodel '{model_file.filename}' succesvol geïnstalleerd!",
+            "model_filename": model_file.filename,
+            "index_filename": index_name
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fout bij uploaden van stemmodel: {e}")
+
+@app.post("/api/song-cover/upload-audio")
+async def upload_song_audio(audio_file: UploadFile = File(...)):
+    """Uploads song audio file (MP3, WAV, FLAC) for cover processing."""
+    try:
+        inputs_dir = Path(BASE_DIR / "outputs" / "song_covers" / "inputs")
+        inputs_dir.mkdir(parents=True, exist_ok=True)
+
+        ext = Path(audio_file.filename).suffix.lower()
+        if ext not in [".mp3", ".wav", ".flac", ".m4a", ".ogg"]:
+            ext = ".wav"
+
+        unique_id = uuid.uuid4().hex[:8]
+        safe_name = f"upload_{unique_id}_{Path(audio_file.filename).stem[:30]}{ext}"
+        dest_path = inputs_dir / safe_name
+
+        with open(dest_path, "wb") as f:
+            shutil.copyfileobj(audio_file.file, f)
+
+        return {
+            "status": "success",
+            "audio_path": str(dest_path),
+            "filename": safe_name
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fout bij uploaden van audio: {e}")
+
+@app.post("/api/song-cover/fetch-url")
+def fetch_song_url(req: SongCoverUrlRequest):
+    """Fetches song audio from YouTube or Spotify via yt-dlp."""
+    try:
+        url = req.url.strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="Voer een geldige URL in.")
+
+        downloaded_path = song_cover_engine.fetch_url_audio(url)
+        return {
+            "status": "success",
+            "audio_path": str(downloaded_path),
+            "filename": downloaded_path.name
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fout bij ophalen van URL: {e}")
+
+@app.post("/api/song-cover/process")
+def process_song_cover(req: SongCoverProcessRequest):
+    """
+    Executes the 4-step AI Song Cover pipeline:
+    [1/4 Audio ophalen] -> [2/4 Vocals scheiden (BS-RoFormer)] -> [3/4 Stem converteren (RVC v2 RMVPE)] -> [4/4 Afmixen]
+    """
+    try:
+        # Check model requirements
+        if not (BASE_DIR / "models" / "bs_roformer").exists():
+            raise HTTPException(
+                status_code=400,
+                detail="BS-RoFormer checkpoint ontbreekt. Download het via de Model Manager."
+            )
+        if not (BASE_DIR / "models" / "rvc" / "rmvpe.pt").exists():
+            raise HTTPException(
+                status_code=400,
+                detail="RMVPE pitch model (rmvpe.pt) ontbreekt. Download het via de Model Manager."
+            )
+
+        result = song_cover_engine.process_song_cover(
+            source_type=req.source_type,
+            file_path_or_url=req.audio_source,
+            model_name=req.model_name,
+            pitch_shift=req.pitch_shift or 0,
+            index_rate=req.index_rate if req.index_rate is not None else 0.75,
+            vocal_vol=req.vocal_vol if req.vocal_vol is not None else 1.0,
+            inst_vol=req.inst_vol if req.inst_vol is not None else 1.0
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[SongCoverProcess] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ----------------- SERVE BUILT FRONTEND IF PRESENT -----------------
 

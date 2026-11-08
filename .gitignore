@@ -32,6 +32,13 @@ models/whisper-medium/**
 models/stable-audio-open-small/**
 models/stable-audio-3-medium/**
 models/stable-audio-3-repo/
+models/bs_roformer/**
+models/rvc/**
+!models/bs_roformer/.gitkeep
+!models/rvc/.gitkeep
+outputs/song_covers/**
+!outputs/song_covers/.gitkeep
+backend/rvc_src/.git/
 !models/f5-tts/.gitkeep
 !models/stable-audio-open/.gitkeep
 !models/llama/.gitkeep

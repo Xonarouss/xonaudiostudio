@@ -14,6 +14,8 @@ from models_manager import (
     is_fish_installed,
     is_audioldm_installed,
     is_whisper_installed,
+    is_bs_roformer_installed,
+    is_rmvpe_installed,
     check_for_model_updates,
     download_model,
     MODELS_DIR,
@@ -24,7 +26,9 @@ from models_manager import (
     XTTS_DIR,
     FISH_MODEL_DIR,
     AUDIOLDM_DIR,
-    WHISPER_DIR
+    WHISPER_DIR,
+    BS_ROFORMER_DIR,
+    RVC_DIR
 )
 
 FIRST_LAUNCH_FLAG = MODELS_DIR / ".first_launch_done"
@@ -109,6 +113,26 @@ MODELS_CATALOG = {
         "what_it_does": "Stability AI flagship sound design and foley generator at 44.1kHz.",
         "use_for": "Cinematic audio, sound effects, variable-length compositions (requires Hugging Face token).",
         "recommendation": "[OPTIONAL - Gated Flagship Model]"
+    },
+    "9": {
+        "key": "bs_roformer",
+        "name": "BS-RoFormer Vocal Separator",
+        "size": "~640 MB",
+        "is_installed": is_bs_roformer_installed,
+        "arch": "Band-Split RoFormer (TRvlvr/ViperX SDR 12.97)",
+        "what_it_does": "State-of-the-art neural music source separation (isolates vocals from instruments).",
+        "use_for": "Song Cover Lab: Isolating vocals and instrumentals from songs for AI song covers.",
+        "recommendation": "[HIGHLY RECOMMENDED for Song Cover Lab]"
+    },
+    "10": {
+        "key": "rmvpe",
+        "name": "RMVPE Pitch Extractor & HuBERT",
+        "size": "~370 MB",
+        "is_installed": is_rmvpe_installed,
+        "arch": "Deep U-Net RMVPE + HuBERT Base (lj1995)",
+        "what_it_does": "High-precision musical pitch contour extraction and acoustic feature representation for RVC.",
+        "use_for": "Song Cover Lab: Pitch shifting and voice timbre transfer for RVC song covers.",
+        "recommendation": "[HIGHLY RECOMMENDED for Song Cover Lab]"
     }
 }
 

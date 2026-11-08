@@ -147,6 +147,22 @@ def _apply_patches():
         except Exception:
             pass
 
+        # 8. Explicit fallback for T5GemmaEncoderModel (for Stable Audio 3 & diffusers)
+        try:
+            from transformers.models.t5gemma.modeling_t5gemma import T5GemmaEncoderModel
+            FALLBACK_SYMBOLS["T5GemmaEncoderModel"] = T5GemmaEncoderModel
+            if not hasattr(transformers, "T5GemmaEncoderModel"):
+                setattr(transformers, "T5GemmaEncoderModel", T5GemmaEncoderModel)
+        except Exception:
+            pass
+
+        # 9. Suppress torch._dynamo flex_attention warnings on Windows PyTorch nightly without triton
+        try:
+            import torch._dynamo
+            torch._dynamo.config.suppress_errors = True
+        except Exception:
+            pass
+
         logger.info("[patch_transformers_compat] All transformers 5.x patches applied.")
     except Exception as e:
         logger.warning(f"[patch_transformers_compat] Warning: {e}")

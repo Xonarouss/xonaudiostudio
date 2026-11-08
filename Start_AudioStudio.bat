@@ -69,12 +69,22 @@ echo [+] Core dependencies and FFmpeg installed successfully!
 echo.
 
 :CHECK_UPDATES
-:: 3.5 Verify critical dependencies (torchsde, FFmpeg, TTS, Fish Speech deps)
-python -c "import torchsde, einops, TTS, coqpit, tiktoken" >nul 2>&1
+:: 3.5 Verify critical dependencies (torchsde, FFmpeg, TTS, Fish Speech deps, audio-separator, yt-dlp)
+python -c "import torchsde, einops, TTS, coqpit, tiktoken, yt_dlp, faiss" >nul 2>&1
 if errorlevel 1 (
-    echo [*] Verifying and installing voice and audio processing libraries...
-    pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg coqpit trainer anyascii pysbd num2words tiktoken vector-quantize-pytorch pytorch-lightning lightning loralib natsort pyrootutils
+    echo [*] Verifying and installing voice, SFX and song cover processing libraries...
+    pip install torchsde einops encodec pydub phonemizer imageio-ffmpeg coqpit trainer anyascii pysbd num2words tiktoken vector-quantize-pytorch pytorch-lightning lightning loralib natsort pyrootutils yt-dlp faiss-cpu audio-separator
     python -c "import TTS" >nul 2>&1 || pip install TTS==0.22.0
+)
+
+:: 3.6 Check Song Cover Lab checkpoints (BS-RoFormer and RMVPE)
+if not exist "models\bs_roformer\*.ckpt" (
+    echo [*] [Song Cover Lab] On-demand downloading BS-RoFormer vocal separator (~640 MB)...
+    python -c "from backend.models_manager import download_model; download_model('bs_roformer')"
+)
+if not exist "models\rvc\rmvpe.pt" (
+    echo [*] [Song Cover Lab] On-demand downloading RMVPE pitch extractor (~150 MB)...
+    python -c "from backend.models_manager import download_model; download_model('rmvpe')"
 )
 
 if not exist "venv\Scripts\ffmpeg.exe" (

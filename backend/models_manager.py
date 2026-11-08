@@ -31,6 +31,8 @@ FISH_REPO_DIR = MODELS_DIR / "fish-speech-repo"
 AUDIOLDM_DIR = MODELS_DIR / "audioldm2"
 STABLE_AUDIO_SMALL_DIR = MODELS_DIR / "stable-audio-open-small"
 WHISPER_DIR = MODELS_DIR / "whisper-medium"
+BS_ROFORMER_DIR = MODELS_DIR / "bs_roformer"
+RVC_DIR = MODELS_DIR / "rvc"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 VERSION_CACHE_FILE = MODELS_DIR / ".version_cache.json"
 
@@ -45,6 +47,8 @@ FISH_REPO_DIR.mkdir(parents=True, exist_ok=True)
 AUDIOLDM_DIR.mkdir(parents=True, exist_ok=True)
 STABLE_AUDIO_SMALL_DIR.mkdir(parents=True, exist_ok=True)
 WHISPER_DIR.mkdir(parents=True, exist_ok=True)
+BS_ROFORMER_DIR.mkdir(parents=True, exist_ok=True)
+RVC_DIR.mkdir(parents=True, exist_ok=True)
 
 def is_llama_installed() -> bool:
     """Checks if Llama weights exist in models/llama."""
@@ -98,6 +102,27 @@ def is_stable_audio_small_installed() -> bool:
              + list(STABLE_AUDIO_SMALL_DIR.glob("**/*.safetensors"))
              + list(STABLE_AUDIO_SMALL_DIR.glob("**/model_config.json")))
     return len(files) > 0
+
+def is_bs_roformer_installed() -> bool:
+    """Checks if BS-RoFormer vocal separator weights exist in models/bs_roformer."""
+    if not BS_ROFORMER_DIR.exists():
+        return False
+    ckpts = list(BS_ROFORMER_DIR.glob("*.ckpt")) + list(BS_ROFORMER_DIR.glob("*.pth"))
+    return len(ckpts) > 0
+
+def is_rmvpe_installed() -> bool:
+    """Checks if RMVPE neural pitch extractor weights exist in models/rvc."""
+    if not RVC_DIR.exists():
+        return False
+    return (RVC_DIR / "rmvpe.pt").exists()
+
+def is_rvc_models_installed() -> bool:
+    """Checks if user RVC voice models (.pth files) exist in models/rvc."""
+    if not RVC_DIR.exists():
+        return False
+    system_weights = {"rmvpe.pt", "hubert_base.pt", "hubert.pt"}
+    user_pths = [p for p in RVC_DIR.glob("**/*.pth") if p.name.lower() not in system_weights]
+    return len(user_pths) > 0
 
 def load_version_cache() -> Dict[str, Any]:
     if VERSION_CACHE_FILE.exists():
@@ -198,6 +223,8 @@ def get_all_models_status() -> Dict[str, Any]:
     stable_small_size = get_dir_size_gb(STABLE_AUDIO_SMALL_DIR)
     stable_3_size = get_dir_size_gb(STABLE_AUDIO_3_DIR)
     whisper_size = get_dir_size_gb(WHISPER_DIR)
+    bs_roformer_size = get_dir_size_gb(BS_ROFORMER_DIR)
+    rvc_size = get_dir_size_gb(RVC_DIR)
 
     f5_ready = is_f5_installed()
     stable_ready = is_stable_audio_installed()
@@ -279,6 +306,33 @@ def get_all_models_status() -> Dict[str, Any]:
             "size_gb": f"{llama_size:.2f}",
             "path": str(LLAMA_DIR),
             "vram_estimate": "2.8 GB"
+        },
+        "bs_roformer": {
+            "name": "BS-RoFormer Vocal Separator (~700 MB)",
+            "repo": "TRvlvr/model_repo (ViperX SDR 12.97)",
+            "installed": is_bs_roformer_installed(),
+            "size_gb": f"{bs_roformer_size:.2f}",
+            "path": str(BS_ROFORMER_DIR),
+            "vram_estimate": "~1.5 GB",
+            "description": "State-of-the-art Band-Split RoFormer for pristine vocal & instrumental isolation (used in Song Cover Lab)."
+        },
+        "rmvpe": {
+            "name": "RMVPE Pitch Extractor (~150 MB)",
+            "repo": "lj1995/VoiceConversionWebUI",
+            "installed": is_rmvpe_installed(),
+            "size_gb": f"{rvc_size:.2f}",
+            "path": str(RVC_DIR / 'rmvpe.pt'),
+            "vram_estimate": "~0.5 GB",
+            "description": "Robust Model for Vocal Pitch Estimation (E2E polyphonic music pitch extraction for RVC v2)."
+        },
+        "rvc_voices": {
+            "name": "RVC Voice Models (/models/rvc)",
+            "repo": "User Imported (.pth / .index)",
+            "installed": is_rvc_models_installed(),
+            "size_gb": f"{rvc_size:.2f}",
+            "path": str(RVC_DIR),
+            "vram_estimate": "~1.0 GB",
+            "description": "Custom RVC v2 voice conversion checkpoints (.pth) and feature indexes (.index) in /models/rvc."
         },
     }
 
@@ -479,6 +533,26 @@ def download_model(model_key: str) -> Dict[str, Any]:
         except Exception as e:
             raise RuntimeError(f"Error downloading Faster-Whisper: {e}")
 
+    elif model_key == "bs_roformer":
+        print("[ModelManager] Downloading BS-RoFormer Vocal Separator (~640 MB)...")
+        try:
+            from audio_separator.separator import Separator
+            sep = Separator(model_file_dir=str(BS_ROFORMER_DIR))
+            sep.load_model(model_filename="model_bs_roformer_ep_317_sdr_12.9755.ckpt")
+            del sep
+            return {"status": "success", "message": "BS-RoFormer Vocal Separator downloaded! Studio vocal isolation ready."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading BS-RoFormer: {e}")
+
+    elif model_key == "rmvpe":
+        print("[ModelManager] Downloading RMVPE Pitch Extractor & HuBERT weights (~330 MB)...")
+        try:
+            p1 = hf_hub_download(repo_id="lj1995/VoiceConversionWebUI", filename="rmvpe.pt", local_dir=str(RVC_DIR))
+            p2 = hf_hub_download(repo_id="lj1995/VoiceConversionWebUI", filename="hubert_base.pt", local_dir=str(RVC_DIR))
+            return {"status": "success", "message": "RMVPE and HuBERT neural models downloaded! RVC voice conversion ready."}
+        except Exception as e:
+            raise RuntimeError(f"Error downloading RMVPE / HuBERT: {e}")
+
     else:
         raise ValueError(f"Unknown model: {model_key}")
 
@@ -543,6 +617,35 @@ def delete_model(model_key: str) -> Dict[str, Any]:
             shutil.rmtree(FISH_MODEL_DIR, ignore_errors=True)
             FISH_MODEL_DIR.mkdir(parents=True, exist_ok=True)
             deleted_items.append("Fish Speech 1.5")
+
+    if model_key in ("bs_roformer", "all"):
+        if BS_ROFORMER_DIR.exists():
+            shutil.rmtree(BS_ROFORMER_DIR, ignore_errors=True)
+            BS_ROFORMER_DIR.mkdir(parents=True, exist_ok=True)
+            deleted_items.append("BS-RoFormer")
+
+    if model_key in ("rmvpe", "all"):
+        rmvpe_file = RVC_DIR / "rmvpe.pt"
+        if rmvpe_file.exists():
+            rmvpe_file.unlink(missing_ok=True)
+            deleted_items.append("RMVPE")
+        hubert_file = RVC_DIR / "hubert_base.pt"
+        if hubert_file.exists():
+            hubert_file.unlink(missing_ok=True)
+            deleted_items.append("HuBERT")
+
+    if model_key in ("rvc_voices", "all"):
+        # Delete user voice models in models/rvc, preserving rmvpe.pt and hubert_base.pt
+        system_weights = {"rmvpe.pt", "hubert_base.pt", "hubert.pt"}
+        del_count = 0
+        for pth in RVC_DIR.glob("**/*.pth"):
+            if pth.name.lower() not in system_weights:
+                pth.unlink(missing_ok=True)
+                del_count += 1
+        for idx in RVC_DIR.glob("**/*.index"):
+            idx.unlink(missing_ok=True)
+        if del_count > 0:
+            deleted_items.append(f"RVC Voice Models ({del_count} models)")
 
     if not deleted_items:
         raise ValueError(f"No valid model selected: {model_key}")

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot } from 'lucide-react';
+import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot, Music2 } from 'lucide-react';
 import VoiceLab from './components/VoiceLab';
 import SoundStudio from './components/SoundStudio';
+import SongCoverLab from './components/SongCoverLab';
 import GenerationsLibrary from './components/GenerationsLibrary';
 import ModelManager from './components/ModelManager';
 import HardwareWidget from './components/HardwareWidget';
@@ -144,7 +145,19 @@ export default function App() {
               }`}
             >
               <Radio className="w-4 h-4" />
-              <span>Sound Studio</span>
+              <span>SFX Studio</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('songcoverlab')}
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'songcoverlab'
+                  ? 'bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Music2 className="w-4 h-4" />
+              <span>Song Cover Lab</span>
             </button>
 
             <button
@@ -195,6 +208,13 @@ export default function App() {
 
         {activeTab === 'soundstudio' && (
           <SoundStudio
+            modelsStatus={modelsStatus}
+            onOpenModelManager={() => setActiveTab('models')}
+          />
+        )}
+
+        {activeTab === 'songcoverlab' && (
+          <SongCoverLab
             modelsStatus={modelsStatus}
             onOpenModelManager={() => setActiveTab('models')}
           />
