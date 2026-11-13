@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>XonAudio Studio — Professional Local AI Audio Workstation (Song Cover Lab · 3 Voice Engines · Dutch Support · 3 SFX Engines · 100% Local)</title>
+  <meta name="description" content="Next-Gen Local AI Audio Workstation. AI Song Cover Lab (BS-RoFormer + RVC v2 RMVPE), 3 SOTA TTS engines (F5-TTS, XTTS-v2 with 17 languages incl. Dutch, Fish Speech 1.5 Ultra), 3 SFX engines (Stable Audio 3 Medium DiT, Stable Audio Open, AudioLDM 2), and 320k MP3 + 24-bit WAV studio export. 100% local on NVIDIA GPUs.">
+  <meta name="keywords" content="AI Audio, Song Cover AI, RVC v2, BS-RoFormer, Stem Separation, RMVPE, F5-TTS, XTTS-v2, Fish Speech 1.5, Dutch TTS, Nederlandse AI stem, Stable Audio 3, Stable Audio Open, AudioLDM 2, Voice Cloning, RTX 5080, Blackwell sm_120, Local AI, Open Source">
+  <meta name="author" content="Xonarous Inc">
+  <link rel="icon" type="image/x-icon" href="assets/icon.ico">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="XonAudio Studio — Next-Gen Local AI Audio Workstation">
+  <meta property="og:description" content="100% Private Voice Cloning, AI Song Covers & Foley Sound Synthesis powered by RTX Blackwell sm_120. Built by Xonarous Inc.">
+  <meta property="og:image" content="assets/logo.png">
+  <meta property="og:url" content="https://xonarouss.github.io/xonaudiostudio/">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            accent: {
+              50: '#f0fdfa',
+              500: '#14b8a6',
+              600: '#0d9488',
+            }
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 35px -5px rgba(16, 185, 129, 0.25)',
+            'glow-cyan': '0 0 35px -5px rgba(6, 182, 212, 0.25)',
+            'card': '0 20px 40px -15px rgba(15, 23, 42, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons (Fast CDN + Fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"><\/script>');
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #2563eb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .glass-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    }
+    .mesh-bg {
+      background-image: 
+        radial-gradient(at 10% 10%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 90% 20%, rgba(14, 165, 233, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 80%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
+    }
+  </style>
+</head>
+<body class="mesh-bg min-h-screen text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- TOP ANNOUNCEMENT BANNER -->
+  <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white text-xs font-semibold py-2 px-4 text-center tracking-wide flex items-center justify-center gap-2 shadow-sm">
+    <span class="inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] uppercase font-bold tracking-wider">v1.3 Release</span>
+    <span class="truncate">XonAudio Studio v1.3 • AI Song Cover Lab (BS-RoFormer + RVC v2 RMVPE) • 3 SFX Engines (SA3 Medium DiT, SA Open, AudioLDM 2) • 3 Voice Engines (Dutch Support) • 320k MP3 + 24-bit WAV Studio Export • 100% Local</span>
+    <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="underline hover:text-emerald-100 font-bold ml-1 hidden sm:inline-flex items-center gap-1">Download Free <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
+  </div>
+
+  <!-- STICKY NAVBAR -->
+  <header class="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Logo & Brand -->
+      <a href="#" class="flex items-center gap-3 group shrink-0">
+        <div class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 p-0.5 shadow-md group-hover:scale-105 transition-transform">
+          <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
+            <img src="assets/logo.svg" alt="XonAudio Logo" class="w-6 h-6 sm:w-7 sm:h-7">
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 font-sans">XonAudio</span>
+            <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded-full border border-emerald-200/60 uppercase tracking-wider">Studio</span>
+          </div>
+          <p class="text-[10px] sm:text-[11px] text-slate-500 font-medium">By <span class="text-slate-700 font-semibold">Xonarous Inc</span></p>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links (Clean & Compact) -->
+      <nav class="hidden lg:flex items-center gap-7 text-xs sm:text-sm font-semibold text-slate-600">
+        <a href="#models" class="text-emerald-700 font-bold hover:text-emerald-600 transition-colors flex items-center gap-1">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 9 AI Models
+        </a>
+        <a href="#song-cover-lab" class="hover:text-pink-600 transition-colors flex items-center gap-1 font-semibold text-slate-700">
+          <i data-lucide="music-2" class="w-3.5 h-3.5 text-pink-500"></i> Song Cover Lab
+        </a>
+        <a href="#features" class="hover:text-emerald-600 transition-colors">Features</a>
+        <a href="#showcase" class="hover:text-emerald-600 transition-colors">Live Demos</a>
+        <a href="#telemetry" class="hover:text-emerald-600 transition-colors">Diagnostics</a>
+        <a href="#benchmarks" class="hover:text-emerald-600 transition-colors">Hardware</a>
+        <a href="#quickstart" class="hover:text-emerald-600 transition-colors">Quickstart</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://buymeacoffee.com/xonarous" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-all shadow-xs">
+          <span>🍺</span>
+          <span>Buy a Beer</span>
+        </a>
+        <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-xl transition-all">
+          <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
+        <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-95">
+          <i data-lucide="download" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>Download</span>
+        </a>
+
+        <!-- Mobile Hamburger Toggle -->
+        <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors">
+          <i data-lucide="menu" id="menuIcon" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobileMenu" class="hidden lg:hidden border-t border-slate-200/80 bg-white/95 px-4 pt-3 pb-5 space-y-3 animate-fadeIn">
+      <nav class="flex flex-col space-y-2 text-sm font-semibold text-slate-700">
+        <a href="#models" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">9 AI Models</a>
+        <a href="#song-cover-lab" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors text-pink-600 font-bold">Song Cover Lab</a>
+        <a href="#features" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Features</a>
+        <a href="#showcase" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Live Demos</a>
+        <a href="#telemetry" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Hardware Diagnostics</a>
+        <a href="#benchmarks" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Hardware Profiles</a>
+        <a href="#quickstart" onclick="toggleMobileMenu()" class="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Quickstart Guide</a>
+      </nav>
+      <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+        <a href="https://buymeacoffee.com/xonarous" target="_blank" class="w-full text-center py-2 px-3 text-xs font-bold text-amber-800 bg-amber-50 rounded-xl border border-amber-200">
+          🍺 Buy Me a Beer (Support Development)
+        </a>
+        <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="w-full text-center py-2 px-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-12 sm:pt-16 pb-16 sm:pb-20 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      
+      <!-- Top Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-white border border-emerald-200/80 text-emerald-800 text-[11px] sm:text-xs font-bold shadow-xs mb-6 sm:mb-8 hover:border-emerald-300 transition-colors">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+        <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
+        <span>Open Source AI Audio Studio v1.3</span>
+        <span class="text-slate-300">|</span>
+        <span class="text-slate-600 font-medium">RTX 5080 Blackwell sm_120</span>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-3xl sm:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.12]">
+        The Sovereign <span class="gradient-text">Local AI Audio</span> Workstation
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="mt-4 sm:mt-6 text-base sm:text-xl text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed px-2">
+        Full <strong>AI Song Cover Lab</strong> with <strong>BS-RoFormer</strong> stem separation and <strong>RVC v2 RMVPE</strong> voice conversion. <strong>3 state-of-the-art TTS engines</strong> (F5-TTS, XTTS-v2 with 🇳🇱 Dutch, Fish Speech 1.5 Ultra), <strong>3 SFX engines</strong> (Stable Audio 3 Medium DiT, Stable Audio Open, AudioLDM 2), and <strong>320k MP3 + 24-bit WAV</strong> broadcast mastering. 100% on-device on your NVIDIA GPU with zero cloud dependencies.
+      </p>
+
+      <!-- CTA Action Group -->
+      <div class="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-2">
+        <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 sm:py-4 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 rounded-2xl shadow-glow-emerald hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+          <i data-lucide="download-cloud" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span>Download Portable v1.3.0 (.zip)</span>
+        </a>
+        <a href="#song-cover-lab" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-pink-700 bg-pink-50 hover:bg-pink-100 border border-pink-200 rounded-2xl shadow-xs hover:shadow transition-all">
+          <i data-lucide="music-2" class="w-4 h-4 text-pink-600"></i>
+          <span>Explore Song Cover Lab</span>
+        </a>
+        <a href="#quickstart" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs hover:shadow transition-all">
+          <i data-lucide="terminal" class="w-4 h-4 text-emerald-600"></i>
+          <span>Quickstart Guide</span>
+        </a>
+        <a href="https://xonarous.nl" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-600 hover:text-emerald-700 transition-colors">
+          <span>Official Company</span>
+          <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
+        </a>
+      </div>
+
+      <!-- Quick Command Snippet -->
+      <div class="mt-8 inline-flex items-center gap-2 sm:gap-3 bg-white border border-slate-200/90 rounded-2xl px-4 sm:px-5 py-3 shadow-card max-w-xl mx-auto w-full sm:w-auto overflow-hidden">
+        <span class="text-xs font-mono font-medium text-slate-400 select-none">$</span>
+        <code class="text-xs sm:text-sm font-mono text-slate-800 tracking-tight font-medium overflow-x-auto select-all text-left">git clone https://github.com/Xonarouss/xonaudiostudio.git</code>
+        <button onclick="navigator.clipboard.writeText('git clone https://github.com/Xonarouss/xonaudiostudio.git && cd xonaudiostudio && Start_AudioStudio.bat'); this.innerHTML='<span class=\'text-emerald-600 font-bold text-xs\'>Copied!</span>'; setTimeout(()=>{ this.innerHTML='<i data-lucide=\'copy\' class=\'w-4 h-4\'></i>'; lucide.createIcons(); }, 2000);" class="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 transition-colors shrink-0" title="Copy Command">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Feature Pill Badges -->
+      <div class="mt-10 sm:mt-12 flex flex-wrap justify-center items-center gap-2 sm:gap-3 text-xs font-bold text-slate-600">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-pink-200 shadow-2xs text-pink-700">
+          <i data-lucide="music-2" class="w-4 h-4 text-pink-600"></i> AI Song Cover Lab (BS-RoFormer + RVC v2)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i> 3 SOTA Voice Engines
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-orange-200 shadow-2xs text-orange-700">
+          <span class="text-xs">🇳🇱</span> Dutch Support (XTTS + Fish)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-teal-200 shadow-2xs text-teal-700">
+          <i data-lucide="sparkles" class="w-4 h-4 text-teal-600"></i> 3 SFX Engines (SA3 Medium DiT)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <i data-lucide="disc" class="w-4 h-4 text-indigo-600"></i> 320k MP3 &amp; 24-bit WAV Studio Dual Export
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> 100% Offline &amp; Private (No API)
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-2xs">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Blackwell sm_120 Ready
+        </span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INTERACTIVE AUDIO SHOWCASE (REAL AUDIO PLAYBACK) -->
+  <section id="showcase" class="py-16 sm:py-20 bg-white border-y border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="headphones" class="w-3.5 h-3.5"></i> Authentic Audio Demonstrations
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Hear Neural Audio Quality Live</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-500">Listen to real uncompressed studio clips synthesized by F5-TTS, Stable Audio Open, and the Song Cover Lab (BS-RoFormer + RVC v2). Click play below to test.</p>
+      </div>
+
+      <!-- Demo Players Grid (3 Columns on Large Screens) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        
+        <!-- Demo Card 1: F5-TTS Voice Cloning -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 hover:shadow-card transition-all relative overflow-hidden group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-extrabold">F5-TTS v1 Base</span>
+                <span class="text-xs font-semibold text-slate-500">Neural Speech</span>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-400">24kHz Vocos</span>
+            </div>
+
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <i data-lucide="mic" class="w-4 h-4 text-emerald-600"></i> Voice Lab Synthesis Demo
+            </h3>
+            <p class="text-xs text-slate-600 mb-5 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 italic">
+              "Welcome to XonAudio Studio. This voice is generated locally with pure neural flow matching on your GPU. The audio is crystal clear and completely natural."
+            </p>
+
+            <!-- Waveform Visualizer Canvas -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+              <canvas id="waveformCanvas1" width="500" height="70" class="w-full h-16 block"></canvas>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="flex items-center justify-between gap-4 pt-2">
+            <button id="playBtn1" onclick="toggleAudioDemo(1)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95">
+              <i data-lucide="play" id="playIcon1" class="w-3.5 h-3.5"></i>
+              <span id="playText1">Play Voice Sample</span>
+            </button>
+            <div class="text-right">
+              <span class="text-xs font-bold text-slate-700 block">F5-TTS Flow Match</span>
+              <span class="text-[11px] text-slate-400 font-mono">RTX 5080 Local</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Demo Card 2: Stable Audio Open Foley -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 hover:shadow-card transition-all relative overflow-hidden group flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-extrabold">Stable Audio Open</span>
+                <span class="text-xs font-semibold text-slate-500">Diffusion Foley</span>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-400">44.1kHz Stereo</span>
+            </div>
+
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <i data-lucide="music" class="w-4 h-4 text-teal-600"></i> Cinematic Sound FX Demo
+            </h3>
+            <p class="text-xs text-slate-600 mb-5 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 italic">
+              "Prompt: Cinematic heavy thunderstorm with distant rolling thunder, subtle rain striking a glass skylight, binaural 44.1kHz."
+            </p>
+
+            <!-- Waveform Visualizer Canvas -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+              <canvas id="waveformCanvas2" width="500" height="70" class="w-full h-16 block"></canvas>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="flex items-center justify-between gap-4 pt-2">
+            <button id="playBtn2" onclick="toggleAudioDemo(2)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95">
+              <i data-lucide="play" id="playIcon2" class="w-3.5 h-3.5"></i>
+              <span id="playText2">Play Foley Sample</span>
+            </button>
+            <div class="text-right">
+              <span class="text-xs font-bold text-slate-700 block">Stereo Spatial Foley</span>
+              <span class="text-[11px] text-slate-400 font-mono">1 to 47 Seconds</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Demo Card 3: AI Song Cover Lab (BS-RoFormer + RVC v2 RMVPE) -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 hover:shadow-card transition-all relative overflow-hidden group flex flex-col justify-between border-2 border-pink-200/80 bg-gradient-to-b from-white to-pink-50/20">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 bg-pink-100 text-pink-700 border border-pink-300 rounded-lg text-xs font-extrabold flex items-center gap-1">
+                  <i data-lucide="music-2" class="w-3 h-3 text-pink-600"></i> Song Cover Lab
+                </span>
+                <span class="text-xs font-semibold text-pink-600">BS-RoFormer + RVC</span>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-400">320k MP3 Hi-Fi</span>
+            </div>
+
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <i data-lucide="disc" class="w-4 h-4 text-pink-600"></i> Original Neural Song Cover (Demo)
+            </h3>
+            <p class="text-xs text-slate-600 mb-5 leading-relaxed bg-pink-50/60 p-3 rounded-xl border border-pink-100 italic">
+              "Original acoustic vocal &amp; melodic instrumental cover synthesized in Song Cover Lab. Demonstrates BS-RoFormer stem isolation, RVC v2 RMVPE neural pitch conversion, transparent de-reverb expander, and 320k broadcast mastering (100% royalty-free AI demo)."
+            </p>
+
+            <!-- Waveform Visualizer Canvas -->
+            <div class="bg-pink-50/50 border border-pink-200/80 rounded-2xl p-4 mb-4">
+              <canvas id="waveformCanvas3" width="500" height="70" class="w-full h-16 block"></canvas>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="flex items-center justify-between gap-4 pt-2">
+            <button id="playBtn3" onclick="toggleAudioDemo(3)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95">
+              <i data-lucide="play" id="playIcon3" class="w-3.5 h-3.5"></i>
+              <span id="playText3">Play Song Cover</span>
+            </button>
+            <div class="text-right">
+              <span class="text-xs font-bold text-pink-700 block">AI Singing Cover</span>
+              <span class="text-[11px] text-slate-400 font-mono">Full 320k Master</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 9 LOCAL AI MODELS SHOWCASE -->
+  <section id="models" class="py-16 sm:py-20 bg-slate-50 border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-600"></i> 9 Neural AI Architectures
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Nine World-Class Models. 100% Local. Zero API.</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-500">
+          No cloud tokens, no monthly fees, and zero latency to remote servers. All 9 neural foundation models execute directly in PyTorch CUDA on your local NVIDIA RTX GPU.
+        </p>
+      </div>
+
+      <!-- Models Grid (9 Models) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Model 1: F5-TTS -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-cyan-200/80 bg-white shadow-xs">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 border border-cyan-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="mic" class="w-3.5 h-3.5 text-cyan-700"></i> F5-TTS v1
+              </span>
+              <span class="text-xs font-semibold text-cyan-700 font-mono">~2.3 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="mic" class="w-5 h-5 text-cyan-600"></i> F5-TTS Flow-Matching
+            </h3>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Zero-Shot Voice Cloning</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              State-of-the-art non-autoregressive flow-matching architecture. Synthesizes natural, human speech with flawless rhythm and inflection from just 5-10 seconds of reference audio. Supports English and Chinese Mandarin natively with instant zero-shot adaptation.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇬🇧 English</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇨🇳 Chinese</span>
+            <span class="px-2 py-0.5 rounded bg-cyan-50 text-cyan-700 font-mono">24kHz ODE Solver</span>
+          </div>
+        </div>
+
+        <!-- Model 2: XTTS-v2 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-orange-200 bg-white shadow-sm ring-1 ring-orange-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-orange-100 text-orange-800 border border-orange-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="mic-2" class="w-3.5 h-3.5 text-orange-700"></i> XTTS-v2
+              </span>
+              <span class="text-xs font-semibold text-orange-700 font-mono">~2.0 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="mic-2" class="w-5 h-5 text-orange-600"></i>
+              <span>XTTS-v2 Multilingual</span>
+              <span class="text-sm">🇳🇱</span>
+            </h3>
+            <p class="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-3">17 Languages Supported</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Coqui XTTS-v2 brings industry-standard multilingual voice cloning with native high-quality pronunciation for 17 languages including <strong>Dutch (Nederlands)</strong>, German, French, Spanish, Italian, Portuguese, Polish, Russian, and more.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-orange-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">🇳🇱 Dutch (NL)</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇩🇪 German</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇫🇷 French</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">+14 More</span>
+          </div>
+        </div>
+
+        <!-- Model 3: Fish Speech 1.5 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-teal-200 bg-white shadow-sm ring-1 ring-teal-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-teal-700"></i> Fish Speech 1.5
+              </span>
+              <span class="text-xs font-semibold text-teal-700 font-mono">~0.7 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="zap" class="w-5 h-5 text-teal-600"></i>
+              <span>Fish Speech 1.5 Ultra</span>
+              <span class="text-sm">🇳🇱</span>
+            </h3>
+            <p class="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Dual-AR + VQ-GAN Neural Codec</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              The latest cutting-edge architecture in neural speech. Combines a dual autoregressive transformer with a high-fidelity VQ-GAN vocoder. Blazing fast generation, studio-grade prosody, and 100% offline local inference with Dutch support.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-teal-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-bold">🇳🇱 Dutch (NL)</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇬🇧 English</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">🇯🇵 Japanese</span>
+            <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-mono">Ultra-Low VRAM</span>
+          </div>
+        </div>
+
+        <!-- Model 4: BS-RoFormer Vocal Separator -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-pink-200 bg-white shadow-sm ring-1 ring-pink-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-pink-100 text-pink-800 border border-pink-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="scissors" class="w-3.5 h-3.5 text-pink-700"></i> BS-RoFormer
+              </span>
+              <span class="text-xs font-semibold text-pink-700 font-mono">~0.64 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="scissors" class="w-5 h-5 text-pink-600"></i>
+              <span>BS-RoFormer Vocal Separator</span>
+            </h3>
+            <p class="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">SOTA 12.97 SDR Stem Separation</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              State-of-the-art Band-Split RoFormer running on CUDA via PyTorch Lightning. Cleanly isolates vocals and instrumental accompaniment with world-record 12.97 SDR accuracy and zero bleed, powering our Song Cover Lab.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-pink-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-pink-100 text-pink-800 font-bold">12.97 SDR SOTA</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">44.1kHz Stereo</span>
+            <span class="px-2 py-0.5 rounded bg-pink-50 text-pink-700 font-mono">CUDA PyTorch</span>
+          </div>
+        </div>
+
+        <!-- Model 5: RVC v2 + RMVPE + HuBERT -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-rose-200 bg-white shadow-sm ring-1 ring-rose-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="music-2" class="w-3.5 h-3.5 text-rose-700"></i> RVC v2 + RMVPE
+              </span>
+              <span class="text-xs font-semibold text-rose-700 font-mono">Neural Pitch</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="music-2" class="w-5 h-5 text-rose-600"></i>
+              <span>RVC v2 Neural Voice Conversion</span>
+            </h3>
+            <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Singing Voice Cloning &amp; RMVPE F0</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Deep neural singing voice conversion with RMVPE fundamental frequency extraction, FAISS index timbre retrieval, bit-exact pure-PyTorch Fairseq HuBERT encoding, and unvoiced consonant protection. Clone any singer on the fly or load any .pth checkpoint.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-rose-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">RMVPE 100 FPS</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">FAISS Index</span>
+            <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-mono">HuBERT Base</span>
+          </div>
+        </div>
+
+        <!-- Model 6: Stable Audio 3 Medium DiT -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-teal-200 bg-white shadow-sm ring-1 ring-teal-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-teal-700"></i> Stable Audio 3
+              </span>
+              <span class="text-xs font-semibold text-teal-700 font-mono">~3.2 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-teal-600"></i>
+              <span>Stable Audio 3 Medium DiT</span>
+            </h3>
+            <p class="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Flow-Matching Diffusion Transformer</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Stability AI's newest Diffusion Transformer (DiT). Generates studio-grade 44.1kHz stereo sound effects in just 10-12 flow-matching steps. Equipped with intelligent negative prompt sanitization to prevent vocal cancellation.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-teal-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-bold">Flow DiT</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">44.1kHz Stereo</span>
+            <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-mono">10-12 Steps</span>
+          </div>
+        </div>
+
+        <!-- Model 7: AudioLDM 2 Studio (Multi-Event SFX) -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-indigo-200 bg-white shadow-sm ring-1 ring-indigo-200/50">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-700"></i> AudioLDM 2 Studio
+              </span>
+              <span class="text-xs font-semibold text-indigo-700 font-mono">~1.8 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
+              <span>AudioLDM 2 Studio</span>
+            </h3>
+            <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-3">Multi-Event Action Adherence</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Dual CLAP + T5 conditioning designed specifically for complex narrative sound effects and Foley. Solves missed sounds in composite prompts (e.g. <em>reversing car screeching tires</em> synthesizes the car reversing <strong>AND</strong> the screeching tires without dropping events).
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-indigo-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold">Multi-Event Foley</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">Dual CLAP + T5</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-mono">~3s Generation</span>
+          </div>
+        </div>
+
+        <!-- Model 8: Stable Audio Open -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-purple-200 bg-white shadow-sm">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="headphones" class="w-3.5 h-3.5 text-purple-700"></i> Stable Audio Open
+              </span>
+              <span class="text-xs font-semibold text-purple-700 font-mono">~4.8 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="headphones" class="w-5 h-5 text-purple-600"></i>
+              <span>Stable Audio Open 1.0</span>
+            </h3>
+            <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-3">Stereo Foley &amp; SFX Diffusion</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Stability AI's generative audio diffusion model for pristine 44.1kHz full-stereo sound design. Synthesizes Hollywood trailer impacts, organic atmospheric ambiances, rainstorms, futuristic weapons, and instruments up to 47 continuous seconds.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-purple-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold">44.1kHz Stereo</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">Up to 47 Seconds</span>
+            <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-mono">CFG Guidance</span>
+          </div>
+        </div>
+
+        <!-- Model 9: Llama 3 Studio AI -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between hover:translate-y-[-4px] transition-all border border-emerald-200 bg-white shadow-sm">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5">
+                <i data-lucide="wand-2" class="w-3.5 h-3.5 text-emerald-700"></i> Llama 3
+              </span>
+              <span class="text-xs font-semibold text-emerald-700 font-mono">~2.8 GB</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="wand-2" class="w-5 h-5 text-emerald-600"></i>
+              <span>Meta Llama 3 Studio AI</span>
+            </h3>
+            <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-3">Magic Wand Prompt Director</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Meta Llama 3 operating as your local audio director. Transforms short, plain descriptions into rich cinematic acoustic directions with the Magic Wand (🪄), scripts voice acting cues with proper punctuation, and chats via the built-in Studio Assistant.
+            </p>
+          </div>
+          <div class="mt-5 pt-4 border-t border-emerald-100 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Magic Wand 🪄</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100">Voice Director</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono">On-Demand VRAM</span>
+          </div>
+        </div>
+
+        <!-- Storage & GPU Summary Box -->
+        <div class="glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-950 text-white shadow-lg lg:col-span-3">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-mono font-bold">
+                Zero Cloud
+              </span>
+              <span class="text-xs font-semibold text-slate-400">Windows 10/11</span>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">100% Sovereign Local AI</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              All 9 models are downloaded once and cached in your <code class="text-emerald-400 font-mono">/models</code> directory. Manage individual weights, clear GPU VRAM instantly, or wipe any model in 1 click via Model Manager.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono text-slate-300 border-t border-slate-800 pt-3">
+              <div class="flex justify-between sm:flex-col">
+                <span class="text-slate-400">Audio Telemetry:</span>
+                <span class="text-emerald-400 font-bold">Sub-second NVML</span>
+              </div>
+              <div class="flex justify-between sm:flex-col">
+                <span class="text-slate-400">Offline Ready:</span>
+                <span class="text-emerald-400 font-bold">Air-gapped capable</span>
+              </div>
+              <div class="flex justify-between sm:flex-col">
+                <span class="text-slate-400">Song Cover Lab:</span>
+                <span class="text-pink-400 font-bold">BS-RoFormer + RVC v2</span>
+              </div>
+            </div>
+          </div>
+          <a href="#song-cover-lab" class="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 text-center transition-colors block">
+            Explore AI Song Cover Lab &rarr;
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SONG COVER LAB SPOTLIGHT SECTION -->
+  <section id="song-cover-lab" class="py-16 sm:py-24 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white relative overflow-hidden border-b border-slate-800">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(236,72,153,0.12),transparent_60%)] pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <div class="text-center max-w-3xl mx-auto mb-14 sm:mb-18">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs font-bold uppercase tracking-wider mb-4">
+          <i data-lucide="music-2" class="w-4 h-4 text-pink-400"></i> Next-Gen Song Cover Lab
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          Turn Any Song Into an <span class="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-300 text-transparent bg-clip-text">AI Cover</span>
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed">
+          Produce full AI singing covers in 4 automated stages. Isolate pristine acapellas with BS-RoFormer, replace the singer with RVC v2 and deep neural pitch tracking, and master your broadcast-ready mix in 320k MP3 and 24-bit WAV.
+        </p>
+      </div>
+
+      <!-- 4-Stage Pipeline Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        
+        <!-- Stage 1 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              01
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="download-cloud" class="w-4 h-4 text-pink-400"></i> Audio Ingestion
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Drag-and-drop local audio files (MP3, WAV, FLAC) or paste direct YouTube/Spotify song URLs with 1-click automatic download via yt-dlp.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            MP3 / WAV / FLAC / URL
+          </div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              02
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="scissors" class="w-4 h-4 text-pink-400"></i> BS-RoFormer Split
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Decomposes the song into clean isolated vocals and backing instrumental stems on CUDA using the state-of-the-art BS-RoFormer (12.97 SDR record).
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            12.97 SDR Zero Bleed
+          </div>
+        </div>
+
+        <!-- Stage 3 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              03
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="mic-2" class="w-4 h-4 text-pink-400"></i> RVC v2 + RMVPE
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Transforms vocals using any RVC v2 model or uploaded voice sample. Tracks melody with RMVPE pitch extraction and bit-exact pure-PyTorch HuBERT.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            Pitch Shift -12 to +12
+          </div>
+        </div>
+
+        <!-- Stage 4 -->
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800/90 rounded-3xl p-6 flex flex-col justify-between hover:border-pink-500/40 transition-all">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold font-mono text-sm mb-4 border border-pink-500/20">
+              04
+            </div>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-pink-400"></i> Hi-Fi Mastering
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Blend vocal and instrumental volumes (0–150%) with dynamic RMS envelope matching, Kaiser sinc resampling, and 320k MP3 + 24-bit WAV dual export.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] font-mono text-pink-300">
+            320k MP3 &amp; 24-bit WAV
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Feature Callout Banners -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Callout 1: YouTube & Direct Voice Cloning -->
+        <div class="bg-gradient-to-r from-pink-950/60 via-slate-900/80 to-indigo-950/60 border border-pink-500/30 rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-1 bg-pink-500/20 text-pink-300 rounded-lg text-xs font-bold uppercase tracking-wider font-mono">YouTube Voice Cloning</span>
+              <span class="px-2 py-0.5 bg-red-500/20 text-red-300 rounded-md text-[10px] font-bold font-mono">yt-dlp</span>
+            </div>
+            <h3 class="text-lg sm:text-xl font-extrabold text-white mt-1">Extract Target Singer Voice from YouTube</h3>
+            <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+              Don't have a pre-trained .pth voice model? Simply paste any YouTube URL or upload a short vocal clip of yourself or any artist. XonAudio Studio extracts the vocal timbre and creates an instant FAISS timbre index on the fly.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-xs font-mono text-pink-400 flex items-center gap-2">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i> YouTube URL &bull; Audio Upload &bull; 8 Vocal Presets
+          </div>
+        </div>
+
+        <!-- Callout 2: De-Reverb & Silence Slicing -->
+        <div class="bg-gradient-to-r from-slate-900/80 via-indigo-950/60 to-purple-950/60 border border-indigo-500/30 rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-1 bg-indigo-500/20 text-indigo-300 rounded-lg text-xs font-bold uppercase tracking-wider font-mono">Acoustic Clarity</span>
+              <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-md text-[10px] font-bold font-mono">De-Reverb Gate</span>
+            </div>
+            <h3 class="text-lg sm:text-xl font-extrabold text-white mt-1">Downward Expander &amp; Silence-Aware Slicing</h3>
+            <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+              Our transparent downward expander suppresses room reflections and room reverb decay tails by 15–22 dB without touching direct singing formants. Silence-aware phrase boundary slicing ensures no words are sliced in mid-utterance.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-xs font-mono text-indigo-400 flex items-center gap-2">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i> Zero Slapback Echo &bull; Natural Phrase Continuity
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FEATURES DEEP DIVE -->
+  <section id="features" class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i> Comprehensive Suite
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Engineered for Creative Sovereignty</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-500">Every tool you need to clone voices, engineer sound design, and manage large neural weights cleanly on Windows.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+        
+        <!-- Feature 1 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-emerald-200/60 shadow-xs">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 border border-emerald-100 shadow-xs">
+            <i data-lucide="mic" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            Voice Lab (3 Engines)
+            <span class="text-xs">🇳🇱</span>
+          </h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Switch effortlessly between <strong>F5-TTS</strong>, <strong>XTTS-v2</strong>, and <strong>Fish Speech 1.5</strong>. Zero-shot clone timbre, cadence, and emotion from 5–10s audio. Full native support for <strong>Dutch (Nederlands)</strong>, natural laughter cues (`[laugh]`), and 16 other languages.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 3 interchangeable local voice engines</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> 🇳🇱 Dutch presets (Daan, Femke, Bram, Lotte)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Speed scaling, emotion cues &amp; auto-trim</li>
+          </ul>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-teal-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-6 border border-teal-100 shadow-xs">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">SFX Studio (3 Diffusion Engines)</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Tri-engine sound effect suite: <strong>Stable Audio 3 Medium DiT</strong> (10-step Flow DiT), <strong>Stable Audio Open</strong> (44.1kHz stereo Foley), and <strong>AudioLDM 2</strong> (multi-event soundscapes). Includes intelligent negative prompt sanitization.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> Stable Audio 3 Medium + SA Open + AudioLDM 2</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> Dynamic negative prompt conflict resolver</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-teal-500"></i> 1 to 47 seconds variable stereo synthesis</li>
+          </ul>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-pink-200/60 shadow-xs">
+          <div class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center mb-6 border border-pink-100 shadow-xs">
+            <i data-lucide="music-2" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            AI Song Cover Lab
+            <span class="text-xs px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full font-bold">New</span>
+          </h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Full end-to-end singing cover production. Isolates vocals with <strong>BS-RoFormer</strong> (12.97 SDR record), converts singing timbre via <strong>RVC v2 + RMVPE</strong>, and lets you clone any singer instantly by uploading a voice sample.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-pink-500"></i> BS-RoFormer 12.97 SDR stem separation on CUDA</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-pink-500"></i> RMVPE 100 FPS pitch tracking &amp; pitch shift presets</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-pink-500"></i> YouTube / Spotify audio ingestion via yt-dlp</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Second Row of Features -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mt-6 sm:mt-8">
+        
+        <!-- Feature 4 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-indigo-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 border border-indigo-100 shadow-xs">
+            <i data-lucide="disc" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Hi-Fi Studio Dual Export</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Commercial broadcast mastering for every generation. Exports simultaneously to <strong>320 kbps MP3</strong> (FFmpeg libmp3lame) and <strong>24-bit Lossless Studio Master WAV</strong> with Kaiser sinc resampling and dynamic RMS envelope matching.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> 320 kbps MP3 (CBR High-Fidelity)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> 24-bit PCM WAV Lossless Studio Master</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-indigo-500"></i> Kaiser sinc resampling &amp; RMS envelope transfer</li>
+          </ul>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-purple-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-6 border border-purple-100 shadow-xs">
+            <i data-lucide="wand-2" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Llama 3 AI Co-Pilot &amp; Wand</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Local Meta Llama 3 operating as your creative audio director. Click the Magic Wand (🪄) to expand short ideas into rich cinematic acoustic directions, or chat with the built-in Studio Assistant.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> 1-Click Magic Wand Prompt Refiner (🪄)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Contextual model check detection</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-purple-500"></i> Floating chat co-pilot for studio advice</li>
+          </ul>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-cyan-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center mb-6 border border-cyan-100 shadow-xs">
+            <i data-lucide="activity" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Real-Time NVML Telemetry</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Sub-second NVML hardware monitor tracking GPU %, temperature, GDDR7 VRAM, Watts, and CPU %. Live in-viewport floating HUD keeping you fully informed during heavy neural synthesis.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Native NVML NVIDIA driver queries (2.5s)</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Real-time VRAM, Watts, GPU temp &amp; CPU %</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-500"></i> Dockable matching width with zero overhead</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Third Row of Features -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mt-6 sm:mt-8">
+        
+        <!-- Feature 7 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-amber-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6 border border-amber-100 shadow-xs">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Generations Archive &amp; Stems</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Every audio file you produce is safely cataloged in your local library. Play clips directly from the archive, inspect source prompts, download WAV/MP3 files, or access isolated stems.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> Auto-indexed history with timestamps &amp; origin</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> Direct WAV/MP3 player &amp; stem inspector</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-amber-500"></i> 100% confidential and local SQLite registry</li>
+          </ul>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-rose-200/60">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-6 border border-rose-100 shadow-xs">
+            <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Storage Reclaim &amp; Model Manager</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            AI weights can occupy massive SSD capacity. XonAudio Studio lets you inspect exact on-disk model sizes in gigabytes and wipe them in 1 click whenever you need to free up storage space.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> 1-Click Clean Storage button for instant savings</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> Auto-checks HuggingFace commit SHAs</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-rose-500"></i> On-demand lazy downloading on BAT launch</li>
+          </ul>
+        </div>
+
+        <!-- Feature 9 -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:translate-y-[-4px] transition-all border border-emerald-200/60 shadow-xs">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 border border-emerald-100 shadow-xs">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">100% Sovereign Offline Privacy</h3>
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Zero cloud telemetry, zero remote API endpoints, and zero data leakage. All 9 neural foundation models run completely offline on your NVIDIA GPU with true creative sovereignty.
+          </p>
+          <ul class="text-xs font-semibold text-slate-600 space-y-2">
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Zero monthly API subscriptions or token meters</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Fully air-gapped capable on Windows 10/11</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Pure PyTorch CUDA acceleration</li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- LIVE TELEMETRY SHOWCASE SECTION -->
+  <section id="telemetry" class="py-16 sm:py-20 bg-slate-900 text-white relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        
+        <!-- Left Column: Copy -->
+        <div class="lg:col-span-7">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> NVML Hardware Intelligence
+          </div>
+          <h2 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+            Real-Time Hardware Telemetry in Your Viewport
+          </h2>
+          <p class="mt-4 text-slate-300 text-sm sm:text-lg leading-relaxed">
+            Monitor your NVIDIA Blackwell RTX 5080, Ada Lovelace, or Ampere GPU with precision sub-second metrics. Track thermal performance, power draw in Watts, VRAM consumption, and host CPU/RAM while neural synthesis takes place.
+          </p>
+
+          <div class="mt-6 sm:mt-8 grid grid-cols-3 gap-4 border-t border-slate-800 pt-6 sm:pt-8 text-center sm:text-left">
+            <div>
+              <p class="text-2xl sm:text-3xl font-extrabold text-emerald-400">16 GB</p>
+              <p class="text-[11px] sm:text-xs text-slate-400 mt-1 font-semibold">GDDR7 VRAM</p>
+            </div>
+            <div>
+              <p class="text-2xl sm:text-3xl font-extrabold text-teal-400">sm_120</p>
+              <p class="text-[11px] sm:text-xs text-slate-400 mt-1 font-semibold">Blackwell Compute</p>
+            </div>
+            <div>
+              <p class="text-2xl sm:text-3xl font-extrabold text-cyan-400">&lt; 0.7s</p>
+              <p class="text-[11px] sm:text-xs text-slate-400 mt-1 font-semibold">Inference Latency</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Live Simulated Hardware Widget (Matching Real App!) -->
+        <div class="lg:col-span-5 flex justify-center w-full">
+          <div class="w-full max-w-sm bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-5 shadow-2xl relative">
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-extrabold text-base text-white tracking-wide font-sans">RTX 5080</span>
+              </div>
+              <div class="flex items-center gap-2 text-slate-400">
+                <span class="text-[10px] font-mono uppercase bg-slate-800 px-2 py-0.5 rounded text-emerald-400 font-bold">Online</span>
+              </div>
+            </div>
+
+            <!-- Metric Rows -->
+            <div class="space-y-3.5 text-xs font-medium">
+              
+              <!-- GPU % -->
+              <div>
+                <div class="flex justify-between items-center mb-1 text-slate-300">
+                  <span class="font-semibold text-slate-400">GPU</span>
+                  <span id="metricGpu" class="font-mono font-bold text-white">3%</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                  <div id="barGpu" class="bg-emerald-400 h-full rounded-full transition-all duration-700" style="width: 3%;"></div>
+                </div>
+              </div>
+
+              <!-- GPU Temp -->
+              <div>
+                <div class="flex justify-between items-center mb-1 text-slate-300">
+                  <span class="font-semibold text-slate-400">GPU Temp</span>
+                  <span id="metricTemp" class="font-mono font-bold text-emerald-400">26°C</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                  <div id="barTemp" class="bg-emerald-500 h-full rounded-full transition-all duration-700" style="width: 26%;"></div>
+                </div>
+              </div>
+
+              <!-- VRAM -->
+              <div>
+                <div class="flex justify-between items-center mb-1 text-slate-300">
+                  <span class="font-semibold text-slate-400">VRAM</span>
+                  <span id="metricVram" class="font-mono font-bold text-cyan-400">3.1 GB / 15.9 GB</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                  <div id="barVram" class="bg-cyan-400 h-full rounded-full transition-all duration-700" style="width: 20%;"></div>
+                </div>
+              </div>
+
+              <!-- Power -->
+              <div>
+                <div class="flex justify-between items-center mb-1 text-slate-300">
+                  <span class="font-semibold text-slate-400">Power</span>
+                  <span id="metricPower" class="font-mono font-bold text-indigo-400">51 / 389 W</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                  <div id="barPower" class="bg-indigo-400 h-full rounded-full transition-all duration-700" style="width: 14%;"></div>
+                </div>
+              </div>
+
+              <!-- RAM -->
+              <div>
+                <div class="flex justify-between items-center mb-1 text-slate-300">
+                  <span class="font-semibold text-slate-400">RAM</span>
+                  <span id="metricRam" class="font-mono font-bold text-purple-400">22.9 GB / 63.1 GB</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                  <div id="barRam" class="bg-purple-400 h-full rounded-full transition-all duration-700" style="width: 36%;"></div>
+                </div>
+              </div>
+
+              <!-- CPU -->
+              <div>
+                <div class="flex justify-between items-center mb-1 text-slate-300">
+                  <span class="font-semibold text-slate-400">CPU</span>
+                  <span id="metricCpu" class="font-mono font-bold text-blue-400">23%</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                  <div id="barCpu" class="bg-blue-400 h-full rounded-full transition-all duration-700" style="width: 23%;"></div>
+                </div>
+              </div>
+
+              <!-- Engine Process -->
+              <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-slate-400 text-[11px]">
+                <span>Engine Process</span>
+                <span class="font-mono text-slate-300 font-semibold">0.1 GB</span>
+              </div>
+
+            </div>
+
+            <!-- Footer indicator -->
+            <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>Audio engine reachable (127.0.0.1:8000)</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- HARDWARE & BENCHMARKS COMPARISON -->
+  <section id="benchmarks" class="py-16 sm:py-20 bg-slate-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> Hardware Compatibility
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Tailored Across NVIDIA Architecture</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-500">From budget RTX 3060 setups to flagship Blackwell RTX 5080/5090 workstations.</p>
+      </div>
+
+      <!-- Tiers Table -->
+      <div class="glass-card rounded-3xl overflow-hidden shadow-card border border-slate-200 mb-12">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm min-w-[600px]">
+            <thead class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="py-4 px-6 font-bold">Tier</th>
+                <th class="py-4 px-6 font-bold">Target Hardware</th>
+                <th class="py-4 px-6 font-bold">VRAM</th>
+                <th class="py-4 px-6 font-bold">Execution Mode</th>
+                <th class="py-4 px-6 font-bold">TTS Latency</th>
+                <th class="py-4 px-6 font-bold">Foley (10s)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-600">
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-4 px-6 font-bold text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Minimum Tier
+                </td>
+                <td class="py-4 px-6">RTX 3060 12GB / RTX 4060 16GB</td>
+                <td class="py-4 px-6 font-mono text-xs">8 – 12 GB</td>
+                <td class="py-4 px-6"><span class="px-2.5 py-1 bg-slate-100 rounded-md text-xs font-semibold">FP16 Sliced</span></td>
+                <td class="py-4 px-6 font-mono text-xs">~ 1.8s</td>
+                <td class="py-4 px-6 font-mono text-xs">~ 6.2s</td>
+              </tr>
+              <tr class="hover:bg-slate-50/80 transition-colors bg-white">
+                <td class="py-4 px-6 font-bold text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span> Recommended Studio
+                </td>
+                <td class="py-4 px-6">RTX 4070Ti Super / RTX 4080 16GB</td>
+                <td class="py-4 px-6 font-mono text-xs">16 GB</td>
+                <td class="py-4 px-6"><span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-md text-xs font-semibold">Native FP16</span></td>
+                <td class="py-4 px-6 font-mono text-xs">~ 0.9s</td>
+                <td class="py-4 px-6 font-mono text-xs">~ 3.1s</td>
+              </tr>
+              <tr class="hover:bg-emerald-50/40 transition-colors bg-emerald-50/20">
+                <td class="py-4 px-6 font-bold text-emerald-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Blackwell Flagship
+                </td>
+                <td class="py-4 px-6 font-semibold text-slate-900">RTX 5080 16GB / RTX 5090 32GB</td>
+                <td class="py-4 px-6 font-mono text-xs font-bold text-emerald-700">16 – 32 GB GDDR7</td>
+                <td class="py-4 px-6"><span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md text-xs font-bold">sm_120 Native</span></td>
+                <td class="py-4 px-6 font-mono text-xs font-bold text-emerald-700">~ 0.5s</td>
+                <td class="py-4 px-6 font-mono text-xs font-bold text-emerald-700">~ 1.7s</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- QUICKSTART GUIDE SECTION -->
+  <section id="quickstart" class="py-16 sm:py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="play-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Easy Installation
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Up and Running in 60 Seconds</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-500">Choose the workflow that suits your setup best.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
+        
+        <!-- Option 1: Standalone ZIP -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:shadow-card transition-all border-2 border-emerald-500/20 relative">
+          <div class="absolute -top-3.5 right-6 bg-emerald-600 text-white text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-xs">
+            Recommended
+          </div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">1</div>
+            <div>
+              <h3 class="font-extrabold text-base sm:text-lg text-slate-900">Standalone Portable ZIP</h3>
+              <p class="text-xs text-slate-500">No Git installation needed</p>
+            </div>
+          </div>
+          
+          <ol class="space-y-3.5 text-xs font-medium text-slate-600 my-6">
+            <li class="flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">A</span>
+              <span>Download <code class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-800 font-mono">XonAudio-Studio-v1.3.0-Portable.zip</code> from GitHub Releases.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">B</span>
+              <span>Extract the ZIP folder anywhere on your Windows PC (e.g. <code class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-800 font-mono">D:\XonAudio</code>).</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">C</span>
+              <span>Double-click <strong class="text-slate-900">Start_AudioStudio.bat</strong>. Automatically verifies and downloads models on launch!</span>
+            </li>
+          </ol>
+
+          <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Download ZIP from Releases</span>
+          </a>
+        </div>
+
+        <!-- Option 2: Git Clone -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 hover:shadow-card transition-all">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">2</div>
+            <div>
+              <h3 class="font-extrabold text-base sm:text-lg text-slate-900">Developer Git Clone</h3>
+              <p class="text-xs text-slate-500">For ongoing updates &amp; contributions</p>
+            </div>
+          </div>
+
+          <div class="my-6 bg-slate-950 text-slate-100 rounded-2xl p-4 font-mono text-xs space-y-2 border border-slate-800 overflow-x-auto">
+            <p class="text-slate-400"># 1. Clone the repository</p>
+            <p class="text-emerald-400 select-all whitespace-nowrap">git clone https://github.com/Xonarouss/xonaudiostudio.git</p>
+            <p class="text-slate-400 mt-2"># 2. Enter workspace</p>
+            <p class="text-emerald-400 select-all whitespace-nowrap">cd xonaudiostudio</p>
+            <p class="text-slate-400 mt-2"># 3. Launch automated script</p>
+            <p class="text-cyan-400 select-all whitespace-nowrap">Start_AudioStudio.bat</p>
+          </div>
+
+          <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all">
+            <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span>Explore Codebase on GitHub</span>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMPANY BRANDING & SUPPORT -->
+  <section class="py-16 bg-gradient-to-b from-white to-slate-50 border-t border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center mx-auto shadow-glow-emerald mb-5 sm:mb-6 text-white">
+        <i data-lucide="heart" class="w-7 h-7 sm:w-8 sm:h-8 fill-white"></i>
+      </div>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Free &amp; Open Source for Everyone</h2>
+      <p class="mt-3 text-xs sm:text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
+        XonAudio Studio is engineered by <strong>Xonarous Inc</strong> to foster local, sovereign AI creation. If you enjoy generating audio with XonAudio Studio, support future developments with a cold brew!
+      </p>
+
+      <div class="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+        <a href="https://buymeacoffee.com/xonarous" target="_blank" class="inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform active:scale-95">
+          <span>🍺</span>
+          <span>Buy Me a Beer</span>
+        </a>
+        <a href="https://xonarous.nl" target="_blank" class="inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-2xl font-bold text-xs sm:text-sm shadow-xs transition-all">
+          <span>Visit Xonarous Inc</span>
+          <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-10 sm:py-12 text-slate-500 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <!-- Brand & Copy -->
+      <div class="flex items-center gap-3 text-center sm:text-left">
+        <img src="assets/logo.svg" alt="XonAudio" class="w-6 h-6">
+        <div>
+          <span class="font-extrabold text-slate-800 text-sm">XonAudio Studio</span>
+          <p class="text-[11px] text-slate-400">© 2026 All rights reserved.</p>
+        </div>
+      </div>
+
+      <!-- Mandatory Company Branding Link -->
+      <div class="text-center font-medium">
+        Built with passion by <a href="https://xonarous.nl" target="_blank" rel="noopener noreferrer" class="font-extrabold text-emerald-600 hover:text-emerald-700 underline decoration-emerald-300 underline-offset-4 transition-colors">Xonarous Inc</a>
+      </div>
+
+      <!-- Social / Links -->
+      <div class="flex flex-wrap items-center justify-center gap-5 font-semibold">
+        <a href="https://github.com/Xonarouss/xonaudiostudio" target="_blank" class="hover:text-slate-900 transition-colors flex items-center gap-1.5">
+          <svg class="w-4 h-4 fill-current shrink-0 inline-block" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
+        <a href="https://github.com/Xonarouss/xonaudiostudio/releases" class="hover:text-slate-900 transition-colors">Releases</a>
+        <a href="https://buymeacoffee.com/xonarous" target="_blank" class="hover:text-amber-600 transition-colors">Buy Me a Beer</a>
+        <a href="https://xonarous.nl" target="_blank" class="hover:text-emerald-600 transition-colors">xonarous.nl</a>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- SCRIPT FOR REAL AUDIO DEMOS & LIVE HARDWARE TICKS -->
+  <script>
+    // ==========================================
+    // LUCIDE ICON INITIALIZER (MULTI-PASS)
+    // ==========================================
+    function initIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
+    initIcons();
+    document.addEventListener('DOMContentLoaded', initIcons);
+    window.addEventListener('load', initIcons);
+    setTimeout(initIcons, 300);
+    setTimeout(initIcons, 1000);
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    }
+
+    // ==========================================
+    // REAL AUDIO PLAYBACK & WAVEFORM ANIMATION
+    // ==========================================
+    let currentAudio = null;
+    let currentPlayingId = 0;
+    let animFrame = null;
+
+    const audioMap = {
+      1: new Audio('assets/voice_sample.wav'),
+      2: new Audio('assets/foley_sample.wav'),
+      3: new Audio('assets/song_cover_sample.mp3')
+    };
+    for (const key in audioMap) {
+      audioMap[key].preload = 'auto';
+    }
+
+    function drawWaveform(canvasId, isPlaying) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const barCount = 42;
+      const barWidth = 6;
+      const gap = (width - (barCount * barWidth)) / (barCount - 1);
+
+      for (let i = 0; i < barCount; i++) {
+        const x = i * (barWidth + gap);
+        let barHeight = isPlaying 
+          ? (Math.sin(Date.now() * 0.009 + i * 0.35) * 0.5 + 0.5) * (height * 0.75) + 6
+          : (Math.sin(i * 0.3) * 0.25 + 0.3) * (height * 0.4) + 4;
+        
+        const y = (height - barHeight) / 2;
+
+        const grad = ctx.createLinearGradient(0, y, 0, y + barHeight);
+        if (canvasId === 'waveformCanvas1') {
+          grad.addColorStop(0, '#10b981');
+          grad.addColorStop(1, '#059669');
+        } else if (canvasId === 'waveformCanvas2') {
+          grad.addColorStop(0, '#06b6d4');
+          grad.addColorStop(1, '#0d9488');
+        } else {
+          grad.addColorStop(0, '#ec4899');
+          grad.addColorStop(1, '#e11d48');
+        }
+
+        ctx.fillStyle = isPlaying ? grad : '#cbd5e1';
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, 3);
+        ctx.fill();
+      }
+
+      if (isPlaying) {
+        animFrame = requestAnimationFrame(() => drawWaveform(canvasId, true));
+      }
+    }
+
+    // Draw initial static waveforms
+    drawWaveform('waveformCanvas1', false);
+    drawWaveform('waveformCanvas2', false);
+    drawWaveform('waveformCanvas3', false);
+
+    function stopAllAudio() {
+      if (currentAudio) {
+        try {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        } catch(e) {}
+        currentAudio = null;
+      }
+      if (animFrame) {
+        cancelAnimationFrame(animFrame);
+        animFrame = null;
+      }
+      const pt1 = document.getElementById('playText1');
+      if (pt1) pt1.textContent = 'Play Voice Sample';
+      const pt2 = document.getElementById('playText2');
+      if (pt2) pt2.textContent = 'Play Foley Sample';
+      const pt3 = document.getElementById('playText3');
+      if (pt3) pt3.textContent = 'Play Song Cover';
+
+      const b1 = document.getElementById('playBtn1');
+      if (b1) {
+        b1.classList.remove('bg-rose-600', 'hover:bg-rose-700');
+        b1.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+      }
+      const b2 = document.getElementById('playBtn2');
+      if (b2) {
+        b2.classList.remove('bg-rose-600', 'hover:bg-rose-700');
+        b2.classList.add('bg-teal-600', 'hover:bg-teal-700');
+      }
+      const b3 = document.getElementById('playBtn3');
+      if (b3) {
+        b3.classList.remove('bg-slate-800', 'hover:bg-slate-900');
+        b3.classList.add('bg-gradient-to-r', 'from-pink-600', 'to-rose-600', 'hover:from-pink-700', 'hover:to-rose-700');
+      }
+
+      initIcons();
+      drawWaveform('waveformCanvas1', false);
+      drawWaveform('waveformCanvas2', false);
+      drawWaveform('waveformCanvas3', false);
+      currentPlayingId = 0;
+    }
+
+    function toggleAudioDemo(id) {
+      if (currentPlayingId === id) {
+        stopAllAudio();
+        return;
+      }
+
+      stopAllAudio();
+      currentPlayingId = id;
+      const targetAudio = audioMap[id];
+      currentAudio = targetAudio;
+
+      if (id === 1) {
+        const pt1 = document.getElementById('playText1');
+        if (pt1) pt1.textContent = 'Stop Audio';
+        const b1 = document.getElementById('playBtn1');
+        if (b1) {
+          b1.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          b1.classList.add('bg-rose-600', 'hover:bg-rose-700');
+        }
+        drawWaveform('waveformCanvas1', true);
+      } else if (id === 2) {
+        const pt2 = document.getElementById('playText2');
+        if (pt2) pt2.textContent = 'Stop Audio';
+        const b2 = document.getElementById('playBtn2');
+        if (b2) {
+          b2.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+          b2.classList.add('bg-rose-600', 'hover:bg-rose-700');
+        }
+        drawWaveform('waveformCanvas2', true);
+      } else if (id === 3) {
+        const pt3 = document.getElementById('playText3');
+        if (pt3) pt3.textContent = 'Stop Cover';
+        const b3 = document.getElementById('playBtn3');
+        if (b3) {
+          b3.classList.remove('bg-gradient-to-r', 'from-pink-600', 'to-rose-600', 'hover:from-pink-700', 'hover:to-rose-700');
+          b3.classList.add('bg-slate-800', 'hover:bg-slate-900');
+        }
+        drawWaveform('waveformCanvas3', true);
+      }
+      initIcons();
+
+      targetAudio.currentTime = 0;
+      const playPromise = targetAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          targetAudio.onended = () => {
+            stopAllAudio();
+          };
+        }).catch((err) => {
+          console.warn("Audio file play fallback: ", err);
+          if (id === 1 && window.speechSynthesis) {
+            const utter = new SpeechSynthesisUtterance("Welcome to XonAudio Studio. Experience high-fidelity voice cloning running locally on your RTX GPU.");
+            utter.onend = () => stopAllAudio();
+            window.speechSynthesis.speak(utter);
+          } else {
+            stopAllAudio();
+          }
+        });
+      }
+    }
+
+    // ==========================================
+    // HARDWARE TELEMETRY LIVE TICK SIMULATION
+    // ==========================================
+    setInterval(() => {
+      const gpuPct = Math.floor(Math.random() * 5) + 2;
+      const tempC = 26 + (Math.random() > 0.6 ? 1 : 0);
+      const vram = (3.1 + (Math.random() * 0.2 - 0.1)).toFixed(1);
+      const power = Math.floor(49 + Math.random() * 6);
+      const cpu = Math.floor(18 + Math.random() * 8);
+
+      const mg = document.getElementById('metricGpu');
+      if (mg) {
+        mg.textContent = gpuPct + '%';
+        document.getElementById('barGpu').style.width = gpuPct + '%';
+        document.getElementById('metricTemp').textContent = tempC + '°C';
+        document.getElementById('barTemp').style.width = tempC + '%';
+        document.getElementById('metricVram').textContent = vram + ' GB / 15.9 GB';
+        document.getElementById('barVram').style.width = Math.round((vram / 15.9) * 100) + '%';
+        document.getElementById('metricPower').textContent = power + ' / 389 W';
+        document.getElementById('barPower').style.width = Math.round((power / 389) * 100) + '%';
+        document.getElementById('metricCpu').textContent = cpu + '%';
+        document.getElementById('barCpu').style.width = cpu + '%';
+      }
+    }, 2400);
+
+  </script>
+</body>
+</html>
