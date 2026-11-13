@@ -63,7 +63,6 @@ Unlike cloud-dependent platforms with monthly subscriptions, privacy concerns, a
 - **🪄 Llama 3 Magic Wand & AI Co-Pilot:** Local Meta Llama 3 expands simple ideas into Hollywood acoustic directions and provides interactive studio assistance.
 - **📊 Real-Time Dynamic Hardware Monitor:** Live floating monitor widget displaying GPU %, Temperature (°C), GDDR7 VRAM, Power Draw (Watts), System RAM, and CPU %.
 - **💎 Hi-Fi Dual Export Quality:** Every generation can be exported as both **320 kbps MP3** (FFmpeg libmp3lame) and **24-bit Lossless PCM WAV** (`PCM_24`).
-- **👤 Studio Identity & Profile:** Configurable studio profile with **Nickname** (e.g. *Chris*), **Avatar** (preset SVG & custom image uploads), and **Naam van Herkomst / Origin** (e.g. *Kerkrade*), displayed across the header, AI Assistant chat, and generation archive.
 - **💾 Automated Model Manager:** Inspect checkpoint sizes in GB, download missing models on-demand, or wipe unused models in 1 click.
 - **🚀 Automated Startup Scripts:** `Start_AudioStudio.bat` automatically configures dependencies, checks for model updates, on-demand downloads missing checkpoints, and opens the app.
 

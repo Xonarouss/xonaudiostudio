@@ -9,4 +9,3 @@ counts = Counter(matches)
 print("Found", len(matches), "icon tags with", len(counts), "unique icons:")
 for name, c in sorted(counts.items()):
     print(f"  {name}: {c}")
-

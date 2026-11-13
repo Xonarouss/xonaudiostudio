@@ -172,4 +172,3 @@ def make_song_cover():
 
 if __name__ == "__main__":
     make_song_cover()
-

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, X, ChevronDown, ChevronUp, Copy, Check, Wand2, AlertCircle, DownloadCloud, MapPin } from 'lucide-react';
+import { Bot, Send, Sparkles, X, ChevronDown, ChevronUp, Copy, Check, Wand2, AlertCircle, DownloadCloud } from 'lucide-react';
 
-export default function AIAssistant({ onApplyPrompt, activeTab, modelsStatus, onOpenModelManager, userProfile }) {
+export default function AIAssistant({ onApplyPrompt, activeTab, modelsStatus, onOpenModelManager }) {
   const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -187,32 +187,6 @@ export default function AIAssistant({ onApplyPrompt, activeTab, modelsStatus, on
                 key={idx}
                 className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
               >
-                {/* Identity header above bubble */}
-                {m.role === 'user' ? (
-                  <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] text-slate-500 font-semibold">
-                    <span className="text-slate-800 font-extrabold">{userProfile?.nickname || 'Chris'}</span>
-                    <span className="text-slate-300">•</span>
-                    <span className="flex items-center gap-0.5 text-rose-500">
-                      <MapPin className="w-2.5 h-2.5" />
-                      <span>{userProfile?.location || 'Kerkrade'}</span>
-                    </span>
-                    <div className="w-4 h-4 rounded-full overflow-hidden bg-slate-900 ml-0.5 ring-1 ring-slate-200">
-                      <img
-                        src={userProfile?.avatar === 'custom' && userProfile?.custom_avatar_data ? userProfile.custom_avatar_data : `/avatars/${userProfile?.avatar || 'avatar-chris'}.svg`}
-                        alt={userProfile?.nickname || 'Chris'}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] text-slate-500 font-semibold">
-                    <div className="w-3.5 h-3.5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[8px] font-bold">
-                      🤖
-                    </div>
-                    <span className="text-purple-700 font-extrabold">Llama 3 AI Co-Pilot</span>
-                  </div>
-                )}
-
                 <div
                   className={`p-3 rounded-2xl max-w-[92%] leading-relaxed ${
                     m.role === 'user'

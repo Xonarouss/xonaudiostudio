@@ -154,13 +154,6 @@ class PreprocessTextRequest(BaseModel):
     text: str
     engine: Optional[str] = "f5_tts"
 
-class UserProfileRequest(BaseModel):
-    nickname: str = "Chris"
-    location: str = "Kerkrade"
-    avatar: Optional[str] = "avatar-chris"
-    custom_avatar_data: Optional[str] = None
-    bio: Optional[str] = "Studio Director"
-
 # ----------------- SYSTEM & MODELS ENDPOINTS -----------------
 
 @app.get("/api/health")
@@ -239,47 +232,6 @@ def save_hf_token(req: HFTokenRequest):
     # Also set in current process environment
     os.environ["HF_TOKEN"] = token
     return {"status": "success", "message": "HF Token saved. You can now download Stable Audio Open."}
-
-# ----------------- USER PROFILE & IDENTITY -----------------
-
-PROFILE_FILE = OUTPUTS_DIR / "user_profile.json"
-
-DEFAULT_PROFILE = {
-    "nickname": "Chris",
-    "location": "Kerkrade",
-    "avatar": "avatar-chris",
-    "custom_avatar_data": None,
-    "bio": "Studio Director"
-}
-
-@app.get("/api/user/profile")
-def get_user_profile():
-    """Returns the user profile with nickname, avatar, and location/herkomst."""
-    if PROFILE_FILE.exists():
-        try:
-            with open(PROFILE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return {"status": "success", "profile": data}
-        except Exception as e:
-            logger.warning(f"Failed to read user profile: {e}")
-    return {"status": "success", "profile": DEFAULT_PROFILE}
-
-@app.post("/api/user/profile")
-def save_user_profile(req: UserProfileRequest):
-    """Saves the user profile with nickname, avatar, and location/herkomst."""
-    try:
-        profile_data = {
-            "nickname": req.nickname.strip() or "Chris",
-            "location": req.location.strip() or "Kerkrade",
-            "avatar": req.avatar or "avatar-chris",
-            "custom_avatar_data": req.custom_avatar_data,
-            "bio": req.bio or "Studio Director"
-        }
-        with open(PROFILE_FILE, "w", encoding="utf-8") as f:
-            json.dump(profile_data, f, indent=2, ensure_ascii=False)
-        return {"status": "success", "profile": profile_data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 # ----------------- LLAMA AI ASSISTANT & MAGIC WAND -----------------
 
