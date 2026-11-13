@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Download, Trash2, Music, Mic, Clock, RefreshCw, FolderOpen, ArrowUpRight, Sparkles, Music2, Disc, User } from 'lucide-react';
+import { Play, Download, Trash2, Music, Mic, Clock, RefreshCw, FolderOpen, ArrowUpRight, Sparkles, Music2, Disc, User, MapPin } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
 
-export default function GenerationsLibrary({ onLoadIntoStudio }) {
+export default function GenerationsLibrary({ onLoadIntoStudio, userProfile }) {
   const [generations, setGenerations] = useState([]);
   const [selectedAudio, setSelectedAudio] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'tts' | 'sfx' | 'song_cover'
@@ -195,7 +195,12 @@ export default function GenerationsLibrary({ onLoadIntoStudio }) {
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                  <span className="font-mono text-slate-500 text-[11px]">{item.size_mb} MB</span>
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+                    <MapPin className="w-2.5 h-2.5 text-rose-500 shrink-0" />
+                    <span>{userProfile?.location || 'Kerkrade'}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="font-mono text-[11px] text-slate-400">{item.size_mb} MB</span>
+                  </div>
 
                   <div className="flex items-center gap-1">
                     {onLoadIntoStudio && (

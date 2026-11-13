@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Component } from 'react';
-import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot, Music2, AlertCircle } from 'lucide-react';
+import { Mic, Radio, HardDrive, Volume2, Sparkles, RefreshCw, FolderOpen, Bot, Music2, AlertCircle, MapPin, User } from 'lucide-react';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -42,6 +42,7 @@ import GenerationsLibrary from './components/GenerationsLibrary';
 import ModelManager from './components/ModelManager';
 import HardwareWidget from './components/HardwareWidget';
 import AIAssistant from './components/AIAssistant';
+import UserProfileModal from './components/UserProfileModal';
 import Footer from './components/Footer';
 
 export default function App() {
@@ -51,6 +52,20 @@ export default function App() {
     stable_audio: { installed: false, size_gb: '0.00' },
     llama: { installed: false, size_gb: '0.00' }
   });
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem('xonaudio_user_profile');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return {
+      nickname: 'Chris',
+      location: 'Kerkrade',
+      avatar: 'avatar-chris',
+      custom_avatar_data: null,
+      bio: 'Studio Director'
+    };
+  });
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [systemInfo, setSystemInfo] = useState({
     gpu_name: 'GPU',
     gpu_util_percent: 0,
@@ -100,6 +115,36 @@ export default function App() {
     const interval = setInterval(fetchStatus, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    fetch('/api/user/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.profile) {
+          setUserProfile(data.profile);
+          try {
+            localStorage.setItem('xonaudio_user_profile', JSON.stringify(data.profile));
+          } catch(e) {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveProfile = async (updated) => {
+    setUserProfile(updated);
+    try {
+      localStorage.setItem('xonaudio_user_profile', JSON.stringify(updated));
+    } catch (e) {}
+    try {
+      await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    } catch (e) {
+      console.warn("Could not sync profile to backend:", e);
+    }
+  };
 
   const handleApplyPromptFromAssistant = (text) => {
     setAppliedPrompt(text);
@@ -220,14 +265,43 @@ export default function App() {
             </button>
           </div>
 
-          {/* Dynamic Hardware Quick-Indicator in Header on Desktop */}
-          <div className="hidden lg:flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs shadow-2xs">
+          {/* User Profile Pill & Dynamic Hardware Quick-Indicator in Header */}
+          <div className="flex items-center gap-3">
+            <div className="hidden xl:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-slate-700 font-semibold">{gpuName}</span>
               <span className="text-slate-400">|</span>
               <span className="text-emerald-700 font-mono font-bold">{gpuTemp}°C</span>
             </div>
+
+            {/* User Profile Pill (Avatar, Nickname, Herkomst) */}
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs hover:shadow-xs transition-all group shrink-0 active:scale-95"
+              title="Studio Identity (Nickname, Avatar & Herkomst - Klik om te wijzigen)"
+            >
+              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[1.5px] shadow-xs flex-shrink-0">
+                <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center overflow-hidden">
+                  <img
+                    src={userProfile.avatar === 'custom' && userProfile.custom_avatar_data ? userProfile.custom_avatar_data : `/avatars/${userProfile.avatar || 'avatar-chris'}.svg`}
+                    alt={userProfile.nickname}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+              </div>
+              <div className="text-left leading-tight hidden sm:block">
+                <div className="flex items-center gap-1">
+                  <span className="font-extrabold text-xs text-slate-900 font-sans group-hover:text-cyan-700 transition-colors">
+                    {userProfile.nickname}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+                  <MapPin className="w-2.5 h-2.5 text-rose-500 shrink-0" />
+                  <span>{userProfile.location}</span>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </header>
@@ -259,6 +333,7 @@ export default function App() {
           {activeTab === 'library' && (
             <GenerationsLibrary
               onLoadIntoStudio={handleLoadGenerationIntoStudio}
+              userProfile={userProfile}
             />
           )}
 
@@ -281,10 +356,19 @@ export default function App() {
             activeTab={activeTab}
             modelsStatus={modelsStatus}
             onOpenModelManager={() => setActiveTab('models')}
+            userProfile={userProfile}
           />
           <HardwareWidget systemInfo={systemInfo} />
         </div>
       </div>
+
+      {/* User Profile & Herkomst Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userProfile={userProfile}
+        onSaveProfile={handleSaveProfile}
+      />
 
       {/* Footer with Dynamic Hardware Specs and Xonarous Inc Link */}
       <Footer systemInfo={systemInfo} />
